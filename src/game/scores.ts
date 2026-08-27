@@ -1,72 +1,71 @@
-const BOARD_KEY = "bankgeheimnis-board-v1";
-const LEGACY_KEY = "bankgeheimnis-hs-v1";
-const BOARD_SIZE = 10;
-const SAVE_VERSION = 1;
+const SUPABASE_URL = "https://lforuvtpskrnydlburpt.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmb3J1dnRwc2tybnlkbGJ1cnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NjAwMDQsImV4cCI6MjEwMzQzNjAwNH0.dXH7H7VhUPYNcMSGztdJT9L6CYZrnJEdj75xAXo0RPY";
 
-export type ScoreEntry = {
+export interface ScoreEntry {
   name: string;
   score: number;
-  at: number;
-};
-
-type Save = { version: number; entries: ScoreEntry[] };
-
-function normalizeName(raw: string) {
-  const name = raw.replace(/\s+/g, " ").trim().slice(0, 16);
-  return name || "Anonym";
+  at?: number;
 }
 
 export function loadBoard(): ScoreEntry[] {
   try {
-    const raw = localStorage.getItem(BOARD_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Save;
-      const entries = Array.isArray(parsed?.entries) ? parsed.entries : [];
-      return entries
-        .filter((e) => e && typeof e.score === "number" && typeof e.name === "string")
-        .sort((a, b) => b.score - a.score || a.at - b.at)
-        .slice(0, BOARD_SIZE);
-    }
-    const legacy = Number(localStorage.getItem(LEGACY_KEY) || 0) || 0;
-    if (legacy > 0) {
-      const migrated: ScoreEntry[] = [{ name: "Rekord", score: legacy, at: Date.now() }];
-      persist(migrated);
-      return migrated;
-    }
+    const raw = localStorage.getItem("bankgeheimnis_board");
+    return raw ? JSON.parse(raw) : [];
   } catch {
-    /* private mode / bad JSON */
+    return [];
   }
-  return [];
 }
 
-function persist(entries: ScoreEntry[]) {
-  const save: Save = { version: SAVE_VERSION, entries };
+export function topScore(): number {
+  const b = loadBoard();
+  return b[0]?.score ?? 0;
+}
+
+export function qualifies(score: number): boolean {
+  return score > 0;
+}
+
+export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
   try {
-    localStorage.setItem(BOARD_KEY, JSON.stringify(save));
-    const best = entries[0]?.score ?? 0;
-    localStorage.setItem(LEGACY_KEY, String(best));
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/highscores?select=name,score&order=score.desc&limit=10`,
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+    if (!res.ok) return loadBoard();
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return loadBoard();
+    const mapped = data.map((d: { name: string; score: number }) => ({
+      name: d.name || "Park-Besucher",
+      score: Number(d.score) || 0,
+      at: Date.now()
+    }));
+    try {
+      localStorage.setItem("bankgeheimnis_board", JSON.stringify(mapped));
+    } catch {}
+    return mapped;
   } catch {
-    /* ignore quota */
+    return loadBoard();
   }
 }
 
-export function topScore() {
-  return loadBoard()[0]?.score ?? 0;
-}
-
-export function qualifies(score: number) {
-  if (score <= 0) return false;
-  const board = loadBoard();
-  if (board.length < BOARD_SIZE) return true;
-  return score > board[board.length - 1]!.score;
-}
-
-export function submitScore(name: string, score: number): ScoreEntry[] {
-  if (score <= 0) return loadBoard();
-  const entries = loadBoard();
-  entries.push({ name: normalizeName(name), score, at: Date.now() });
-  entries.sort((a, b) => b.score - a.score || a.at - b.at);
-  const next = entries.slice(0, BOARD_SIZE);
-  persist(next);
-  return next;
+export async function submitScore(name: string, score: number): Promise<ScoreEntry[]> {
+  const cleanName = (name.trim() || "Park-Besucher").slice(0, 16);
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/highscores`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify({ name: cleanName, score: Math.round(score) })
+    });
+  } catch {}
+  return await fetchOnlineBoard();
 }

@@ -46,7 +46,7 @@ export function GameScreen() {
       setName("");
       setBoard(loadBoard());
     }
-    if (hud.mode === "title") setBoard(loadBoard());
+    fetchOnlineBoard().then((b) => { if (b && b.length > 0) setBoard(b); });
   }, [hud.mode, hud.score]);
 
   const engine = engineRef.current;
@@ -88,7 +88,7 @@ export function GameScreen() {
               </ul>
               {board.length > 0 && (
                 <ol className="w-full max-w-sm space-y-1 text-sm text-paper-dim">
-                  {board.slice(0, 5).map((row, i) => (
+                  {board.slice(0, 10).map((row, i) => (
                     <li key={`${row.at}-${row.name}`} className="flex justify-between gap-3">
                       <span className="truncate">
                         {i + 1}. {row.name}
@@ -202,7 +202,7 @@ export function GameScreen() {
                 className="mt-5 flex w-full max-w-xs flex-col gap-2"
                 onSubmit={(e: FormEvent) => {
                   e.preventDefault();
-                  setBoard(submitScore(name, hud.score));
+                  submitScore(name, hud.score).then((res) => setBoard(res));
                   setNamed(true);
                 }}
               >
