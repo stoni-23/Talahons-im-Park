@@ -885,10 +885,10 @@ export class GameEngine {
     for (const f of this.floaters) {
       ctx.save();
       ctx.globalAlpha = clamp((f.life / f.max) * 1.35, 0, 1);
-      const sz = f.size || (f.text.includes("Wallah") ? 115 : (f.text.startsWith("-") ? 95 : 80)); ctx.font = `900 ${sz}px sans-serif`;
+      const sz = f.text.includes("Wallah") ? 58 : (f.text.startsWith("-") ? 48 : 40); ctx.font = `900 ${sz}px sans-serif`;
       ctx.fillStyle = f.color;
       ctx.strokeStyle = "rgba(10,10,10,0.82)";
-      ctx.lineWidth = 14;
+      ctx.lineWidth = 7;
       ctx.textAlign = "center";
       ctx.strokeText(f.text, f.x + ox, f.y + oy);
       ctx.fillText(f.text, f.x + ox, f.y + oy);
@@ -957,7 +957,7 @@ export class GameEngine {
     ctx.save();
     ctx.strokeStyle = "#f3ead8";
     ctx.fillStyle = "#f3ead8";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 7;
     ctx.beginPath();
     ctx.arc(x, y, 16 + kick, 0, Math.PI * 2);
     ctx.stroke();
@@ -975,7 +975,7 @@ export class GameEngine {
     ctx.lineTo(x + 22 + kick, y);
     ctx.stroke();
     ctx.strokeStyle = "rgba(10,10,10,0.55)";
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 7;
     ctx.globalCompositeOperation = "destination-over";
     ctx.beginPath();
     ctx.arc(x, y, 16 + kick, 0, Math.PI * 2);
