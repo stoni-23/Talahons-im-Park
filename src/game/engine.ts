@@ -380,36 +380,12 @@ export class GameEngine {
 
   spawnPeeker() {
     if (this.aliveCount() >= MAX_ALIVE) return;
-    const lane = Math.random() < 0.5 ? 0 : 1;
-    const running = Math.random() < 0.6;
-    this.spawnWalker(lane, running, 795);
+    this.spawnWalker(1, Math.random() < 0.4);
   }
 
   spawnBush() {
     if (this.aliveCount() >= MAX_ALIVE) return;
-    const free = BUSHES.map((_, i) => i).filter(
-      (i) => !this.bushBusy.has(i) && BUSHES[i]!.x >= OMA_KEEP_X,
-    );
-    if (!free.length) return;
-    const idx = pick(free);
-    const bush = BUSHES[idx]!;
-    this.bushBusy.add(idx);
-    this.targets.push({
-      ...this.baseTarget(),
-      id: this.id++,
-      act: "bush",
-      x: bush.x + bush.facing * 10,
-      y: bush.y,
-      vx: 0,
-      z: bush.z + 0.06,
-      facing: bush.facing,
-      points: 200,
-      scale: bush.scale,
-      phase: "in",
-      phaseT: 0,
-      reveal: 0,
-      hide: idx,
-    });
+    this.spawnWalker(0, false);
   }
 
   spawnRocker() {
@@ -764,11 +740,11 @@ export class GameEngine {
   }
 
   spriteFor(t: Target) {
-    if (t.act === "rocker") return this.img("bahndidos");
-    if (t.state === "falling") return this.img(`talahon-hit-${(t.frame % 4) + 1}`);
-    if (t.act === "run") return this.img(`talahon-run-${(t.frame % 4) + 1}`);
-    const base = t.variant === "b" ? "talahon-walk-b" : "talahon-walk";
-    return this.img(`${base}-${(t.frame % 4) + 1}`);
+    const variant = t.variant === "b" ? "-b" : "";
+    const act = t.act === "run" ? "run" : t.act === "rocker" ? "bahndidos" : t.state === "falling" ? "hit" : "walk";
+    if (act === "bahndidos") return this.img("bahndidos");
+    const f = ((t.frame % 4) + 1);
+    return this.img(`talahon-${act}${variant}-${f}`) || this.img(`talahon-walk-${f}`) || this.img("talahon-walk-1");
   }
 
   draw() {
