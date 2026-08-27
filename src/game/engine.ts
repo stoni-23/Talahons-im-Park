@@ -582,7 +582,7 @@ export class GameEngine {
       ctx.fillStyle = "#222";
       ctx.fillRect(-w / 2, -h, w, h);
     }
-    ctx.restore();
+    /* no restore clip */
   }
 
   drawCrosshair() {
@@ -616,7 +616,7 @@ export class GameEngine {
     ctx.beginPath();
     ctx.arc(x, y, 16 + kick, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.restore();
+    /* no restore clip */
   }
 
   destroy() {
