@@ -845,9 +845,7 @@ export class GameEngine {
     if (this.mode === "playing" || this.mode === "paused") this.drawCrosshair();
   }
 
-  clipOccluders(_ctx: CanvasRenderingContext2D, _t: Target) {
-    return;
-  }
+  clipOccluders(_ctx: CanvasRenderingContext2D, _t: Target) {}
 
   drawCrosshair() {
     const ctx = this.ctx;
