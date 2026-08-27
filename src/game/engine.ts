@@ -885,10 +885,10 @@ export class GameEngine {
     for (const f of this.floaters) {
       ctx.save();
       ctx.globalAlpha = clamp((f.life / f.max) * 1.35, 0, 1);
-      ctx.font = `800 ${f.size}px 'Bebas Neue', sans-serif`;
+      const sz = f.size || (f.text.includes("Wallah") ? 115 : (f.text.startsWith("-") ? 95 : 80)); ctx.font = `900 ${sz}px sans-serif`;
       ctx.fillStyle = f.color;
       ctx.strokeStyle = "rgba(10,10,10,0.82)";
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 14;
       ctx.textAlign = "center";
       ctx.strokeText(f.text, f.x + ox, f.y + oy);
       ctx.fillText(f.text, f.x + ox, f.y + oy);
