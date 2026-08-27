@@ -76,16 +76,15 @@ export function GameScreen() {
                 className="h-auto w-[min(72vw,280px)] select-none"
                 draggable={false}
               />
-              <p className="max-w-sm text-center text-sm leading-relaxed text-paper-dim">
-                90 Sekunden. Die Oma holt die Parabellum unter dem Strickzeug vor.
-                Talahons gucken aus den Büschen und hinter Bäumen, manche laufen
-                durch den Park.
+              <p className="max-w-sm text-center text-xs italic leading-relaxed text-paper-dim">
+                „Ich rede von meiner kleinen Parabellum-Halbautomatik, Kaliber 9 mm, mit erweitertem Magazin unter meinem Strickzeug. Die macht euch Beine, noch bevor ihr überhaupt ‚Guli Guli Ram Sam Sam‘ singen könnt …“
               </p>
-              <ul className="w-full max-w-sm space-y-1.5 text-sm text-paper-dim">
-                <ScoreRow label="Nah, groß" value="8 Pkt" />
-                <ScoreRow label="Weit, klein" value="35 Pkt" />
-                <ScoreRow label="Hinterm Baum / im Busch" value="18–28 Pkt" />
+              <ul className="w-full max-w-sm space-y-1.5 text-xs sm:text-sm text-paper-dim">
+                <ScoreRow label="Wallah, kopfschuss!" value="2× Pkt + 50" />
                 <ScoreRow label="Bahndidos auf dem Roller" value="200 Pkt" />
+                <ScoreRow label="Hinterm Baum / im Busch" value="18–32 Pkt" />
+                <ScoreRow label="Talahons im Park" value="8–35 Pkt" />
+                <ScoreRow label="Fehlschuss ins Leere" value="-15 Pkt" />
               </ul>
               {board.length > 0 && (
                 <ol className="w-full max-w-sm space-y-1 text-sm text-paper-dim">
