@@ -42,12 +42,10 @@ const TREES = [
 ];
 
 const BUSHES = [
-  { x: 255, y: 628, z: 1.2, scale: 0.72, w: 110, h: 88, facing: 1 },
-  { x: 365, y: 668, z: 1.74, scale: 0.9, w: 140, h: 108, facing: 1 },
-  { x: 575, y: 708, z: 2.18, scale: 1.08, w: 168, h: 124, facing: -1 },
-  { x: 995, y: 678, z: 1.9, scale: 0.96, w: 148, h: 112, facing: 1 },
-  { x: 1238, y: 658, z: 1.64, scale: 0.84, w: 132, h: 102, facing: -1 },
-  { x: 1492, y: 698, z: 2.1, scale: 0.94, w: 144, h: 110, facing: -1 },
+  { x: 210, y: 535, z: 0.38, scale: 0.45, w: 80, h: 70, facing: 1 },
+  { x: 460, y: 530, z: 0.35, scale: 0.42, w: 75, h: 65, facing: 1 },
+  { x: 1290, y: 535, z: 0.38, scale: 0.46, w: 85, h: 70, facing: -1 },
+  { x: 1485, y: 540, z: 0.42, scale: 0.50, w: 90, h: 75, facing: -1 },
 ];
 
 const ASSET_KEYS = [
