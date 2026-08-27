@@ -284,10 +284,11 @@ export class GameEngine {
     this.bushBusy.clear();
     this.spawnAcc = 0.5;
     this.rockerT = rand(9, 14);
-    this.spawnWalker(0, false);
-    this.spawnWalker(1, false);
+    this.spawnBush();
+    this.spawnBush();
+    this.spawnBush();
+    this.spawnPeeker();
     this.spawnWalker(2, false);
-    this.spawnWalker(3, false);
     this.emit();
   }
 
@@ -380,12 +381,56 @@ export class GameEngine {
 
   spawnPeeker() {
     if (this.aliveCount() >= MAX_ALIVE) return;
-    this.spawnWalker(1, Math.random() < 0.4);
+    const free = TREES.map((_, i) => i).filter(
+      (i) => !this.peekBusy.has(i) && TREES[i]!.x >= OMA_KEEP_X,
+    );
+    if (!free.length) return;
+    const idx = pick(free);
+    const tree = TREES[idx]!;
+    this.peekBusy.add(idx);
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "peek",
+      x: tree.x,
+      y: tree.y,
+      vx: 0,
+      z: tree.z + 0.04,
+      facing: tree.facing,
+      points: tree.scale < 0.42 ? 32 : 26,
+      scale: tree.scale,
+      phase: "in",
+      phaseT: 0,
+      reveal: 0,
+      hide: idx,
+    });
   }
 
   spawnBush() {
     if (this.aliveCount() >= MAX_ALIVE) return;
-    this.spawnWalker(0, false);
+    const free = BUSHES.map((_, i) => i).filter(
+      (i) => !this.bushBusy.has(i) && BUSHES[i]!.x >= OMA_KEEP_X,
+    );
+    if (!free.length) return;
+    const idx = pick(free);
+    const bush = BUSHES[idx]!;
+    this.bushBusy.add(idx);
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "bush",
+      x: bush.x + bush.facing * 10,
+      y: bush.y,
+      vx: 0,
+      z: bush.z + 0.06,
+      facing: bush.facing,
+      points: bush.scale < 0.8 ? 22 : 16,
+      scale: bush.scale,
+      phase: "in",
+      phaseT: 0,
+      reveal: 0,
+      hide: idx,
+    });
   }
 
   spawnRocker() {
@@ -616,9 +661,9 @@ export class GameEngine {
       const n = progress > 0.5 && Math.random() < 0.55 ? 2 : 1;
       for (let i = 0; i < n; i++) {
         const r = Math.random();
-        if (r < 0.15) this.spawnBush();
-        else if (r < 0.30) this.spawnPeeker();
-        else if (r < 0.70) this.spawnWalker(undefined, false);
+        if (r < 0.5) this.spawnBush();
+        else if (r < 0.72) this.spawnPeeker();
+        else if (r < 0.9) this.spawnWalker(undefined, false);
         else this.spawnWalker(undefined, true);
       }
     }
@@ -740,11 +785,11 @@ export class GameEngine {
   }
 
   spriteFor(t: Target) {
-    const variant = t.variant === "b" ? "-b" : "";
-    const act = t.act === "run" ? "run" : t.act === "rocker" ? "bahndidos" : t.state === "falling" ? "hit" : "walk";
-    if (act === "bahndidos") return this.img("bahndidos");
-    const f = ((t.frame % 4) + 1);
-    return this.img(`talahon-${act}${variant}-${f}`) || this.img(`talahon-walk-${f}`) || this.img("talahon-walk-1");
+    if (t.act === "rocker") return this.img("bahndidos");
+    if (t.state === "falling") return this.img(`talahon-hit-${(t.frame % 4) + 1}`);
+    if (t.act === "run") return this.img(`talahon-run-${(t.frame % 4) + 1}`);
+    const base = t.variant === "b" ? "talahon-walk-b" : "talahon-walk";
+    return this.img(`${base}-${(t.frame % 4) + 1}`);
   }
 
   draw() {
@@ -821,14 +866,59 @@ export class GameEngine {
     if (this.mode === "playing" || this.mode === "paused") this.drawCrosshair();
   }
 
-  clipOccluders(_ctx: CanvasRenderingContext2D, _t: Target) {}
+  clipOccluders(_ctx: CanvasRenderingContext2D, _t: Target) {
+    return;
+  }
+
+  drawTarget(t: Target) {
+    const sprite = this.spriteFor(t);
+    const ctx = this.ctx;
+    let w = 140 * t.scale;
+    let h = 180 * t.scale;
+    if (sprite) {
+      const ratio = sprite.width / sprite.height;
+      h =
+        (t.act === "rocker"
+          ? 430
+          : t.act === "peek"
+            ? 340
+            : t.act === "bush"
+              ? 335
+              : 320) * t.scale;
+      w = h * ratio;
+    }
+    t.dw = w;
+    t.dh = h;
+    if (t.act === "bush" && t.state === "alive") this.placeBush(t);
+    ctx.save();
+    if (t.act === "walk" || t.act === "run" || t.state === "falling") {
+      this.clipOccluders(ctx, t);
+    }
+    if (t.act === "peek" && t.state === "alive" && t.hide >= 0) {
+      const tree = TREES[t.hide]!;
+      ctx.beginPath();
+      if (t.facing > 0) ctx.rect(tree.x - 2, 0, WORLD_W, WORLD_H);
+      else ctx.rect(0, 0, tree.x + 2, WORLD_H);
+      ctx.clip();
+    }
+    ctx.translate(t.x, t.y);
+    ctx.rotate(t.rot);
+    if (t.facing < 0) ctx.scale(-1, 1);
+    if (t.act === "bush" && t.state === "alive" && t.reveal < 0.98) {
+      const r = clamp(t.reveal, 0.12, 1);
+      ctx.beginPath();
+      ctx.rect(-w / 2, -h, w, h * r);
+      ctx.clip();
+    }
+    if (sprite) ctx.drawImage(sprite, -w / 2, -h, w, h);
+    else {
+      ctx.fillStyle = "#222";
+      ctx.fillRect(-w / 2, -h, w, h);
+    }
+    ctx.restore();
+  }
 
   drawCrosshair() {
-    this.ctx.save();
-    this.ctx.fillStyle = "#ff0000";
-    this.ctx.font = "bold 24px monospace";
-    this.ctx.fillText("BUILD_TEST_V2", 30, 40);
-    this.ctx.restore();
     const ctx = this.ctx;
     const x = this.aimX;
     const y = this.aimY;
