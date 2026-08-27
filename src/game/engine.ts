@@ -42,10 +42,8 @@ const TREES = [
 ];
 
 const BUSHES = [
-  { x: 210, y: 535, z: 0.38, scale: 0.45, w: 80, h: 70, facing: 1 },
-  { x: 460, y: 530, z: 0.35, scale: 0.42, w: 75, h: 65, facing: 1 },
-  { x: 1290, y: 535, z: 0.38, scale: 0.46, w: 85, h: 70, facing: -1 },
-  { x: 1485, y: 540, z: 0.42, scale: 0.50, w: 90, h: 75, facing: -1 },
+  { x: 180, y: 515, z: 0.32, scale: 0.40, w: 70, h: 55, facing: 1 },
+  { x: 1420, y: 515, z: 0.32, scale: 0.40, w: 70, h: 55, facing: -1 }
 ];
 
 const ASSET_KEYS = [
@@ -531,7 +529,7 @@ export class GameEngine {
         return true;
     }
     /* bush clipping removed */
-    if (box) {
+    if (box && t.act !== "walk" && t.act !== "run") {
       ctx.beginPath();
       ctx.rect(-40, -40, 1680, 980);
       ctx.rect(box.x, box.y, box.w, box.h);
