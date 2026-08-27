@@ -283,7 +283,7 @@ export class GameEngine {
     this.peekBusy.clear();
     this.bushBusy.clear();
     this.spawnAcc = 0.5;
-    this.rockerT = rand(9, 14);
+    this.rockerT = rand(5, 8);
     this.spawnBush();
     this.spawnBush();
     this.spawnBush();
@@ -434,17 +434,16 @@ export class GameEngine {
   }
 
   spawnRocker() {
-    if (this.aliveCount() >= MAX_ALIVE) return;
     const fromRight = Math.random() < 0.5;
-    const speed = 280;
+    const speed = 260;
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
       act: "rocker",
-      x: fromRight ? 980 : -100,
+      x: fromRight ? 960 : -80,
       y: 1190,
       vx: (fromRight ? -1 : 1) * speed,
-      z: 1.6,
+      z: 1.8,
       facing: fromRight ? -1 : 1,
       points: 200,
       scale: 0.92,
@@ -673,7 +672,7 @@ export class GameEngine {
     }
     this.rockerT -= dt;
     if (this.rockerT <= 0) {
-      this.rockerT = rand(14, 24) - progress * 4;
+      this.rockerT = rand(10, 15);
       this.spawnRocker();
     }
     for (const t of this.targets) {
