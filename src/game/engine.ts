@@ -19,28 +19,28 @@ import {
 import { topScore } from "./scores";
 import type { Flash, Floater, Hole, Hud, Particle, Target } from "./types";
 
-export const WORLD_W = 1600;
-export const WORLD_H = 900;
+export const WORLD_W = 900;
+export const WORLD_H = 1600;
 const FIRE_CD = 0.26;
 const COMBO_WINDOW = 1.05;
 const MAX_ALIVE = 9;
-const OMA_KEEP_X = 560;
+const OMA_KEEP_X = 320;
 
 const LANES = [
-  { y: 532, scale: 0.52, z: 0.18, pts: 35, speed: 38 },
-  { y: 586, scale: 0.72, z: 0.82, pts: 22, speed: 58 },
-  { y: 642, scale: 0.94, z: 1.52, pts: 14, speed: 84 },
-  { y: 698, scale: 1.16, z: 2.38, pts: 8, speed: 108 },
+  { y: 960, scale: 0.52, z: 0.18, pts: 35, speed: 45 },
+  { y: 1060, scale: 0.72, z: 0.82, pts: 22, speed: 65 },
+  { y: 1180, scale: 0.94, z: 1.52, pts: 14, speed: 90 },
+  { y: 1300, scale: 1.18, z: 2.38, pts: 8, speed: 118 },
 ];
 
 const TREES = [
-  { x: 795, y: 560, z: 0.5, trunkW: 65, scale: 0.72, facing: -1 },
-  { x: 805, y: 560, z: 0.5, trunkW: 65, scale: 0.72, facing: 1 }
+  { x: 440, y: 1040, z: 0.5, trunkW: 55, scale: 0.75, facing: -1 },
+  { x: 460, y: 1040, z: 0.5, trunkW: 55, scale: 0.75, facing: 1 }
 ];
 
 const BUSHES = [
-  { x: 140, y: 475, z: 0.22, scale: 0.28, w: 60, h: 38, facing: 1 },
-  { x: 1460, y: 475, z: 0.22, scale: 0.28, w: 60, h: 38, facing: -1 }
+  { x: 90, y: 910, z: 0.22, scale: 0.32, w: 60, h: 38, facing: 1 },
+  { x: 810, y: 910, z: 0.22, scale: 0.32, w: 60, h: 38, facing: -1 }
 ];
 
 const ASSET_KEYS = [
@@ -363,7 +363,7 @@ export class GameEngine {
     const near = L.y >= 620;
     const fromRight = near || Math.random() >= 0.5;
     const speed = L.speed * (run ? 2.2 : 1) * rand(0.88, 1.18);
-    const start = x ?? (fromRight ? 1670 : -70);
+    const start = x ?? (fromRight ? 980 : -80);
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
@@ -617,8 +617,11 @@ export class GameEngine {
 
   omaRect() {
     const img = this.img(this.recoil > 0.02 ? "oma-recoil" : "oma");
-    const w = img ? 455 * (img.width / img.height) : 440;
-    return { x: 28, y: 467, w, h: 455, mx: 28 + w * 0.8, my: 644.45 };
+    const h = 560;
+    const w = img ? h * (img.width / img.height) : 530;
+    const x = -10;
+    const y = WORLD_H - h + 25;
+    return { x, y, w, h, mx: x + w * 0.78, my: y + h * 0.38 };
   }
 
   loop = (now: number) => {
@@ -803,12 +806,16 @@ export class GameEngine {
     const oy = shake ? (Math.random() * 2 - 1) * 10 * shake : 0;
     ctx.translate(ox, oy);
     const bg = this.img("park-bg");
-    if (bg) ctx.drawImage(bg, 0, 0, WORLD_W, WORLD_H);
-    else {
+    if (bg) {
+      const targetRatio = WORLD_W / WORLD_H;
+      const srcW = bg.height * targetRatio;
+      const srcX = (bg.width - srcW) / 2;
+      ctx.drawImage(bg, srcX, 0, srcW, bg.height, 0, 0, WORLD_W, WORLD_H);
+    } else {
       ctx.fillStyle = "#6ea0c8";
       ctx.fillRect(0, 0, WORLD_W, WORLD_H);
       ctx.fillStyle = "#3d6b3a";
-      ctx.fillRect(0, 405, WORLD_W, WORLD_H);
+      ctx.fillRect(0, 800, WORLD_W, WORLD_H);
     }
     for (const hole of this.holes) {
       ctx.fillStyle = `rgba(10,10,10,${0.55 * hole.a})`;
@@ -819,7 +826,7 @@ export class GameEngine {
     const sorted = this.targets.slice().sort((a, b) => a.z - b.z);
     for (const t of sorted) this.drawTarget(t);
     const foliage = this.img("foliage");
-    if (foliage) ctx.drawImage(foliage, 0, 698, WORLD_W, 210);
+    if (foliage) ctx.drawImage(foliage, 0, WORLD_H - 260, WORLD_W, 260);
     const oma = this.omaRect();
     const omaImg = this.img(this.recoil > 0.02 ? "oma-recoil" : "oma");
     if (omaImg) {
