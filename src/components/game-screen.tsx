@@ -1,8 +1,8 @@
-import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
 import { unlockAudio } from "@/game/audio";
-import { loadBoard, qualifies, submitScore, type ScoreEntry } from "@/game/scores";
+import { qualifies, loadBoard, submitScore, fetchOnlineBoard, type ScoreEntry } from "@/game/scores";
 import type { Hud } from "@/game/types";
 
 const primaryBtn =
@@ -15,9 +15,15 @@ export function GameScreen() {
   const engineRef = useRef<GameEngine | null>(null);
   const [hud, setHud] = useState<Hud>(emptyHud());
   const [omaLine, setOmaLine] = useState(false);
-  const [board, setBoard] = useState<ScoreEntry[]>(() => loadBoard());
+  const [board, setBoard] = useState<ScoreEntry[]>([]);
   const [name, setName] = useState("");
   const [named, setNamed] = useState(false);
+
+  useEffect(() => {
+    fetchOnlineBoard().then((data) => {
+      if (data && data.length > 0) setBoard(data);
+    });
+  }, [hud.mode]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,9 +50,10 @@ export function GameScreen() {
     if (hud.mode === "results") {
       setNamed(!qualifies(hud.score));
       setName("");
-      setBoard(loadBoard());
+      fetchOnlineBoard().then((data) => {
+        if (data && data.length > 0) setBoard(data);
+      });
     }
-    fetchOnlineBoard().then((b) => { if (b && b.length > 0) setBoard(b); });
   }, [hud.mode, hud.score]);
 
   const engine = engineRef.current;
@@ -69,40 +76,48 @@ export function GameScreen() {
 
         {hud.mode === "title" && (
           <div className="absolute inset-0 flex items-center justify-center bg-ink/80 px-4 py-8">
-            <div className="flex max-h-full w-full max-w-lg flex-col items-center gap-5 overflow-y-auto">
+            <div className="flex max-h-full w-full max-w-lg flex-col items-center gap-4 overflow-y-auto">
               <img
                 src="/assets/logo.png"
                 alt="Bankgeheimnis im Park"
-                className="h-auto w-[min(72vw,280px)] select-none"
+                className="h-auto w-[min(72vw,240px)] select-none"
                 draggable={false}
               />
               <p className="max-w-sm text-center text-xs italic leading-relaxed text-paper-dim">
                 „Ich rede von meiner kleinen Parabellum-Halbautomatik, Kaliber 9 mm, mit erweitertem Magazin unter meinem Strickzeug. Die macht euch Beine, noch bevor ihr überhaupt ‚Guli Guli Ram Sam Sam‘ singen könnt …“
               </p>
-              <ul className="w-full max-w-sm space-y-1.5 text-xs sm:text-sm text-paper-dim">
+
+              {/* Weltweite Top 10 */}
+              <div className="w-full max-w-sm rounded-xl border border-line bg-ink/90 p-3">
+                <p className="mb-2 text-center text-xs font-bold tracking-[0.14em] text-paper uppercase">
+                  🏆 Parkbank Top 10
+                </p>
+                {board.length > 0 ? (
+                  <ol className="divide-y divide-line/40 text-xs text-paper-dim">
+                    {board.slice(0, 10).map((row, i) => (
+                      <li key={`${row.name}-${i}-${row.score}`} className="flex items-center justify-between py-1">
+                        <span className="flex items-center gap-2 truncate">
+                          <span className="w-5 font-mono font-semibold text-paper">{i + 1}.</span>
+                          <span className="truncate text-paper">{row.name}</span>
+                        </span>
+                        <span className="font-mono font-bold text-amber-400">{row.score} Pkt</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="py-2 text-center text-xs text-muted">Lade Rangliste…</p>
+                )}
+              </div>
+
+              {/* Punktetabelle */}
+              <ul className="w-full max-w-sm space-y-1 rounded-xl border border-line bg-ink/60 p-3 text-xs text-paper-dim">
                 <ScoreRow label="Wallah, kopfschuss!" value="2× Pkt + 50" />
                 <ScoreRow label="Bahndidos auf dem Roller" value="200 Pkt" />
                 <ScoreRow label="Hinterm Baum / im Busch" value="18–32 Pkt" />
                 <ScoreRow label="Talahons im Park" value="8–35 Pkt" />
                 <ScoreRow label="Fehlschuss ins Leere" value="-15 Pkt" />
               </ul>
-              {board.length > 0 && (
-                <ol className="w-full max-w-sm space-y-1 text-sm text-paper-dim">
-                  {board.slice(0, 10).map((row, i) => (
-                    <li key={`${row.at}-${row.name}`} className="flex justify-between gap-3">
-                      <span className="truncate">
-                        {i + 1}. {row.name}
-                      </span>
-                      <span className="font-medium tabular-nums text-paper">{row.score}</span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-              {hud.highScore > 0 && board.length === 0 && (
-                <p className="font-display text-2xl tracking-wide text-paper">
-                  Highscore {hud.highScore}
-                </p>
-              )}
+
               <button
                 type="button"
                 disabled={!hud.ready}
@@ -110,11 +125,11 @@ export function GameScreen() {
                   unlockAudio();
                   engine?.start();
                 }}
-                className="h-12 min-w-44 rounded-lg bg-paper px-8 font-display text-2xl tracking-wide text-ink transition-transform duration-150 ease-out hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                className={primaryBtn}
               >
                 {hud.ready ? "Spielen" : "Laden…"}
               </button>
-              <p className="text-xs text-muted">
+              <p className="text-[11px] text-muted">
                 Klicken zum Zielen · Esc Pause · M Stumm
               </p>
             </div>
@@ -178,87 +193,85 @@ export function GameScreen() {
 
         {hud.mode === "results" && (
           <Modal>
-            <p className="font-display text-5xl tracking-wide">Runde vorbei</p>
-            {hud.isNewHigh && (
-              <p className="mt-2 text-sm font-medium text-paper">Neuer Highscore</p>
-            )}
-            <p className="mt-4 font-display text-6xl tabular-nums tracking-wide">{hud.score}</p>
-            <dl className="mt-5 grid w-full max-w-xs grid-cols-2 gap-x-6 gap-y-2 text-sm text-paper-dim">
+            <p className="font-display text-4xl tracking-wide">Runde vorbei</p>
+            <p className="mt-2 font-display text-5xl tabular-nums tracking-wide text-amber-400">{hud.score} Pkt</p>
+            <dl className="mt-4 grid w-full max-w-xs grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:text-sm text-paper-dim">
               <dt>Treffer</dt>
-              <dd className="text-right tabular-nums text-paper">
-                {hud.hits} / {hud.shots}
-              </dd>
+              <dd className="text-right tabular-nums text-paper">{hud.hits} / {hud.shots}</dd>
               <dt>Genauigkeit</dt>
               <dd className="text-right tabular-nums text-paper">{accuracy}%</dd>
               <dt>Beste Combo</dt>
               <dd className="text-right tabular-nums text-paper">{hud.bestCombo}</dd>
-              <dt>Highscore</dt>
-              <dd className="text-right tabular-nums text-paper">
-                {Math.max(hud.highScore, board[0]?.score ?? 0)}
-              </dd>
             </dl>
-            {!named && qualifies(hud.score) ? (
+
+            {!named ? (
               <form
-                className="mt-5 flex w-full max-w-xs flex-col gap-2"
-                onSubmit={(e: FormEvent) => {
+                className="mt-4 flex w-full max-w-xs flex-col gap-2"
+                onSubmit={async (e: FormEvent) => {
                   e.preventDefault();
-                  submitScore(name, hud.score).then((res) => setBoard(res));
+                  const updated = await submitScore(name, hud.score);
+                  setBoard(updated);
                   setNamed(true);
                 }}
               >
                 <label className="text-left text-[11px] font-medium tracking-[0.14em] text-paper-dim uppercase">
-                  Name für die Bestenliste
+                  Name für die 🏆 Parkbank Top 10
                 </label>
-                <input
-                  autoFocus
-                  maxLength={16}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Dein Name"
-                  className="h-11 rounded-md border border-line bg-ink px-3 text-paper outline-none placeholder:text-muted"
-                />
-                <button type="submit" className={primaryBtn}>
-                  Eintragen
-                </button>
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    maxLength={16}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Dein Name"
+                    className="h-11 flex-1 rounded-md border border-line bg-ink px-3 text-sm text-paper outline-none placeholder:text-muted"
+                  />
+                  <button type="submit" className="h-11 rounded-md bg-paper px-4 font-semibold text-sm text-ink">
+                    Speichern
+                  </button>
+                </div>
               </form>
             ) : (
-              board.length > 0 && (
-                <ol className="mt-5 w-full max-w-xs space-y-1 text-sm text-paper-dim">
-                  {board.map((row, i) => (
-                    <li
-                      key={`${row.at}-${row.name}`}
-                      className={`flex justify-between gap-3 ${row.score === hud.score && row.name === (name.trim() || "Anonym") ? "text-paper" : ""}`}
-                    >
-                      <span className="truncate">
-                        {i + 1}. {row.name}
+              <div className="mt-4 w-full max-w-xs rounded-xl border border-line bg-ink/90 p-3">
+                <p className="mb-2 text-center text-xs font-bold tracking-[0.14em] text-paper uppercase">
+                  🏆 Parkbank Top 10
+                </p>
+                <ol className="divide-y divide-line/40 text-xs text-paper-dim max-h-36 overflow-y-auto">
+                  {board.slice(0, 10).map((row, i) => (
+                    <li key={`${row.name}-${i}-${row.score}`} className="flex items-center justify-between py-1">
+                      <span className="flex items-center gap-2 truncate">
+                        <span className="w-5 font-mono font-semibold text-paper">{i + 1}.</span>
+                        <span className="truncate text-paper">{row.name}</span>
                       </span>
-                      <span className="tabular-nums text-paper">{row.score}</span>
+                      <span className="font-mono font-bold text-amber-400">{row.score} Pkt</span>
                     </li>
                   ))}
                 </ol>
-              )
+              </div>
             )}
-            <div className="mt-6 flex flex-col gap-2">
+
+            <div className="mt-4 flex w-full max-w-xs flex-col gap-2">
               <button
                 type="button"
                 className={primaryBtn}
                 onClick={() => {
-                  if (!named && qualifies(hud.score)) submitScore(name, hud.score);
-                  unlockAudio();
+                  setNamed(false);
+                  setName("");
                   engine?.start();
                 }}
               >
-                Nochmal
+                Nochmal spielen
               </button>
               <button
                 type="button"
                 className={ghostBtn}
                 onClick={() => {
-                  if (!named && qualifies(hud.score)) submitScore(name, hud.score);
+                  setNamed(false);
+                  setName("");
                   engine?.toTitle();
                 }}
               >
-                Menü
+                Zum Menü
               </button>
             </div>
           </Modal>
@@ -268,65 +281,45 @@ export function GameScreen() {
   );
 }
 
-function ScoreRow({ label, value }: { label: string; value: string }) {
+function HudChip({ label, value, large }: { label: string; value: string; large?: boolean }) {
   return (
-    <li className="flex justify-between gap-4 border-b border-line py-1">
-      <span>{label}</span>
-      <span className="font-medium text-paper">{value}</span>
-    </li>
+    <div className="flex flex-col items-center rounded-lg border border-line bg-ink/70 px-3 py-1.5 backdrop-blur-sm">
+      <span className="text-[10px] font-medium tracking-[0.14em] text-paper-dim uppercase">{label}</span>
+      <span className={`font-display tabular-nums ${large ? "text-2xl sm:text-3xl text-paper" : "text-lg sm:text-xl text-paper"}`}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function IconBtn({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className="flex size-11 items-center justify-center rounded-full border border-line bg-ink/70 text-paper backdrop-blur-sm transition-transform active:scale-95"
+    >
+      {children}
+    </button>
   );
 }
 
 function Modal({ children }: { children: ReactNode }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-ink/70 px-4">
-      <div className="max-h-[min(92dvh,44rem)] w-full max-w-md overflow-y-auto rounded-xl border border-line bg-ink-2 px-6 py-8 text-center shadow-[0_24px_60px_rgba(0,0,0,0.45)]">
+    <div className="absolute inset-0 flex items-center justify-center bg-ink/80 p-4">
+      <div className="flex w-full max-w-md flex-col items-center rounded-2xl border border-line bg-ink p-6 text-center shadow-2xl">
         {children}
       </div>
     </div>
   );
 }
 
-function HudChip({
-  label,
-  value,
-  large,
-}: {
-  label: string;
-  value: string;
-  large?: boolean;
-}) {
+function ScoreRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="pointer-events-none rounded-md border border-line bg-ink/55 px-3 py-2 backdrop-blur-sm">
-      <div className="text-[10px] font-medium tracking-[0.14em] text-paper-dim uppercase">
-        {label}
-      </div>
-      <div
-        className={`font-display tabular-nums tracking-wide ${large ? "text-4xl" : "text-3xl"}`}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function IconBtn({
-  children,
-  onClick,
-  label,
-}: {
-  children: ReactNode;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      className="flex size-11 items-center justify-center rounded-md border border-line bg-ink/70 text-paper backdrop-blur-sm transition-colors hover:bg-ink-3"
-    >
-      {children}
-    </button>
+    <li className="flex items-center justify-between">
+      <span>{label}</span>
+      <span className="font-medium text-paper">{value}</span>
+    </li>
   );
 }

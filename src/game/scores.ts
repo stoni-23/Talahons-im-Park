@@ -9,7 +9,7 @@ export interface ScoreEntry {
 
 export function loadBoard(): ScoreEntry[] {
   try {
-    const raw = localStorage.getItem("bankgeheimnis_board");
+    const raw = typeof window !== "undefined" ? localStorage.getItem("bankgeheimnis_board") : null;
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -45,7 +45,9 @@ export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
       at: Date.now()
     }));
     try {
-      localStorage.setItem("bankgeheimnis_board", JSON.stringify(mapped));
+      if (typeof window !== "undefined") {
+        localStorage.setItem("bankgeheimnis_board", JSON.stringify(mapped));
+      }
     } catch {}
     return mapped;
   } catch {
