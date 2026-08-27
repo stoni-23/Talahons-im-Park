@@ -42,8 +42,8 @@ const TREES = [
 ];
 
 const BUSHES = [
-  { x: 190, y: 510, z: 0.3, scale: 0.36, w: 80, h: 50, facing: 1 },
-  { x: 1430, y: 510, z: 0.3, scale: 0.36, w: 80, h: 50, facing: -1 }
+  { x: 130, y: 475, z: 0.25, scale: 0.30, w: 60, h: 40, facing: 1 },
+  { x: 1510, y: 475, z: 0.25, scale: 0.30, w: 60, h: 40, facing: -1 }
 ];
 
 const ASSET_KEYS = [
@@ -427,7 +427,7 @@ export class GameEngine {
       vx: 0,
       z: bush.z + 0.06,
       facing: bush.facing,
-      points: bush.scale < 0.8 ? 22 : 16,
+      points: 200,
       scale: bush.scale,
       phase: "in",
       phaseT: 0,
