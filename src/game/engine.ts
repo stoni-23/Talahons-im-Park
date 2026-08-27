@@ -508,10 +508,22 @@ export class GameEngine {
         dist = d;
       }
     }
-    if (hit) this.kill(hit);
-    else {
+    if (hit) {
+      const isHead = this.aimY <= (hit.y - (hit.dh || 80) * 0.62);
+      this.kill(hit, isHead);
+    } else {
       playMiss();
       this.combo = 0;
+      this.score = Math.max(0, this.score - 15);
+      this.floaters.push({
+        x: this.aimX,
+        y: this.aimY - 10,
+        text: "-15",
+        color: "#ff3b30",
+        life: 0.9,
+        max: 0.9,
+        vy: -50,
+      });
       this.holes.push({ x: this.aimX, y: this.aimY, r: rand(4, 7), a: 1 });
       if (this.holes.length > 48) this.holes.shift();
       this.burst(this.aimX, this.aimY, 5, "#cfc4ae", 40);
@@ -563,7 +575,7 @@ export class GameEngine {
     return x >= left && x <= right && y >= top && y <= bottom;
   }
 
-  kill(t: Target) {
+  kill(t: Target, isHeadshot = false) {
     t.state = "falling";
     t.frame = 0;
     t.frameT = 0;
@@ -575,7 +587,19 @@ export class GameEngine {
     this.comboT = COMBO_WINDOW;
     if (this.combo > this.bestCombo) this.bestCombo = this.combo;
     const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3));
-    const pts = t.points * mult;
+    let pts = Math.round(t.points * (1 + Math.min(this.combo, 10) * 0.15));
+    if (isHeadshot) {
+      pts = Math.round(pts * 2 + 50);
+      this.floaters.push({
+        x: t.x,
+        y: t.y - (t.dh || 80) - 20,
+        text: "Wallah, kopfschuss!",
+        color: "#ffcc00",
+        life: 1.2,
+        max: 1.2,
+        vy: -60,
+      });
+    }
     this.score += pts;
     playHit(this.combo);
     if (!this.reduced) {
