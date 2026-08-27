@@ -39,8 +39,8 @@ const TREES = [
 ];
 
 const BUSHES = [
-  { x: 170, y: 490, z: 0.25, scale: 0.30, w: 70, h: 40, facing: 1 },
-  { x: 1450, y: 490, z: 0.25, scale: 0.30, w: 70, h: 40, facing: -1 }
+  { x: 140, y: 475, z: 0.22, scale: 0.28, w: 60, h: 38, facing: 1 },
+  { x: 1460, y: 475, z: 0.22, scale: 0.28, w: 60, h: 38, facing: -1 }
 ];
 
 const ASSET_KEYS = [
@@ -284,11 +284,10 @@ export class GameEngine {
     this.bushBusy.clear();
     this.spawnAcc = 0.5;
     this.rockerT = rand(9, 14);
-    this.spawnBush();
-    this.spawnBush();
-    this.spawnBush();
-    this.spawnPeeker();
+    this.spawnWalker(0, false);
+    this.spawnWalker(1, false);
     this.spawnWalker(2, false);
+    this.spawnWalker(3, false);
     this.emit();
   }
 
@@ -381,29 +380,9 @@ export class GameEngine {
 
   spawnPeeker() {
     if (this.aliveCount() >= MAX_ALIVE) return;
-    const free = TREES.map((_, i) => i).filter(
-      (i) => !this.peekBusy.has(i) && TREES[i]!.x >= OMA_KEEP_X,
-    );
-    if (!free.length) return;
-    const idx = pick(free);
-    const tree = TREES[idx]!;
-    this.peekBusy.add(idx);
-    this.targets.push({
-      ...this.baseTarget(),
-      id: this.id++,
-      act: "peek",
-      x: tree.x,
-      y: tree.y,
-      vx: 0,
-      z: tree.z + 0.04,
-      facing: tree.facing,
-      points: tree.scale < 0.42 ? 32 : 26,
-      scale: tree.scale,
-      phase: "in",
-      phaseT: 0,
-      reveal: 0,
-      hide: idx,
-    });
+    const lane = Math.random() < 0.5 ? 0 : 1;
+    const running = Math.random() < 0.6;
+    this.spawnWalker(lane, running, 795);
   }
 
   spawnBush() {
@@ -661,10 +640,10 @@ export class GameEngine {
       const n = progress > 0.5 && Math.random() < 0.55 ? 2 : 1;
       for (let i = 0; i < n; i++) {
         const r = Math.random();
-        if (r < 0.2) this.spawnBush();
-else if (r < 0.4) this.spawnPeeker();
-else if (r < 0.75) this.spawnWalker(undefined, false);
-else this.spawnWalker(undefined, true);
+        if (r < 0.15) this.spawnBush();
+        else if (r < 0.30) this.spawnPeeker();
+        else if (r < 0.70) this.spawnWalker(undefined, false);
+        else this.spawnWalker(undefined, true);
       }
     }
     this.rockerT -= dt;
@@ -866,84 +845,8 @@ else this.spawnWalker(undefined, true);
     if (this.mode === "playing" || this.mode === "paused") this.drawCrosshair();
   }
 
-  clipOccluders(ctx: CanvasRenderingContext2D, t: Target) {
-    const w = t.dw || 80;
-    const left = t.x - w * 0.5;
-    const right = t.x + w * 0.5;
-    let box: { x: number; y: number; w: number; h: number } | null = null;
-    let z = Infinity;
-    for (const tree of TREES) {
-      if (tree.z <= t.z + 0.05) continue;
-      const tx = tree.x - tree.trunkW / 2;
-      if (right < tx || left > tx + tree.trunkW) continue;
-      if (tree.z < z) {
-        z = tree.z;
-        box = { x: tx, y: tree.y - 300, w: tree.trunkW, h: 320 };
-      }
-    }
-    for (const bush of BUSHES) {
-      if (bush.z <= t.z + 0.05) continue;
-      const bx = bush.x - bush.w / 2;
-      if (right < bx || left > bx + bush.w) continue;
-      if (bush.z < z) {
-        z = bush.z;
-        box = { x: bx, y: bush.y - bush.h, w: bush.w, h: bush.h };
-      }
-    }
-    if (box) {
-      ctx.beginPath();
-      ctx.rect(-40, -40, 1680, 980);
-      ctx.rect(box.x, box.y, box.w, box.h);
-      /* no clip */
-    }
-  }
-
-  drawTarget(t: Target) {
-    const sprite = this.spriteFor(t);
-    const ctx = this.ctx;
-    let w = 140 * t.scale;
-    let h = 180 * t.scale;
-    if (sprite) {
-      const ratio = sprite.width / sprite.height;
-      h =
-        (t.act === "rocker"
-          ? 430
-          : t.act === "peek"
-            ? 340
-            : t.act === "bush"
-              ? 335
-              : 320) * t.scale;
-      w = h * ratio;
-    }
-    t.dw = w;
-    t.dh = h;
-    if (t.act === "bush" && t.state === "alive") this.placeBush(t);
-    ctx.save();
-    if (t.act === "walk" || t.act === "run" || t.state === "falling") {
-      this.clipOccluders(ctx, t);
-    }
-    if (t.act === "peek" && t.state === "alive" && t.hide >= 0) {
-      const tree = TREES[t.hide]!;
-      ctx.beginPath();
-      if (t.facing > 0) ctx.rect(tree.x - 2, 0, WORLD_W, WORLD_H);
-      else ctx.rect(0, 0, tree.x + 2, WORLD_H);
-      /* no clip */
-    }
-    ctx.translate(t.x, t.y);
-    ctx.rotate(t.rot);
-    if (t.facing < 0) ctx.scale(-1, 1);
-    if (t.act === "bush" && t.state === "alive" && t.reveal < 0.98) {
-      const r = clamp(t.reveal, 0.12, 1);
-      ctx.beginPath();
-      ctx.rect(-w / 2, -h, w, h * r);
-      /* no clip */
-    }
-    if (sprite) ctx.drawImage(sprite, -w / 2, -h, w, h);
-    else {
-      ctx.fillStyle = "#222";
-      ctx.fillRect(-w / 2, -h, w, h);
-    }
-    ctx.restore();
+  clipOccluders(_ctx: CanvasRenderingContext2D, _t: Target) {
+    return;
   }
 
   drawCrosshair() {
