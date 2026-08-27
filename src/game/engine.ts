@@ -434,21 +434,22 @@ export class GameEngine {
   }
 
   spawnRocker() {
+    if (this.aliveCount() >= MAX_ALIVE) return;
+    const fromRight = Math.random() < 0.5;
+    const speed = 280;
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
       act: "rocker",
-      variant: "a",
-      x: 1780,
-      y: 648,
-      vx: -rand(480, 620),
-      z: 2.2,
-      facing: -1,
+      x: fromRight ? 980 : -100,
+      y: 1190,
+      vx: (fromRight ? -1 : 1) * speed,
+      z: 1.6,
+      facing: fromRight ? -1 : 1,
       points: 200,
       scale: 0.92,
       phase: "move",
     });
-    playRocker();
   }
 
   freeHide(t: Target) {
