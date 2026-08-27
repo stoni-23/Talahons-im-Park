@@ -34,16 +34,13 @@ const LANES = [
 ];
 
 const TREES = [
-  { x: 188, y: 578, z: 0.58, trunkW: 58, scale: 0.72, facing: 1 },
-  { x: 412, y: 552, z: 0.32, trunkW: 40, scale: 0.56, facing: -1 },
-  { x: 798, y: 568, z: 0.5, trunkW: 64, scale: 0.8, facing: -1 },
-  { x: 1128, y: 560, z: 0.4, trunkW: 44, scale: 0.62, facing: 1 },
-  { x: 1422, y: 574, z: 0.54, trunkW: 54, scale: 0.7, facing: -1 },
+  { x: 795, y: 560, z: 0.5, trunkW: 65, scale: 0.72, facing: -1 },
+  { x: 805, y: 560, z: 0.5, trunkW: 65, scale: 0.72, facing: 1 }
 ];
 
 const BUSHES = [
-  { x: 130, y: 475, z: 0.25, scale: 0.30, w: 60, h: 40, facing: 1 },
-  { x: 1510, y: 475, z: 0.25, scale: 0.30, w: 60, h: 40, facing: -1 }
+  { x: 170, y: 490, z: 0.25, scale: 0.30, w: 70, h: 40, facing: 1 },
+  { x: 1450, y: 490, z: 0.25, scale: 0.30, w: 70, h: 40, facing: -1 }
 ];
 
 const ASSET_KEYS = [
