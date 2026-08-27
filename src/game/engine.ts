@@ -42,8 +42,8 @@ const TREES = [
 ];
 
 const BUSHES = [
-  { x: 180, y: 515, z: 0.32, scale: 0.40, w: 70, h: 55, facing: 1 },
-  { x: 1420, y: 515, z: 0.32, scale: 0.40, w: 70, h: 55, facing: -1 }
+  { x: 190, y: 510, z: 0.3, scale: 0.36, w: 80, h: 50, facing: 1 },
+  { x: 1430, y: 510, z: 0.3, scale: 0.36, w: 80, h: 50, facing: -1 }
 ];
 
 const ASSET_KEYS = [
@@ -528,12 +528,376 @@ export class GameEngine {
       if (x >= tree.x - tree.trunkW / 2 && x <= tree.x + tree.trunkW / 2 && y <= tree.y && y >= tree.y - 280)
         return true;
     }
-    /* bush clipping removed */
-    if (box && t.act !== "walk" && t.act !== "run") {
+    for (const bush of BUSHES) {
+      if (bush.z <= t.z + 0.05) continue;
+      if (x >= bush.x - bush.w / 2 && x <= bush.x + bush.w / 2 && y <= bush.y && y >= bush.y - bush.h)
+        return true;
+    }
+    return false;
+  }
+
+  hitTest(t: Target, x: number, y: number) {
+    if ((t.act === "walk" || t.act === "run") && this.occludesPoint(t, x, y)) return false;
+    const w = t.dw || 80;
+    const h = t.dh || 80;
+    let left = t.x - w * 0.38;
+    let right = t.x + w * 0.38;
+    let top = t.y - h * 0.92;
+    let bottom = t.y - h * 0.06;
+    if (t.act === "peek" && t.hide >= 0) {
+      const tree = TREES[t.hide]!;
+      const r = Math.max(0.2, t.reveal);
+      if (t.facing > 0) {
+        left = tree.x;
+        right = t.x + w * 0.42 * r;
+      } else {
+        left = t.x - w * 0.42 * r;
+        right = tree.x;
+      }
+      top = t.y - h * 0.9;
+      bottom = t.y - h * 0.1;
+    }
+    if (t.act === "bush") {
+      top = t.y - h;
+      bottom = t.y - h * (1 - Math.max(0.15, t.reveal));
+      left = t.x - w * 0.32;
+      right = t.x + w * 0.32;
+    }
+    return x >= left && x <= right && y >= top && y <= bottom;
+  }
+
+  kill(t: Target) {
+    t.state = "falling";
+    t.frame = 0;
+    t.frameT = 0;
+    t.vy = -180;
+    t.vx = (this.aimX > t.x ? -1 : 1) * 90;
+    this.freeHide(t);
+    this.hits++;
+    this.combo += 1;
+    this.comboT = COMBO_WINDOW;
+    if (this.combo > this.bestCombo) this.bestCombo = this.combo;
+    const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3));
+    const pts = t.points * mult;
+    this.score += pts;
+    playHit(this.combo);
+    if (!this.reduced) {
+      this.trauma = Math.min(1, this.trauma + (t.act === "rocker" ? 0.7 : 0.38));
+      this.hitstop = t.act === "rocker" ? 0.09 : 0.045;
+    }
+    this.flashes.push({ x: t.x, y: t.y - t.dh * 0.5, t: 0.18, kind: "impact" });
+    this.burst(t.x, t.y - t.dh * 0.45, t.act === "rocker" ? 28 : 16, "#d4a84b", 160);
+    this.burst(t.x, t.y - t.dh * 0.45, 8, "#f3ead8", 90);
+    this.floaters.push({
+      x: t.x,
+      y: t.y - t.dh * 0.78,
+      text: mult > 1 ? `${pts}  ×${mult}` : `+${pts}`,
+      life: 1.35,
+      max: 1.35,
+      color: "#f3ead8",
+      size: t.act === "rocker" ? 110 : 92,
+    });
+  }
+
+  burst(x: number, y: number, n: number, color: string, speed: number) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const s = rand(speed * 0.3, speed);
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(a) * s,
+        vy: Math.sin(a) * s - 40,
+        life: rand(0.35, 0.7),
+        max: 0.7,
+        size: rand(2, 5),
+        color,
+        rot: rand(0, 6),
+        vr: rand(-8, 8),
+      });
+    }
+  }
+
+  omaRect() {
+    const img = this.img(this.recoil > 0.02 ? "oma-recoil" : "oma");
+    const w = img ? 455 * (img.width / img.height) : 440;
+    return { x: 28, y: 467, w, h: 455, mx: 28 + w * 0.8, my: 644.45 };
+  }
+
+  loop = (now: number) => {
+    if (this.destroyed) return;
+    this.raf = requestAnimationFrame(this.loop);
+    const dt = this.last ? (now - this.last) / 1000 : 0.016;
+    this.last = now;
+    this.update(Math.min(dt, 0.1));
+    this.draw();
+  };
+
+  update(dt: number) {
+    tickChirps(dt);
+    if (this.mode !== "playing") return;
+    if (this.hitstop > 0) {
+      this.hitstop -= dt;
+      return;
+    }
+    this.timeLeft -= dt;
+    if (this.timeLeft <= 0) {
+      this.timeLeft = 0;
+      this.endRound();
+      return;
+    }
+    this.fireCd = Math.max(0, this.fireCd - dt);
+    this.recoil = Math.max(0, this.recoil - dt);
+    this.trauma = Math.max(0, this.trauma - dt * 1.8);
+    this.comboT -= dt;
+    if (this.comboT <= 0) this.combo = 0;
+    this.hudAcc += dt;
+    if (this.hudAcc > 0.12) {
+      this.hudAcc = 0;
+      this.emit();
+    }
+    const progress = 1 - this.timeLeft / 90;
+    const spawnWait = 1.05 - progress * 0.62;
+    this.spawnAcc -= dt;
+    if (this.spawnAcc <= 0) {
+      this.spawnAcc = spawnWait * rand(0.7, 1.15);
+      const n = progress > 0.5 && Math.random() < 0.55 ? 2 : 1;
+      for (let i = 0; i < n; i++) {
+        const r = Math.random();
+        if (r < 0.2) this.spawnBush();
+else if (r < 0.4) this.spawnPeeker();
+else if (r < 0.75) this.spawnWalker(undefined, false);
+else this.spawnWalker(undefined, true);
+      }
+    }
+    this.rockerT -= dt;
+    if (this.rockerT <= 0) {
+      this.rockerT = rand(14, 24) - progress * 4;
+      this.spawnRocker();
+    }
+    for (const t of this.targets) {
+      t.frameT += dt;
+      const fps =
+        t.state === "falling"
+          ? 10
+          : t.act === "run"
+            ? 12
+            : t.act === "walk"
+              ? 8
+              : t.act === "peek"
+                ? 4
+                : t.act === "bush"
+                  ? 6
+                  : 0;
+      if (fps && t.frameT > 1 / fps) {
+        t.frameT = 0;
+        t.frame = (t.frame + 1) % 4;
+      }
+      if (t.state === "falling") {
+        t.vy += 980 * dt;
+        t.x += t.vx * dt;
+        t.y += t.vy * dt;
+        t.rot += (t.vx >= 0 ? 1 : -1) * 5.5 * dt;
+        continue;
+      }
+      if (t.act === "walk" || t.act === "run" || t.act === "rocker") {
+        t.x += t.vx * dt;
+        continue;
+      }
+      t.phaseT += dt;
+      if (t.act === "peek") {
+        const tree = t.hide >= 0 ? TREES[t.hide] : null;
+        if (t.phase === "in") {
+          t.reveal = clamp(t.phaseT / 0.7, 0, 1);
+          if (t.phaseT > 0.7) {
+            t.phase = "hold";
+            t.phaseT = -rand(0.85, 2.1);
+            t.reveal = 1;
+          }
+        } else if (t.phase === "hold") {
+          t.reveal = 1;
+          if (t.phaseT > 0) {
+            if (Math.random() < 0.48) this.dashOut(t, Math.random() < 0.62);
+            else {
+              t.phase = "out";
+              t.phaseT = 0;
+            }
+          }
+        } else if (t.phase === "out") {
+          t.reveal = 1 - clamp(t.phaseT / 0.48, 0, 1);
+          if (t.phaseT > 0.52) t.x = -999;
+        }
+        if (tree && t.x !== -999) {
+          const n = 210 * t.scale;
+          t.x = tree.x + t.facing * (tree.trunkW * 0.16 + n * 0.36 * t.reveal);
+          t.y = tree.y;
+        }
+      } else if (t.act === "bush") {
+        if (t.phase === "in") {
+          t.reveal = clamp(t.phaseT / 0.7, 0, 0.5);
+          if (t.phaseT > 0.7) {
+            t.phase = "hold";
+            t.phaseT = -rand(1.15, 2.5);
+          }
+        } else if (t.phase === "hold") {
+          t.reveal = 0.5 + Math.sin(t.phaseT * 2.2) * 0.04;
+          if (t.phaseT > 0) {
+            if (Math.random() < 0.16) this.dashOut(t, Math.random() < 0.45);
+            else {
+              t.phase = "out";
+              t.phaseT = 0;
+            }
+          }
+        } else if (t.phase === "out") {
+          t.reveal = 0.5 * (1 - clamp(t.phaseT / 0.48, 0, 1));
+          if (t.phaseT > 0.52) t.x = -999;
+        }
+        if (t.x !== -999) this.placeBush(t);
+      }
+    }
+    this.targets = this.targets.filter((t) => {
+      if (t.x === -999) {
+        this.freeHide(t);
+        return false;
+      }
+      if (t.state === "falling") return t.y < 1060;
+      if (t.act === "walk" || t.act === "run" || t.act === "rocker") {
+        if (t.y >= 620 && t.x < OMA_KEEP_X) {
+          this.freeHide(t);
+          return false;
+        }
+        return t.vx > 0 ? t.x < 1760 : t.x > -160;
+      }
+      return true;
+    });
+    for (const p of this.particles) {
+      p.life -= dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 420 * dt;
+      p.rot += p.vr * dt;
+    }
+    this.particles = this.particles.filter((p) => p.life > 0);
+    for (const f of this.floaters) {
+      f.life -= dt;
+      f.y -= 62 * dt;
+    }
+    this.floaters = this.floaters.filter((f) => f.life > 0);
+    for (const f of this.flashes) f.t -= dt;
+    this.flashes = this.flashes.filter((f) => f.t > 0);
+  }
+
+  spriteFor(t: Target) {
+    if (t.act === "rocker") return this.img("bahndidos");
+    if (t.state === "falling") return this.img(`talahon-hit-${(t.frame % 4) + 1}`);
+    if (t.act === "run") return this.img(`talahon-run-${(t.frame % 4) + 1}`);
+    const base = t.variant === "b" ? "talahon-walk-b" : "talahon-walk";
+    return this.img(`${base}-${(t.frame % 4) + 1}`);
+  }
+
+  draw() {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.clearRect(0, 0, WORLD_W, WORLD_H);
+    const shake = this.reduced ? 0 : this.trauma * this.trauma;
+    const ox = shake ? (Math.random() * 2 - 1) * 14 * shake : 0;
+    const oy = shake ? (Math.random() * 2 - 1) * 10 * shake : 0;
+    ctx.translate(ox, oy);
+    const bg = this.img("park-bg");
+    if (bg) ctx.drawImage(bg, 0, 0, WORLD_W, WORLD_H);
+    else {
+      ctx.fillStyle = "#6ea0c8";
+      ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+      ctx.fillStyle = "#3d6b3a";
+      ctx.fillRect(0, 405, WORLD_W, WORLD_H);
+    }
+    for (const hole of this.holes) {
+      ctx.fillStyle = `rgba(10,10,10,${0.55 * hole.a})`;
+      ctx.beginPath();
+      ctx.ellipse(hole.x, hole.y, hole.r, hole.r * 0.75, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const sorted = this.targets.slice().sort((a, b) => a.z - b.z);
+    for (const t of sorted) this.drawTarget(t);
+    const foliage = this.img("foliage");
+    if (foliage) ctx.drawImage(foliage, 0, 698, WORLD_W, 210);
+    const oma = this.omaRect();
+    const omaImg = this.img(this.recoil > 0.02 ? "oma-recoil" : "oma");
+    if (omaImg) {
+      const kick = this.recoil > 0 ? -6 : 0;
+      ctx.drawImage(omaImg, oma.x, oma.y + kick, oma.w, oma.h);
+    }
+    for (const p of this.particles) {
+      const a = clamp(p.life / p.max, 0, 1);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = a;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      ctx.restore();
+    }
+    for (const f of this.flashes) {
+      const key =
+        f.kind === "muzzle"
+          ? `muzzle-${clamp(4 - Math.ceil(f.t * 20), 1, 4)}`
+          : `impact-${clamp(4 - Math.ceil(f.t * 16), 1, 4)}`;
+      const img = this.img(key);
+      if (!img) continue;
+      const size = f.kind === "muzzle" ? 90 : 130;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = clamp(f.t * 8, 0, 1);
+      ctx.drawImage(img, f.x - size / 2, f.y - size / 2, size, size);
+      ctx.restore();
+    }
+    ctx.restore();
+    for (const f of this.floaters) {
+      ctx.save();
+      ctx.globalAlpha = clamp((f.life / f.max) * 1.35, 0, 1);
+      ctx.font = `800 ${f.size}px 'Bebas Neue', sans-serif`;
+      ctx.fillStyle = f.color;
+      ctx.strokeStyle = "rgba(10,10,10,0.82)";
+      ctx.lineWidth = 10;
+      ctx.textAlign = "center";
+      ctx.strokeText(f.text, f.x + ox, f.y + oy);
+      ctx.fillText(f.text, f.x + ox, f.y + oy);
+      ctx.restore();
+    }
+    if (this.mode === "playing" || this.mode === "paused") this.drawCrosshair();
+  }
+
+  clipOccluders(ctx: CanvasRenderingContext2D, t: Target) {
+    const w = t.dw || 80;
+    const left = t.x - w * 0.5;
+    const right = t.x + w * 0.5;
+    let box: { x: number; y: number; w: number; h: number } | null = null;
+    let z = Infinity;
+    for (const tree of TREES) {
+      if (tree.z <= t.z + 0.05) continue;
+      const tx = tree.x - tree.trunkW / 2;
+      if (right < tx || left > tx + tree.trunkW) continue;
+      if (tree.z < z) {
+        z = tree.z;
+        box = { x: tx, y: tree.y - 300, w: tree.trunkW, h: 320 };
+      }
+    }
+    for (const bush of BUSHES) {
+      if (bush.z <= t.z + 0.05) continue;
+      const bx = bush.x - bush.w / 2;
+      if (right < bx || left > bx + bush.w) continue;
+      if (bush.z < z) {
+        z = bush.z;
+        box = { x: bx, y: bush.y - bush.h, w: bush.w, h: bush.h };
+      }
+    }
+    if (box) {
       ctx.beginPath();
       ctx.rect(-40, -40, 1680, 980);
       ctx.rect(box.x, box.y, box.w, box.h);
-      ctx.clip("evenodd");
+      /* no clip */
     }
   }
 
@@ -566,7 +930,7 @@ export class GameEngine {
       ctx.beginPath();
       if (t.facing > 0) ctx.rect(tree.x - 2, 0, WORLD_W, WORLD_H);
       else ctx.rect(0, 0, tree.x + 2, WORLD_H);
-      ctx.clip();
+      /* no clip */
     }
     ctx.translate(t.x, t.y);
     ctx.rotate(t.rot);
@@ -575,14 +939,14 @@ export class GameEngine {
       const r = clamp(t.reveal, 0.12, 1);
       ctx.beginPath();
       ctx.rect(-w / 2, -h, w, h * r);
-      ctx.clip();
+      /* no clip */
     }
     if (sprite) ctx.drawImage(sprite, -w / 2, -h, w, h);
     else {
       ctx.fillStyle = "#222";
       ctx.fillRect(-w / 2, -h, w, h);
     }
-    /* no restore clip */
+    ctx.restore();
   }
 
   drawCrosshair() {
@@ -616,7 +980,7 @@ export class GameEngine {
     ctx.beginPath();
     ctx.arc(x, y, 16 + kick, 0, Math.PI * 2);
     ctx.stroke();
-    /* no restore clip */
+    ctx.restore();
   }
 
   destroy() {
