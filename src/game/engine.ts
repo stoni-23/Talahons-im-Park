@@ -824,6 +824,11 @@ export class GameEngine {
   clipOccluders(_ctx: CanvasRenderingContext2D, _t: Target) {}
 
   drawCrosshair() {
+    this.ctx.save();
+    this.ctx.fillStyle = "#ff0000";
+    this.ctx.font = "bold 24px monospace";
+    this.ctx.fillText("BUILD_TEST_V2", 30, 40);
+    this.ctx.restore();
     const ctx = this.ctx;
     const x = this.aimX;
     const y = this.aimY;
