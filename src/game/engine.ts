@@ -52,6 +52,8 @@ const ASSET_KEYS = [
   "logo",
   "opa_walk",
   "opa_hit",
+  "opa_walk",
+  "opa_hit",
   ...[1, 2, 3, 4].flatMap((n) => [
     `talahon-walk-${n}`,
     `talahon-walk-b-${n}`,
@@ -454,6 +456,25 @@ export class GameEngine {
     });
   }
 
+  
+  spawnOpa() {
+    const fromRight = Math.random() < 0.5;
+    const speed = 70;
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "opa",
+      x: fromRight ? 960 : -80,
+      y: 1160,
+      vx: (fromRight ? -1 : 1) * speed,
+      z: 1.4,
+      facing: fromRight ? -1 : 1,
+      points: -50,
+      scale: 0.88,
+      phase: "move",
+    });
+  }
+
   spawnRocker() {
     const fromRight = Math.random() < 0.5;
     const speed = 260;
@@ -735,6 +756,8 @@ export class GameEngine {
       this.spawnRocker();
     } else if (Math.random() < 0.18) {
       this.spawnOpa();
+    } else if (Math.random() < 0.18) {
+      this.spawnOpa();
     }
     for (const t of this.targets) {
       t.frameT += dt;
@@ -850,6 +873,7 @@ export class GameEngine {
 
   spriteFor(t: Target) {
     if (t.act === "opa") return this.img(t.state === "falling" ? "opa_hit" : "opa_walk");
+    if (t.act === "opa") return this.img(t.state === "falling" ? "opa_hit" : "opa_walk");
     if (t.act === "rocker") return this.img("bahndidos");
     if (t.state === "falling") return this.img(`talahon-hit-${(t.frame % 4) + 1}`);
     if (t.act === "run") return this.img(`talahon-run-${(t.frame % 4) + 1}`);
@@ -947,7 +971,7 @@ export class GameEngine {
     if (sprite) {
       const ratio = sprite.width / sprite.height;
       h =
-        (t.act === "rocker" ? 430 : t.act === "opa" ? 380
+        (t.act === "rocker" ? 430 : t.act === "opa" ? 380 : t.act === "opa" ? 380
           : t.act === "peek"
             ? 340
             : t.act === "bush"
