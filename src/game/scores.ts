@@ -28,7 +28,7 @@ export function qualifies(score: number): boolean {
 export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/highscores?select=name,score&order=score.desc&limit=10`,
+      `${SUPABASE_URL}/rest/v1/highscores?select=name,score&order=score.desc&limit=100`,
       {
         headers: {
           apikey: SUPABASE_KEY,

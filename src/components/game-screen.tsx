@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import React, { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
 import { unlockAudio } from "@/game/audio";
@@ -11,6 +11,7 @@ const ghostBtn =
   "h-11 rounded-md border border-line px-6 text-sm font-medium text-paper-dim transition-colors hover:bg-ink-3 hover:text-paper";
 
 export function GameScreen() {
+  const [showAllScores, setShowAllScores] = React.useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const [hud, setHud] = useState<Hud>(emptyHud());
@@ -88,13 +89,37 @@ export function GameScreen() {
               </p>
 
               {/* Weltweite Top 10 */}
+              <button
+                type="button"
+                disabled={!hud.ready}
+                onClick={() => {
+                  unlockAudio();
+                  engine?.start();
+                }}
+                className={primaryBtn}
+              >
+                {hud.ready ? "🎮 JETZT SPIELEN" : "Laden…"}
+              </button>
+
+              {/* Highscore Liste (Top 5 / Top 100) */}
               <div className="w-full max-w-sm rounded-xl border border-line bg-ink/90 p-3">
-                <p className="mb-2 text-center text-xs font-bold tracking-[0.14em] text-paper uppercase">
-                  🏆 Parkbank Top 10
-                </p>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs font-bold tracking-[0.14em] text-paper uppercase">
+                    🏆 {showAllScores ? "Top 100 Rangliste" : "Top 5 Bestenliste"}
+                  </p>
+                  {board.length > 5 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllScores(!showAllScores)}
+                      className="text-[11px] font-semibold text-amber-400 underline hover:text-amber-300"
+                    >
+                      {showAllScores ? "Top 5" : "Alle 100"}
+                    </button>
+                  )}
+                </div>
                 {board.length > 0 ? (
-                  <ol className="divide-y divide-line/40 text-xs text-paper-dim">
-                    {board.slice(0, 10).map((row, i) => (
+                  <ol className={`divide-y divide-line/40 text-xs text-paper-dim ${showAllScores ? "max-h-60 overflow-y-auto pr-1" : ""}`}>
+                    {board.slice(0, showAllScores ? 100 : 5).map((row, i) => (
                       <li key={`${row.name}-${i}-${row.score}`} className="flex items-center justify-between py-1">
                         <span className="flex items-center gap-2 truncate">
                           <span className="w-5 font-mono font-semibold text-paper">{i + 1}.</span>
@@ -109,8 +134,9 @@ export function GameScreen() {
                 )}
               </div>
 
-              {/* Punktetabelle */}
+              {/* Spielanleitung & Punktetabelle */}
               <ul className="w-full max-w-sm space-y-1 rounded-xl border border-line bg-ink/60 p-3 text-xs text-paper-dim">
+                <ScoreRow label="⚡ Stricknadelkommando (5er Combo)" value="5s Dauerfeuer (0 Fehl-Abzug)" />
                 <ScoreRow label="Wallah, kopfschuss!" value="2× Pkt + 50" />
                 <ScoreRow label="Bahndidos auf dem Roller" value="200 Pkt" />
                 <ScoreRow label="Hinterm Baum / im Busch" value="18–32 Pkt" />
@@ -119,19 +145,8 @@ export function GameScreen() {
                 <ScoreRow label="Fehlschuss ins Leere" value="-15 Pkt" />
               </ul>
 
-              <button
-                type="button"
-                disabled={!hud.ready}
-                onClick={() => {
-                  unlockAudio();
-                  engine?.start();
-                }}
-                className={primaryBtn}
-              >
-                {hud.ready ? "Spielen" : "Laden…"}
-              </button>
               <p className="text-[11px] text-muted">
-                Klicken zum Zielen · Esc Pause · M Stumm
+                Klicken/Tippen zum Zielen · Im Kommando gedrückt halten · Esc Pause
               </p>
             </div>
           </div>
