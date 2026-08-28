@@ -78,9 +78,9 @@ export function GameScreen() {
           <div className="absolute inset-0 flex items-center justify-center bg-ink/80 px-4 py-8">
             <div className="flex max-h-full w-full max-w-lg flex-col items-center gap-4 overflow-y-auto">
               <img
-                src="/assets/logo.png"
+                src="/assets/logo.png?v=2"
                 alt="Bankgeheimnis im Park"
-                className="h-auto w-[min(72vw,240px)] select-none"
+                className="h-auto w-[min(55vw,170px)] select-none"
                 draggable={false}
               />
               <p className="max-w-sm text-center text-xs italic leading-relaxed text-paper-dim">
