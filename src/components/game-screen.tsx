@@ -226,13 +226,14 @@ export function GameScreen() {
                 className="mt-4 flex w-full max-w-xs flex-col gap-2"
                 onSubmit={async (e: FormEvent) => {
                   e.preventDefault();
+                  if (!name.trim()) return;
+                  setNamed(true);
                   const updated = await submitScore(name, hud.score);
                   setBoard(updated);
-                  setNamed(true);
                 }}
               >
                 <label className="text-left text-[11px] font-medium tracking-[0.14em] text-paper-dim uppercase">
-                  Name für die 🏆 Parkbank Top 10
+                  Name für die 🏆 Bestenliste
                 </label>
                 <div className="flex gap-2">
                   <input
