@@ -112,6 +112,7 @@ export class GameEngine {
   timeLeft = 90;
   combo = 0;
   comboT = 0;
+  strickT = 0;
   shots = 0;
   hits = 0;
   bestCombo = 0;
@@ -505,7 +506,7 @@ export class GameEngine {
 
   shoot() {
     if (this.mode !== "playing" || this.fireCd > 0) return;
-    this.fireCd = FIRE_CD;
+    this.fireCd = this.strickT > 0 ? 0.04 : FIRE_CD;
     this.recoil = 0.12;
     this.shots++;
     playShot();
@@ -608,7 +609,10 @@ export class GameEngine {
     t.vx = (this.aimX > t.x ? -1 : 1) * 90;
     this.freeHide(t);
     this.hits++;
-    this.combo += 1;
+        this.combo += 1;
+    if (this.combo >= 3 && this.strickT <= 0) {
+      this.strickT = 6.0;
+    }
     this.comboT = COMBO_WINDOW;
     if (this.combo > this.bestCombo) this.bestCombo = this.combo;
     const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3));
@@ -712,6 +716,7 @@ export class GameEngine {
     this.fireCd = Math.max(0, this.fireCd - dt);
     this.recoil = Math.max(0, this.recoil - dt);
     this.trauma = Math.max(0, this.trauma - dt * 1.8);
+    if (this.strickT > 0) this.strickT = Math.max(0, this.strickT - dt);
     this.comboT -= dt;
     if (this.comboT <= 0) this.combo = 0;
     this.hudAcc += dt;
@@ -721,7 +726,7 @@ export class GameEngine {
     }
     const progress = 1 - this.timeLeft / 90;
     const spawnWait = 1.05 - progress * 0.62;
-    this.spawnAcc -= dt;
+    this.spawnAcc -= (this.strickT > 0 ? dt * 2.2 : dt);
     if (this.spawnAcc <= 0) {
       this.spawnAcc = spawnWait * rand(0.7, 1.15);
       const n = progress > 0.5 && Math.random() < 0.55 ? 2 : 1;
@@ -763,7 +768,7 @@ export class GameEngine {
       }
       if (t.state === "falling") {
         t.vy += 980 * dt;
-        t.x += t.vx * dt;
+        t.x += t.vx * (this.strickT > 0 ? dt * 1.8 : dt);
         t.y += t.vy * dt;
         t.rot += (t.vx >= 0 ? 1 : -1) * 5.5 * dt;
         continue;
@@ -895,6 +900,22 @@ export class GameEngine {
     }
     const sorted = this.targets.slice().sort((a, b) => a.z - b.z);
     for (const t of sorted) this.drawTarget(t);
+
+    if (this.strickT > 0) {
+      ctx.save();
+      const pulse = 1 + Math.sin(Date.now() / 80) * 0.08;
+      ctx.translate(WORLD_W / 2, 220);
+      ctx.scale(pulse, pulse);
+      ctx.textAlign = "center";
+      ctx.font = "900 42px sans-serif";
+      ctx.fillStyle = "#ff0044";
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 6;
+      ctx.strokeText("⚡ STRICKNADELKOMMANDO! ⚡", 0, 0);
+      ctx.fillText("⚡ STRICKNADELKOMMANDO! ⚡", 0, 0);
+      ctx.restore();
+    }
+
     const foliage = this.img("foliage");
     if (foliage) ctx.drawImage(foliage, 0, WORLD_H - 260, WORLD_W, 260);
     const oma = this.omaRect();
