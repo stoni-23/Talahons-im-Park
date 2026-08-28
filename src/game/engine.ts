@@ -516,7 +516,7 @@ export class GameEngine {
 
   shoot() {
     if (this.mode !== "playing" || this.fireCd > 0) return;
-    this.fireCd = this.strickT > 0 ? 0.02 : FIRE_CD;
+    this.fireCd = this.strickT > 0 ? 0.06 : FIRE_CD;
     this.recoil = 0.12;
     this.shots++;
     playShot();
@@ -592,8 +592,8 @@ export class GameEngine {
 
     this.combo += 1;
     const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3));
-    if (mult >= 3 && this.strickT <= 0) {
-      this.strickT = 6.0;
+    if (mult >= 5 && this.strickT <= 0) {
+      this.strickT = 5.0;
     }
     this.comboT = COMBO_WINDOW;
     if (this.combo > this.bestCombo) this.bestCombo = this.combo;
@@ -690,6 +690,9 @@ export class GameEngine {
     this.comboT -= dt;
     if (this.comboT <= 0) this.combo = 0;
     this.hudAcc += dt;
+        if (this.pointerDown && this.strickT > 0 && this.mode === "playing") {
+      this.shoot();
+    }
     if (this.hudAcc > 0.12) {
       this.hudAcc = 0;
       this.emit();
