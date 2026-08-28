@@ -50,6 +50,8 @@ const ASSET_KEYS = [
   "oma-recoil",
   "bahndidos",
   "logo",
+  "opa_walk",
+  "opa_hit",
   ...[1, 2, 3, 4].flatMap((n) => [
     `talahon-walk-${n}`,
     `talahon-walk-b-${n}`,
@@ -433,6 +435,25 @@ export class GameEngine {
     });
   }
 
+  
+  spawnOpa() {
+    const fromRight = Math.random() < 0.5;
+    const speed = 70;
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "opa",
+      x: fromRight ? 960 : -80,
+      y: 1160,
+      vx: (fromRight ? -1 : 1) * speed,
+      z: 1.4,
+      facing: fromRight ? -1 : 1,
+      points: -50,
+      scale: 0.88,
+      phase: "move",
+    });
+  }
+
   spawnRocker() {
     const fromRight = Math.random() < 0.5;
     const speed = 260;
@@ -600,8 +621,22 @@ export class GameEngine {
         vy: -60,
       });
     }
-    this.score += pts;
-    playHit(this.combo);
+    if (t.act === "opa") {
+      this.combo = 0;
+      this.score = Math.max(0, this.score - 50);
+      this.floaters.push({
+        x: t.x,
+        y: t.y - t.dh * 0.95,
+        text: "Finger weg! (-50)",
+        life: 1.6,
+        max: 1.6,
+        color: "#ef4444",
+        size: 80,
+      });
+    } else {
+      this.score += pts;
+      playHit(this.combo);
+    }
     if (!this.reduced) {
       this.trauma = Math.min(1, this.trauma + (t.act === "rocker" ? 0.7 : 0.38));
       this.hitstop = t.act === "rocker" ? 0.09 : 0.045;
@@ -698,6 +733,8 @@ export class GameEngine {
     if (this.rockerT <= 0) {
       this.rockerT = rand(10, 15);
       this.spawnRocker();
+    } else if (Math.random() < 0.18) {
+      this.spawnOpa();
     }
     for (const t of this.targets) {
       t.frameT += dt;
@@ -724,7 +761,7 @@ export class GameEngine {
         t.rot += (t.vx >= 0 ? 1 : -1) * 5.5 * dt;
         continue;
       }
-      if (t.act === "walk" || t.act === "run" || t.act === "rocker") {
+      if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
         t.x += t.vx * dt;
         continue;
       }
@@ -785,7 +822,7 @@ export class GameEngine {
         return false;
       }
       if (t.state === "falling") return t.y < 1060;
-      if (t.act === "walk" || t.act === "run" || t.act === "rocker") {
+      if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
         if (t.y >= 620 && t.x < OMA_KEEP_X) {
           this.freeHide(t);
           return false;
@@ -812,6 +849,7 @@ export class GameEngine {
   }
 
   spriteFor(t: Target) {
+    if (t.act === "opa") return this.img(t.state === "falling" ? "opa_hit" : "opa_walk");
     if (t.act === "rocker") return this.img("bahndidos");
     if (t.state === "falling") return this.img(`talahon-hit-${(t.frame % 4) + 1}`);
     if (t.act === "run") return this.img(`talahon-run-${(t.frame % 4) + 1}`);
@@ -909,8 +947,7 @@ export class GameEngine {
     if (sprite) {
       const ratio = sprite.width / sprite.height;
       h =
-        (t.act === "rocker"
-          ? 430
+        (t.act === "rocker" ? 430 : t.act === "opa" ? 380
           : t.act === "peek"
             ? 340
             : t.act === "bush"
