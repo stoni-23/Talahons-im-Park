@@ -140,7 +140,7 @@ export function GameScreen() {
           <>
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 pt-[max(12px,env(safe-area-inset-top))] sm:p-5">
               <HudChip label="Punkte" value={String(hud.score)} />
-              <HudChip label="Zeit" value={`${min}:${sec}`} large />
+              <HudChip label="Zeit" value={`${min}:${sec}`} large urgent={hud.timeLeft <= 10 && playing} />
               <HudChip label="Combo" value={String(hud.combo)} />
             </div>
             <div className="absolute right-3 bottom-[max(12px,env(safe-area-inset-bottom))] flex gap-2 sm:right-5">
@@ -281,7 +281,7 @@ export function GameScreen() {
   );
 }
 
-function HudChip({ label, value, large }: { label: string; value: string; large?: boolean }) {
+function HudChip({ label, value, large, urgent }: { label: string; value: string; large?: boolean; urgent?: boolean }) {
   return (
     <div className="flex flex-col items-center rounded-lg border border-line bg-ink/70 px-3 py-1.5 backdrop-blur-sm">
       <span className="text-[10px] font-medium tracking-[0.14em] text-paper-dim uppercase">{label}</span>
