@@ -130,6 +130,7 @@ export class GameEngine {
   flashes: Flash[] = [];
   spawnAcc = 0;
   rockerT = 12;
+  opaT = 8;
   hudAcc = 0;
   id = 1;
   last = 0;
@@ -438,15 +439,16 @@ export class GameEngine {
   }
 
   
-  spawnOpa() {
+    spawnOpa() {
+    if (this.targets.some((t) => t.act === "opa")) return;
     const fromRight = Math.random() < 0.5;
-    const speed = 70;
+    const speed = 65;
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
       act: "opa",
       x: fromRight ? 960 : -80,
-      y: 1160,
+      y: 1180,
       vx: (fromRight ? -1 : 1) * speed,
       z: 1.4,
       facing: fromRight ? -1 : 1,
@@ -454,25 +456,7 @@ export class GameEngine {
       scale: 0.88,
       phase: "move",
     });
-  }
-
-  
-  spawnOpa() {
-    const fromRight = Math.random() < 0.5;
-    const speed = 70;
-    this.targets.push({
-      ...this.baseTarget(),
-      id: this.id++,
-      act: "opa",
-      x: fromRight ? 960 : -80,
-      y: 1160,
-      vx: (fromRight ? -1 : 1) * speed,
-      z: 1.4,
-      facing: fromRight ? -1 : 1,
-      points: -50,
-      scale: 0.88,
-      phase: "move",
-    });
+  });
   }
 
   spawnRocker() {
@@ -752,11 +736,12 @@ export class GameEngine {
     }
     this.rockerT -= dt;
     if (this.rockerT <= 0) {
-      this.rockerT = rand(10, 15);
+      this.rockerT = rand(11, 16);
       this.spawnRocker();
-    } else if (Math.random() < 0.18) {
-      this.spawnOpa();
-    } else if (Math.random() < 0.18) {
+    }
+    this.opaT -= dt;
+    if (this.opaT <= 0) {
+      this.opaT = rand(9, 15);
       this.spawnOpa();
     }
     for (const t of this.targets) {
