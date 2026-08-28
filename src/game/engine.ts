@@ -288,10 +288,7 @@ export class GameEngine {
     this.spawnBush();
     this.spawnBush();
     this.spawnPeeker();
-    this.spawnWalker();
-  }
-
-  spawnWalker(lane?: number, running?: boolean, x?: number) {
+    this.spawnWalker(lane?: number, running?: boolean, x?: number) {
     if (this.aliveCount() >= MAX_ALIVE) return;
     const laneI = lane ?? (Math.random() < 0.34 ? 0 : Math.random() < 0.5 ? 1 : Math.random() < 0.58 ? 2 : 3);
     const L = LANES[laneI]!;
