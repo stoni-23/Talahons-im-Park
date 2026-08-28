@@ -24,7 +24,7 @@ export const WORLD_H = 1600;
 const FIRE_CD = 0.26;
 const COMBO_WINDOW = 1.05;
 const MAX_ALIVE = 9;
-const OMA_KEEP_X = 320;
+const OMA_KEEP_X = -300;
 
 const LANES = [
   { y: 960, scale: 0.52, z: 0.18, pts: 35, speed: 45 },
@@ -459,7 +459,7 @@ export class GameEngine {
 
   dashOut(t: Target, run = true) {
     let dir = t.facing;
-    if (t.x < OMA_KEEP_X + 40) dir = 1;
+    // Wende-Zwang entfernt
     this.freeHide(t);
     t.act = run ? "run" : "walk";
     t.phase = "move";
