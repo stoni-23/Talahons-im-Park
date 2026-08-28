@@ -49,6 +49,8 @@ const ASSET_KEYS = [
   "oma",
   "oma-recoil",
   "bahndidos",
+  "talahin_1",
+  "talahin_2",
   "logo",
   "opa_walk",
   "opa_hit",
@@ -459,6 +461,26 @@ export class GameEngine {
     });
   }
 
+    spawnCarpet() {
+    const fromRight = Math.random() < 0.5;
+    const speed = 190;
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "carpet",
+      x: fromRight ? 980 : -120,
+      y: 340,
+      vx: (fromRight ? -1 : 1) * speed,
+      vy: 0,
+      z: 0.1,
+      facing: fromRight ? -1 : 1,
+      points: 150,
+      scale: 0.62,
+      phase: "move",
+      phaseT: Math.random() * Math.PI * 2,
+    });
+  }
+
   spawnRocker() {
     const fromRight = Math.random() < 0.5;
     const speed = 260;
@@ -715,6 +737,7 @@ export class GameEngine {
     if (this.rockerT <= 0) {
       this.rockerT = rand(11, 16);
       this.spawnRocker();
+    if (Math.random() < 0.45) this.spawnCarpet();
     }
     this.opaT -= dt;
     if (this.opaT <= 0) {
@@ -746,7 +769,19 @@ export class GameEngine {
         t.rot += (t.vx >= 0 ? 1 : -1) * 5.5 * dt;
         continue;
       }
-      if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
+            if (t.act === "carpet") {
+        t.x += t.vx * dt;
+        t.phaseT += dt * 3.2;
+        t.y = 340 + Math.sin(t.phaseT) * 45;
+        t.rot = Math.cos(t.phaseT) * 0.12 * (t.vx > 0 ? 1 : -1);
+        t.frameT += dt;
+        if (t.frameT > 0.14) {
+          t.frameT = 0;
+          t.frame = (t.frame + 1) % 2;
+        }
+        continue;
+      }
+      if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa" || t.act === "carpet") {
         t.x += t.vx * dt;
         continue;
       }
@@ -836,6 +871,7 @@ export class GameEngine {
   spriteFor(t: Target) {
     if (t.act === "opa") return this.img(t.state === "falling" ? "opa_hit" : "opa_walk");
     if (t.act === "opa") return this.img(t.state === "falling" ? "opa_hit" : "opa_walk");
+    if (t.act === "carpet") return this.img(t.frame % 2 === 0 ? "talahin_1" : "talahin_2");
     if (t.act === "rocker") return this.img("bahndidos");
     if (t.state === "falling") return this.img(`talahon-hit-${(t.frame % 4) + 1}`);
     if (t.act === "run") return this.img(`talahon-run-${(t.frame % 4) + 1}`);
