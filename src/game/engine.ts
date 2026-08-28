@@ -506,7 +506,7 @@ export class GameEngine {
 
   shoot() {
     if (this.mode !== "playing" || this.fireCd > 0) return;
-    this.fireCd = this.strickT > 0 ? 0.04 : FIRE_CD;
+    this.fireCd = this.strickT > 0 ? 0.02 : FIRE_CD;
     this.recoil = 0.12;
     this.shots++;
     playShot();
@@ -903,16 +903,24 @@ export class GameEngine {
 
     if (this.strickT > 0) {
       ctx.save();
-      const pulse = 1 + Math.sin(Date.now() / 80) * 0.08;
-      ctx.translate(WORLD_W / 2, 220);
+      const pulse = 1 + Math.sin(Date.now() / 90) * 0.06;
+      ctx.translate(WORLD_W / 2, 380);
       ctx.scale(pulse, pulse);
       ctx.textAlign = "center";
-      ctx.font = "900 42px sans-serif";
-      ctx.fillStyle = "#ff0044";
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 6;
-      ctx.strokeText("⚡ STRICKNADELKOMMANDO! ⚡", 0, 0);
-      ctx.fillText("⚡ STRICKNADELKOMMANDO! ⚡", 0, 0);
+      
+      // Hintergrund-Badge
+      ctx.fillStyle = "rgba(185, 28, 28, 0.85)";
+      ctx.strokeStyle = "#fef08a";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(-260, -32, 520, 64, 16);
+      ctx.fill();
+      ctx.stroke();
+
+      // Text
+      ctx.font = "900 32px sans-serif";
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText("⚡ STRICKNADELKOMMANDO! ⚡", 0, 11);
       ctx.restore();
     }
 
