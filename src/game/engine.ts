@@ -537,97 +537,21 @@ export class GameEngine {
     if (hit) {
       const isHead = this.aimY <= (hit.y - (hit.dh || 80) * 0.62);
       this.kill(hit, isHead);
-    } else {
+        } else {
       playMiss();
-      this.combo = 0;
-      this.score = Math.max(0, this.score - 15);
-      this.floaters.push({
-        x: this.aimX,
-        y: this.aimY - 10,
-        text: "-15",
-        color: "#ff3b30",
-        life: 0.9,
-        max: 0.9,
-        vy: -50,
-      });
-      this.holes.push({ x: this.aimX, y: this.aimY, r: rand(4, 7), a: 1 });
-      if (this.holes.length > 48) this.holes.shift();
-      this.burst(this.aimX, this.aimY, 5, "#cfc4ae", 40);
-    }
-    this.emit();
-  }
-
-  occludesPoint(t: Target, x: number, y: number) {
-    for (const tree of TREES) {
-      if (tree.z <= t.z + 0.05) continue;
-      if (x >= tree.x - tree.trunkW / 2 && x <= tree.x + tree.trunkW / 2 && y <= tree.y && y >= tree.y - 280)
-        return true;
-    }
-    for (const bush of BUSHES) {
-      if (bush.z <= t.z + 0.05) continue;
-      if (x >= bush.x - bush.w / 2 && x <= bush.x + bush.w / 2 && y <= bush.y && y >= bush.y - bush.h)
-        return true;
-    }
-    return false;
-  }
-
-  hitTest(t: Target, x: number, y: number) {
-    if ((t.act === "walk" || t.act === "run") && this.occludesPoint(t, x, y)) return false;
-    const w = t.dw || 80;
-    const h = t.dh || 80;
-    let left = t.x - w * 0.38;
-    let right = t.x + w * 0.38;
-    let top = t.y - h * 0.92;
-    let bottom = t.y - h * 0.06;
-    if (t.act === "peek" && t.hide >= 0) {
-      const tree = TREES[t.hide]!;
-      const r = Math.max(0.2, t.reveal);
-      if (t.facing > 0) {
-        left = tree.x;
-        right = t.x + w * 0.42 * r;
-      } else {
-        left = t.x - w * 0.42 * r;
-        right = tree.x;
+      if (this.strickT <= 0) {
+        this.combo = 0;
+        this.score = Math.max(0, this.score - 15);
+        this.floaters.push({
+          x: this.aimX,
+          y: this.aimY,
+          text: "-15",
+          color: "#ff4d4d",
+          life: 0.8,
+          max: 0.8,
+          vy: -40,
+        });
       }
-      top = t.y - h * 0.9;
-      bottom = t.y - h * 0.1;
-    }
-    if (t.act === "bush") {
-      top = t.y - h;
-      bottom = t.y - h * (1 - Math.max(0.15, t.reveal));
-      left = t.x - w * 0.32;
-      right = t.x + w * 0.32;
-    }
-    return x >= left && x <= right && y >= top && y <= bottom;
-  }
-
-  kill(t: Target, isHeadshot = false) {
-    t.state = "falling";
-    t.frame = 0;
-    t.frameT = 0;
-    t.vy = -180;
-    t.vx = (this.aimX > t.x ? -1 : 1) * 90;
-    this.freeHide(t);
-    this.hits++;
-        this.combo += 1;
-    if (this.combo >= 3 && this.strickT <= 0) {
-      this.strickT = 6.0;
-    }
-    this.comboT = COMBO_WINDOW;
-    if (this.combo > this.bestCombo) this.bestCombo = this.combo;
-    const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3));
-    let pts = Math.round(t.points * (1 + Math.min(this.combo, 10) * 0.15));
-    if (isHeadshot) {
-      pts = Math.round(pts * 2 + 50);
-      this.floaters.push({
-        x: t.x,
-        y: t.y - (t.dh || 80) - 20,
-        text: "Wallah, kopfschuss!",
-        color: "#ffcc00",
-        life: 1.2,
-        max: 1.2,
-        vy: -60,
-      });
     }
     if (t.act === "opa") {
       this.combo = 0;
