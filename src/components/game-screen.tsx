@@ -283,9 +283,9 @@ export function GameScreen() {
 
 function HudChip({ label, value, large, urgent }: { label: string; value: string; large?: boolean; urgent?: boolean }) {
   return (
-    <div className="flex flex-col items-center rounded-lg border border-line bg-ink/70 px-3 py-1.5 backdrop-blur-sm">
-      <span className="text-[10px] font-medium tracking-[0.14em] text-paper-dim uppercase">{label}</span>
-      <span className={`font-display tabular-nums ${large ? "text-2xl sm:text-3xl text-paper" : "text-lg sm:text-xl text-paper"}`}>
+    <div className={`flex flex-col items-center rounded-lg border px-3 py-1.5 backdrop-blur-sm transition-colors ${urgent ? "border-red-500/80 bg-red-950/60" : "border-line bg-ink/70"}`}>
+      <span className={`text-[10px] font-medium tracking-[0.14em] uppercase ${urgent ? "text-red-400" : "text-paper-dim"}`}>{label}</span>
+      <span className={`font-display tabular-nums ${large ? "text-2xl sm:text-3xl" : "text-lg sm:text-xl"} ${urgent ? "text-red-500 animate-pulse font-bold" : "text-paper"}`}>
         {value}
       </span>
     </div>
