@@ -115,6 +115,7 @@ export function GameScreen() {
                 <ScoreRow label="Bahndidos auf dem Roller" value="200 Pkt" />
                 <ScoreRow label="Hinterm Baum / im Busch" value="18–32 Pkt" />
                 <ScoreRow label="Talahons im Park" value="8–35 Pkt" />
+                <ScoreRow label="Opa Spaziergänger (Vorsicht!)" value="-50 Pkt" />
                 <ScoreRow label="Fehlschuss ins Leere" value="-15 Pkt" />
               </ul>
 
