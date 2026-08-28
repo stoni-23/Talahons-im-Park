@@ -361,9 +361,9 @@ export class GameEngine {
     const L = LANES[laneI]!;
     const run = running ?? Math.random() < 0.38;
     const near = L.y >= 620;
-    const fromRight = near || Math.random() >= 0.5;
+    const fromRight = Math.random() < 0.5;
     const speed = L.speed * (run ? 2.2 : 1) * rand(0.88, 1.18);
-    const start = x ?? (fromRight ? 980 : -80);
+    const start = x ?? (fromRight ? 1200 : -200);
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
