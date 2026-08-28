@@ -150,6 +150,7 @@ export function GameScreen() {
                 <ScoreRow label="⚡ Stricknadelkommando (5er Combo)" value="5s Dauerfeuer (0 Fehl-Abzug)" />
                 <ScoreRow label="Wallah, kopfschuss!" value="2× Pkt + 50" />
                 <ScoreRow label="Bahndidos auf dem Roller" value="200 Pkt" />
+                <ScoreRow label="✨ Talahin auf fliegendem Teppich" value="150 Pkt" />
                 <ScoreRow label="Hinterm Baum / im Busch" value="18–32 Pkt" />
                 <ScoreRow label="Talahons im Park" value="8–35 Pkt" />
                 <ScoreRow label="Opa Spaziergänger (Vorsicht!)" value="-50 Pkt" />
