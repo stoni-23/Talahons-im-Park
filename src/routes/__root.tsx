@@ -14,11 +14,20 @@ export const Route = createRootRoute({
       { name: "theme-color", content: "#0a0a0a" },
       {
         name: "description",
-        content: "Die Oma, die Parabellum und zu viele Talahons. Ein Moorhuhn für den Park.",
+        content: "Die Oma, die Parabellum und zu viele Talahons im Park. Kannst du den Highscore knacken?",
       },
+      { property: "og:title", content: "Bankgeheimnis im Park – Moorhuhn-Action" },
+      { property: "og:description", content: "Die Oma, die Parabellum und zu viele Talahons im Park. Knacke den Highscore!" },
+      { property: "og:image", content: "https://talahons-im-park.vercel.app/logo.png" },
+      { property: "og:url", content: "https://talahons-im-park.vercel.app" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://talahons-im-park.vercel.app/logo.png" },
     ],
     links: [
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "icon", type: "image/png", href: "/logo.png" },
+      { rel: "shortcut icon", href: "/logo.png" },
+      { rel: "apple-touch-icon", href: "/logo.png" },
       { rel: "stylesheet", href: appCss },
       {
         rel: "stylesheet",
