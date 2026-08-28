@@ -553,10 +553,57 @@ export class GameEngine {
         });
       }
     }
-  } else {
-      this.score += pts;
-      playHit(this.combo);
+  }
+
+  kill(t: Target, isHeadshot = false) {
+    if (t.state !== "alive") return;
+    t.state = "hit";
+    t.frame = 0;
+    t.frameT = 0;
+    t.vy = -180;
+    t.vx = (this.aimX > t.x ? -1 : 1) * 90;
+    this.freeHide(t);
+    this.hits++;
+
+    if (t.act === "opa") {
+      this.combo = 0;
+      this.score = Math.max(0, this.score - 50);
+      this.floaters.push({
+        x: t.x,
+        y: t.y - (t.dh || 80) * 0.95,
+        text: "Finger weg! (-50)",
+        life: 1.6,
+        max: 1.6,
+        color: "#ef4444",
+      });
+      return;
     }
+
+    this.combo += 1;
+    const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3));
+    if (mult >= 3 && this.strickT <= 0) {
+      this.strickT = 6.0;
+    }
+    this.comboT = COMBO_WINDOW;
+    if (this.combo > this.bestCombo) this.bestCombo = this.combo;
+    let pts = Math.round(t.points * (1 + Math.min(this.combo, 10) * 0.15));
+
+    if (isHeadshot) {
+      pts = Math.round(pts * 2 + 50);
+      this.floaters.push({
+        x: t.x,
+        y: t.y - (t.dh || 80) - 20,
+        text: "Wallah, kopfschuss!",
+        color: "#ffcc00",
+        life: 1.2,
+        max: 1.2,
+        vy: -60,
+      });
+    }
+
+    this.score += pts;
+    playHit(this.combo);
+
     if (!this.reduced) {
       this.trauma = Math.min(1, this.trauma + (t.act === "rocker" ? 0.7 : 0.38));
       this.hitstop = t.act === "rocker" ? 0.09 : 0.045;
@@ -567,7 +614,7 @@ export class GameEngine {
     this.floaters.push({
       x: t.x,
       y: t.y - t.dh * 0.78,
-      text: mult > 1 ? `${pts}  ×${mult}` : `+${pts}`,
+      text: mult > 1 ? `+${pts} ×${mult}` : `+${pts}`,
       life: 1.35,
       max: 1.35,
       color: "#f3ead8",
