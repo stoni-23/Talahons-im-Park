@@ -1,3 +1,13 @@
+function getOmaRank(score: number) {
+  if (score >= 40000) return { title: "👑 Die scharfe Sibylle", desc: "Endgegnerin: Meisterin der Parabellum, absolute Herrscherin über den Park.", color: "text-amber-400 border-amber-500/50 bg-amber-950/40" };
+  if (score >= 30000) return { title: "💥 Parabellum-Gretel", desc: "Schneller am Abzug als jede Kappe fliegen kann.", color: "text-red-400 border-red-500/50 bg-red-950/40" };
+  if (score >= 22000) return { title: "🪑 Parkbank-Legende", desc: "Hält Hof auf der Bank – kein Schattenboxer kommt vorbei.", color: "text-purple-400 border-purple-500/50 bg-purple-950/40" };
+  if (score >= 15000) return { title: "🎯 Nadel-Scharfschützin", desc: "Jeder Schuss sitzt präzise wie eine rechte Masche.", color: "text-blue-400 border-blue-500/50 bg-blue-950/40" };
+  if (score >= 9000) return { title: "⚡ Kleine Bella", desc: "Flink, treffsicher und räumt die E-Scooter vom Gehweg ab.", color: "text-emerald-400 border-emerald-500/50 bg-emerald-950/40" };
+  if (score >= 4000) return { title: "🪡 Strickliesel-Schützin", desc: "Erste Maschen sitzen – die Fake-Caps fliegen im hohen Bogen.", color: "text-yellow-300 border-yellow-500/40 bg-yellow-950/30" };
+  return { title: "🧶 Wollknäuel-Werferin", desc: "Verheddert sich noch in den Maschen, trifft höchstens die Parkbank.", color: "text-stone-300 border-stone-600 bg-stone-900/40" };
+}
+
 import React, { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
@@ -220,6 +230,18 @@ export function GameScreen() {
               <dt>Beste Combo</dt>
               <dd className="text-right tabular-nums text-paper">{hud.bestCombo}</dd>
             </dl>
+
+            {/* Rang-Auszeichnung */}
+            {(() => {
+              const rank = getOmaRank(hud.score);
+              return (
+                <div className={`mt-3 w-full max-w-xs rounded-xl border p-3 text-center ${rank.color}`}>
+                  <p className="text-[10px] font-bold tracking-[0.14em] uppercase opacity-80">Dein erreichter Rang</p>
+                  <p className="mt-0.5 text-base font-black tracking-wide">{rank.title}</p>
+                  <p className="mt-1 text-xs leading-snug opacity-90">{rank.desc}</p>
+                </div>
+              );
+            })()}
 
             {!named ? (
               <form
