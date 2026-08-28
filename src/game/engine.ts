@@ -180,9 +180,12 @@ export class GameEngine {
     await Promise.all(
       ASSET_KEYS.map(async (key) => {
         try {
-          const img = await loadImage(
-            `/assets/${key}.${key === "park-bg" ? "jpg" : "png"}`,
-          );
+          let img: HTMLImageElement;
+          try {
+            img = await loadImage(`/assets/${key}.${key === "park-bg" ? "jpg" : "png"}`);
+          } catch {
+            img = await loadImage(`/${key}.${key === "park-bg" ? "jpg" : "png"}`);
+          }
           this.images.set(key, img);
         } catch {
           /* keep going so one missing file doesn't blank the round */
