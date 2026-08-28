@@ -456,7 +456,6 @@ export class GameEngine {
       scale: 0.88,
       phase: "move",
     });
-  });
   }
 
   spawnRocker() {
