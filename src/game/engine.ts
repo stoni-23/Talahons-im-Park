@@ -288,11 +288,79 @@ export class GameEngine {
     this.spawnBush();
     this.spawnBush();
     this.spawnPeeker();
-    this.spawnWalker(lane?: number, running?: boolean, x?: number) {
+    this.spawnWalker(2, false);
+    this.emit();
+  }
+
+  pause() {
+    if (this.mode === "playing") {
+      this.mode = "paused";
+      setParkPaused(true);
+      this.emit();
+    }
+  }
+
+  resume() {
+    if (this.mode === "paused") {
+      this.mode = "playing";
+      this.last = performance.now();
+      setParkPaused(false);
+      this.emit();
+    }
+  }
+
+  toTitle() {
+    cancelOmaSpeech();
+    stopParkAmbience();
+    this.mode = "title";
+    this.targets = [];
+    this.peekBusy.clear();
+    this.bushBusy.clear();
+    this.emit();
+  }
+
+  toggleMute() {
+    setMuted(!isMuted());
+    this.emit();
+  }
+
+  endRound() {
+    cancelOmaSpeech();
+    stopParkAmbience();
+    playRoundEnd();
+    this.mode = "results";
+    if (this.score > this.highScore) {
+      this.highScore = this.score;
+      this.isNewHigh = true;
+    }
+    this.emit();
+  }
+
+  baseTarget(): Omit<Target, "id" | "act" | "x" | "y" | "vx" | "z" | "facing" | "points" | "scale"> {
+    return {
+      variant: Math.random() < 0.5 ? "a" : "b",
+      vy: 0,
+      frame: 0,
+      frameT: 0,
+      state: "alive",
+      phase: "move",
+      phaseT: 0,
+      reveal: 1,
+      rot: 0,
+      dw: 0,
+      dh: 0,
+      hide: -1,
+    };
+  }
+
+  spawnWalker(lane?: number, running?: boolean, x?: number) {
     if (this.aliveCount() >= MAX_ALIVE) return;
-    const laneI = lane ?? (Math.random() < 0.34 ? 0 : Math.random() < 0.5 ? 1 : Math.random() < 0.58 ? 2 : 3);
+    const laneI =
+      lane ??
+      (Math.random() < 0.34 ? 0 : Math.random() < 0.5 ? 1 : Math.random() < 0.58 ? 2 : 3);
     const L = LANES[laneI]!;
     const run = running ?? Math.random() < 0.38;
+    const near = L.y >= 620;
     const fromRight = Math.random() < 0.5;
     const speed = L.speed * (run ? 2.2 : 1) * rand(0.88, 1.18);
     const start = x ?? (fromRight ? 1150 : -150);
