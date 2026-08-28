@@ -567,7 +567,8 @@ export class GameEngine {
 
   kill(t: Target, isHeadshot = false) {
     if (t.state !== "alive") return;
-    t.state = "hit";
+    t.state = "falling";
+    t.rot = 0;
     t.frame = 0;
     t.frameT = 0;
     t.vy = -180;
