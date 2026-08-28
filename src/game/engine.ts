@@ -537,7 +537,7 @@ export class GameEngine {
     if (hit) {
       const isHead = this.aimY <= (hit.y - (hit.dh || 80) * 0.62);
       this.kill(hit, isHead);
-        } else {
+    } else {
       playMiss();
       if (this.strickT <= 0) {
         this.combo = 0;
@@ -553,19 +553,7 @@ export class GameEngine {
         });
       }
     }
-    if (t.act === "opa") {
-      this.combo = 0;
-      this.score = Math.max(0, this.score - 50);
-      this.floaters.push({
-        x: t.x,
-        y: t.y - t.dh * 0.95,
-        text: "Finger weg! (-50)",
-        life: 1.6,
-        max: 1.6,
-        color: "#ef4444",
-        size: 80,
-      });
-    } else {
+  } else {
       this.score += pts;
       playHit(this.combo);
     }
