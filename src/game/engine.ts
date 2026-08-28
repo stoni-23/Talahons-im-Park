@@ -504,6 +504,16 @@ export class GameEngine {
     t.y = bush.y - bush.h + 18 + dh * (1 - shown);
   }
 
+    hitTest(t: Target, x: number, y: number): boolean {
+    const dw = t.dw || 140 * t.scale;
+    const dh = t.dh || 335 * t.scale;
+    const left = t.x - dw * 0.5;
+    const right = t.x + dw * 0.5;
+    const top = t.y - dh;
+    const bottom = t.y;
+    return x >= left && x <= right && y >= top && y <= bottom;
+  }
+
   shoot() {
     if (this.mode !== "playing" || this.fireCd > 0) return;
     this.fireCd = this.strickT > 0 ? 0.02 : FIRE_CD;
