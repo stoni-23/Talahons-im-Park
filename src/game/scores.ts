@@ -39,11 +39,20 @@ export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
     if (!res.ok) return loadBoard();
     const data = await res.json();
     if (!Array.isArray(data) || data.length === 0) return loadBoard();
-    const mapped = data.map((d: { name: string; score: number }) => ({
-      name: d.name || "Park-Besucher",
-      score: Number(d.score) || 0,
-      at: Date.now()
-    }));
+    
+    // Duplikate (gleicher Name + gleicher Score) herausfiltern
+    const seen = new Set<string>();
+    const mapped: ScoreEntry[] = [];
+    for (const d of data) {
+      const name = (d.name || "Park-Besucher").trim();
+      const score = Number(d.score) || 0;
+      const key = `${name}_${score}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        mapped.push({ name, score, at: Date.now() });
+      }
+    }
+
     try {
       if (typeof window !== "undefined") {
         localStorage.setItem("bankgeheimnis_board", JSON.stringify(mapped));
