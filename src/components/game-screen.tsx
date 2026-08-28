@@ -12,6 +12,7 @@ const ghostBtn =
 
 export function GameScreen() {
   const [showAllScores, setShowAllScores] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const [hud, setHud] = useState<Hud>(emptyHud());
