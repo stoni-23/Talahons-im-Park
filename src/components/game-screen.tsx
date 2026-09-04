@@ -843,7 +843,7 @@ export function GameScreen() {
                   </dd>
                 </dl>
                 {(() => {
-                  const prog = getLevelProgress(profile.totalXp || 0);
+                  const prog = getLevelProgress(Math.max(profile.totalXp || 0, profile.highScore || 0));
                   return (
                     <div className="mt-4 pt-3 border-t border-line/40">
                       <div className="flex justify-between text-[11px] mb-1.5">
