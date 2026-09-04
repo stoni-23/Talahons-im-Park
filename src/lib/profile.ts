@@ -51,7 +51,7 @@ export function loadProfile(name?: string): PlayerProfile {
       highScore: Number(parsed.highScore) || 0,
       gamesPlayed: Number(parsed.gamesPlayed) || 0,
       totalHits: Number(parsed.totalHits) || 0,
-      totalXp: Number(parsed.totalXp) || Number(parsed.highScore) || 0,
+      totalXp: Number(parsed.totalXp) || 0,
     };
   } catch {
     return { name: currentName, highScore: 0, gamesPlayed: 0, totalHits: 0 };
