@@ -6,6 +6,11 @@ export interface PlayerProfile {
   totalXp: number;
 }
 
+export function getPlayerLevel(xp: number): number {
+  if (!xp || xp <= 0) return 1;
+  return Math.max(1, Math.floor(Math.sqrt(xp / 2500)) + 1);
+}
+
 export function getLevelProgress(xp: number) {
   const currentXp = Math.max(0, xp || 0);
   const level = getPlayerLevel(currentXp);
@@ -15,11 +20,6 @@ export function getLevelProgress(xp: number) {
   const progressInLevel = currentXp - currentLevelBaseXp;
   const percent = Math.min(100, Math.max(0, Math.floor((progressInLevel / needed) * 100)));
   return { level, currentXp, currentLevelBaseXp, nextLevelBaseXp, progressInLevel, needed, percent };
-}
-
-export function getPlayerLevel(xp: number): number {
-  if (!xp || xp <= 0) return 1;
-  return Math.max(1, Math.floor(Math.sqrt(xp / 2500)) + 1);
 }
 
 const ACTIVE_USER_KEY = "bankgeheimnis_active_user";
@@ -46,15 +46,19 @@ export function loadProfile(name?: string): PlayerProfile {
   }
   try {
     const parsed = JSON.parse(data);
+    const bestScore = Math.max(0, Number(parsed.highScore) || 0);
+    const rawXp = Number(parsed.totalXp) || 0;
+    const resolvedXp = Math.max(rawXp, bestScore);
+
     return {
       name: currentName,
-      highScore: Number(parsed.highScore) || 0,
-      gamesPlayed: Number(parsed.gamesPlayed) || 0,
-      totalHits: Number(parsed.totalHits) || 0,
-      totalXp: Number(parsed.totalXp) || 0,
+      highScore: bestScore,
+      gamesPlayed: Math.max(0, Number(parsed.gamesPlayed) || 0),
+      totalHits: Math.max(0, Number(parsed.totalHits) || 0),
+      totalXp: resolvedXp,
     };
   } catch {
-    return { name: currentName, highScore: 0, gamesPlayed: 0, totalHits: 0 };
+    return { name: currentName, highScore: 0, gamesPlayed: 0, totalHits: 0, totalXp: 0 };
   }
 }
 
@@ -73,14 +77,11 @@ export function saveProfile(profile: PlayerProfile): void {
   );
 }
 
-export function resetCurrentProfile(): PlayerProfile {
+export function resetCurrentProfile(): void {
+  if (typeof window === "undefined") return;
   const currentName = getActiveUserName();
-  if (typeof window !== "undefined") {
-    if (currentName) {
-      localStorage.removeItem(USER_PREFIX + currentName.toLowerCase());
-    }
-    localStorage.removeItem(ACTIVE_USER_KEY);
-    localStorage.removeItem("bankgeheimnis_profile");
+  if (currentName) {
+    localStorage.removeItem(USER_PREFIX + currentName.toLowerCase());
   }
-  return { name: "", highScore: 0, gamesPlayed: 0, totalHits: 0 };
+  localStorage.removeItem(ACTIVE_USER_KEY);
 }
