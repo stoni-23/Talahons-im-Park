@@ -47,7 +47,7 @@ export function loadProfile(name?: string): PlayerProfile {
   try {
     const parsed = JSON.parse(data);
     const bestScore = Math.max(0, Number(parsed.highScore) || 0);
-    const rawXp = Number(parsed.totalXp) || 0;
+    const rawXp = Math.max(0, Number(parsed.totalXp) || 0);
     const resolvedXp = Math.max(rawXp, bestScore);
 
     return {
@@ -65,14 +65,16 @@ export function loadProfile(name?: string): PlayerProfile {
 export function saveProfile(profile: PlayerProfile): void {
   if (typeof window === "undefined" || !profile.name.trim()) return;
   setActiveUserName(profile.name);
+  const bestScore = Math.max(0, profile.highScore || 0);
+  const resolvedXp = Math.max(0, profile.totalXp || 0, bestScore);
   localStorage.setItem(
     USER_PREFIX + profile.name.trim().toLowerCase(),
     JSON.stringify({
       name: profile.name.trim(),
-      highScore: Math.max(0, profile.highScore),
-      gamesPlayed: Math.max(0, profile.gamesPlayed),
-      totalHits: Math.max(0, profile.totalHits),
-      totalXp: Math.max(0, profile.totalXp || 0),
+      highScore: bestScore,
+      gamesPlayed: Math.max(0, profile.gamesPlayed || 0),
+      totalHits: Math.max(0, profile.totalHits || 0),
+      totalXp: resolvedXp,
     })
   );
 }
