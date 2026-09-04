@@ -326,11 +326,34 @@ export function GameScreen() {
 
       const sStats = (data && data[0] && typeof data[0].stats === "object" && data[0].stats) ? data[0].stats : {};
       const ex = loadProfile(clName);
-      const finalHighScore = Math.max(ex.highScore || 0, typeof existingBoardScore === "number" ? existingBoardScore : 0);
+
+      const onlineBoard = await fetchOnlineBoard();
+      const onlineEntry = onlineBoard.find((x) => x.name.toLowerCase() === clName.toLowerCase());
+      const boardScore = onlineEntry ? (Number(onlineEntry.score) || 0) : 0;
+
+      const finalHighScore = Math.max(
+        ex.highScore || 0,
+        boardScore,
+        Number(sStats.highScore) || 0
+      );
+
       const mergedGames = Math.max(ex.gamesPlayed || 0, Number(sStats.gamesPlayed) || 0);
       const mergedHits = Math.max(ex.totalHits || 0, Number(sStats.totalHits) || 0);
-      const mergedXp = Math.max(ex.totalXp || 0, finalHighScore);
-      const up = { name: clName, highScore: finalHighScore, gamesPlayed: mergedGames, totalHits: mergedHits, totalXp: mergedXp };
+
+      const mergedXp = Math.max(
+        ex.totalXp || 0,
+        Number(sStats.totalXp) || 0,
+        finalHighScore
+      );
+
+      const up = {
+        name: clName,
+        highScore: finalHighScore,
+        gamesPlayed: mergedGames,
+        totalHits: mergedHits,
+        totalXp: mergedXp
+      };
+
       saveProfile(up);
       setProfile(up);
       setPasswordInput("");
