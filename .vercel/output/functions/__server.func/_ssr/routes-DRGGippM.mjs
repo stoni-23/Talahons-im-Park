@@ -1,8 +1,8 @@
 import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
 import { I as require_jsx_runtime, L as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as Smartphone, c as Pause, l as LogOut, n as Volume2, o as Share2, r as User, s as Play, t as VolumeX } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CDyWZ0ms.js
-var routes_CDyWZ0ms_exports = /* @__PURE__ */ __exportAll({
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-DRGGippM.js
+var routes_DRGGippM_exports = /* @__PURE__ */ __exportAll({
 	C: () => stopParkAmbience,
 	S: () => stopOmaKommando,
 	T: () => unlockAudio,
@@ -906,7 +906,7 @@ var GameEngine = class {
 	}
 	spawnCarpet() {
 		if (this.targets.some((t) => t.act === "carpet" && t.state === "alive")) return;
-		import("./audio-DAWjOJM0.mjs").then((a) => a.playTalahinIntro());
+		import("./audio-DrNMbez4.mjs").then((a) => a.playTalahinIntro());
 		const fromRight = Math.random() < .5;
 		const speed = 190;
 		this.targets.push({
@@ -945,7 +945,7 @@ var GameEngine = class {
 	}
 	spawnRocker() {
 		if (this.targets.some((t) => t.act === "rocker" && t.state === "alive")) return;
-		import("./audio-DAWjOJM0.mjs").then((a) => a.playRocker());
+		import("./audio-DrNMbez4.mjs").then((a) => a.playRocker());
 		const fromRight = Math.random() < .5;
 		const speed = 260;
 		this.targets.push({
@@ -1722,8 +1722,8 @@ var GameEngine = class {
 function getLevelProgress(xp) {
 	const currentXp = Math.max(0, xp || 0);
 	const level = getPlayerLevel(currentXp);
-	const currentLevelBaseXp = Math.pow(level - 1, 2) * 250;
-	const nextLevelBaseXp = Math.pow(level, 2) * 250;
+	const currentLevelBaseXp = Math.pow(level - 1, 2) * 2500;
+	const nextLevelBaseXp = Math.pow(level, 2) * 2500;
 	const needed = nextLevelBaseXp - currentLevelBaseXp;
 	const progressInLevel = currentXp - currentLevelBaseXp;
 	return {
@@ -1738,7 +1738,7 @@ function getLevelProgress(xp) {
 }
 function getPlayerLevel(xp) {
 	if (!xp || xp <= 0) return 1;
-	return Math.max(1, Math.floor(Math.sqrt(xp / 250)) + 1);
+	return Math.max(1, Math.floor(Math.sqrt(xp / 2500)) + 1);
 }
 var ACTIVE_USER_KEY = "bankgeheimnis_active_user";
 var USER_PREFIX = "bankgeheimnis_user_";
@@ -2187,7 +2187,7 @@ function GameScreen() {
 		className: "relative flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-ink text-paper",
 		children: [!playing && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 			className: "absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none",
-			children: "v1.0.4 BETA"
+			children: "v1.0.5 BETA"
 		}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 			className: "relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center",
 			style: { touchAction: "none" },
@@ -2590,16 +2590,36 @@ function GameScreen() {
 									/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 										type: "button",
 										onClick: async () => {
-											const shareData = {
-												title: "Bankgeheimnis im Park",
-												text: "Zock das legendäre Parkbank-Spiel und knack den Highscore! 🧶💥",
-												url: window.location.href
-											};
+											const title = "Talahons im Park - Parabellum Edition";
+											const text = "Hilf Omma bei der Parkreinigung und knack den Highscore! 🧶💥";
+											const url = window.location.href;
 											try {
-												if (navigator.share) await navigator.share(shareData);
-												else {
-													await navigator.clipboard.writeText(shareData.url);
-													alert("Link kopiert! Du kannst ihn jetzt einfügen.");
+												let shared = false;
+												try {
+													const imgRes = await fetch("/logo.png");
+													if (imgRes.ok) {
+														const blob = await imgRes.blob();
+														const file = new File([blob], "talahons-im-park.png", { type: "image/png" });
+														if (navigator.canShare && navigator.canShare({ files: [file] })) {
+															await navigator.share({
+																title,
+																text: `${title}\n\n${text}\n${url}`,
+																files: [file]
+															});
+															shared = true;
+														}
+													}
+												} catch {}
+												if (!shared) {
+													if (navigator.share) await navigator.share({
+														title,
+														text,
+														url
+													});
+													else {
+														await navigator.clipboard.writeText(url);
+														alert("Link kopiert!");
+													}
 												}
 											} catch (e) {}
 										},
@@ -3120,4 +3140,4 @@ function Home() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GameScreen, {});
 }
 //#endregion
-export { stopParkAmbience as C, routes_CDyWZ0ms_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
+export { stopParkAmbience as C, routes_DRGGippM_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
