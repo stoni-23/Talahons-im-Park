@@ -983,20 +983,16 @@ export function GameScreen() {
                   setNameError(null); setNamed(true);
                   setActiveUserName(cl);
                   const base = loadProfile(cl);
-                  const freshXp = (base.totalXp || 0) + (hud.score > 0 ? hud.score : 0);
                   const nextP = {
                     ...base,
                     name: cl,
-                    highScore: Math.max(base.highScore || 0, hud.score),
-                    gamesPlayed: (base.gamesPlayed || 0) + 1,
-                    totalHits: (base.totalHits || 0) + (hud.hits || 0),
-                    totalXp: freshXp
+                    highScore: Math.max(base.highScore || 0, hud.score)
                   };
                   saveProfile(nextP);
                   setProfile(nextP);
                   setProfileInput(nextP.name);
                   setIsEditing(false);
-                  const calculatedLvl = getPlayerLevel(freshXp);
+                  const calculatedLvl = getPlayerLevel(nextP.totalXp || hud.score);
                   const up = await submitScore(cl, hud.score, calculatedLvl); setBoard(up);
                 }}>
                   <label className="text-left text-[11px] font-medium tracking-[0.14em] text-paper-dim uppercase">Name für die 🏆 Bestenliste</label>
