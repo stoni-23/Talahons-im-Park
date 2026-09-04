@@ -47,7 +47,7 @@ export function loadProfile(name?: string): PlayerProfile {
   try {
     const parsed = JSON.parse(data);
     const bestScore = Math.max(0, Number(parsed.highScore) || 0);
-    const rawXp = Math.max(0, Number(parsed.totalXp) || 0);
+    const rawXp = Number(parsed.totalXp) || 0;
     const resolvedXp = Math.max(rawXp, bestScore);
 
     return {

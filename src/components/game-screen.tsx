@@ -53,11 +53,7 @@ export function GameScreen() {
   const chatRef = useRef<HTMLDivElement>(null);
 
   
-  useEffect(() => {
-    if (profile?.name?.trim() && (profile?.totalXp || 0) > 0) {
-      syncPlayerLevel(profile.name.trim(), getPlayerLevel(profile.totalXp));
-    }
-  }, [profile.name, profile.totalXp]);
+  // Auto-Sync entfernt
 
   useEffect(() => {
     if (!profile || !profile.name || isEditing) return;
