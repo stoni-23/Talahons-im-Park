@@ -114,11 +114,32 @@ export function GameScreen() {
 
   useEffect(() => {
     const p = loadProfile();
-    setProfile(p);
-    setProfileInput(p.name);
     if (!p.name) {
       setIsEditing(true);
+      setProfile(p);
+      setProfileInput("");
+      return;
     }
+
+    // Wenn eingeloggt: Sofort Online-Rekord laden und XP absichern
+    fetchOnlineBoard().then((boardData) => {
+      const entry = boardData.find((x) => x.name.toLowerCase() === p.name.toLowerCase());
+      const onlineScore = entry ? (Number(entry.score) || 0) : 0;
+      const best = Math.max(p.highScore || 0, onlineScore);
+      const totalXp = Math.max(p.totalXp || 0, best);
+
+      const fixed = {
+        ...p,
+        highScore: best,
+        totalXp: totalXp
+      };
+      saveProfile(fixed);
+      setProfile(fixed);
+      setProfileInput(fixed.name);
+    }).catch(() => {
+      setProfile(p);
+      setProfileInput(p.name);
+    });
   }, []);
 
   useEffect(() => {
@@ -186,7 +207,7 @@ export function GameScreen() {
         setNamed(true);
         setName(activeName);
         if (hud.score > 0) {
-          submitScore(activeName, hud.score, getPlayerLevel(loadProfile(activeName).totalXp)).then((up) => {
+          submitScore(activeName, hud.score, Math.max(getPlayerLevel(loadProfile(activeName).totalXp), getPlayerLevel(loadProfile(activeName).highScore))).then((up) => {
             if (up && up.length > 0) setBoard(up);
           });
         } else {
