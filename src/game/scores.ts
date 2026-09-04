@@ -74,9 +74,9 @@ export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
 export async function syncPlayerLevel(name: string, level: number): Promise<void> {
   const cleanName = name.trim().slice(0, 16);
   const lvl = Math.max(1, Math.round(level));
-  if (!cleanName || lvl < 1) return;
+  if (!cleanName || lvl <= 1) return; // Verhindert strikt das Überschreiben mit Level 1!
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}&level=lt.${lvl}`, {
       method: "PATCH",
       headers: {
         apikey: SUPABASE_KEY,
