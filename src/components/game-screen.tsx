@@ -32,6 +32,7 @@ export function GameScreen() {
   const [pwChangeLoading, setPwChangeLoading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
+  const gameOverHandledRef = useRef(false);
   const [hud, setHud] = useState<Hud>(emptyHud());
   const [omaLine, setOmaLine] = useState(false);
   const [board, setBoard] = useState<ScoreEntry[]>([]);
@@ -142,6 +143,9 @@ export function GameScreen() {
   }, []);
 
   useEffect(() => {
+    if (hud.mode === "playing") {
+      gameOverHandledRef.current = false;
+    }
     if (hud.mode !== "playing") {
       setOmaLine(false);
       return;
@@ -153,11 +157,13 @@ export function GameScreen() {
 
   useEffect(() => {
     if (hud.mode === "results") {
+      if (gameOverHandledRef.current) return;
       setResultsDelay(true);
       const t = window.setTimeout(() => setResultsDelay(false), 2000);
 
       const activeName = profile.name.trim();
       if (activeName) {
+        gameOverHandledRef.current = true;
         const p = loadProfile(activeName);
         p.gamesPlayed = (p.gamesPlayed || 0) + 1;
         p.totalHits = (p.totalHits || 0) + hud.hits;
@@ -614,7 +620,7 @@ export function GameScreen() {
                             </span>
                             <span className="text-sm select-none" title={rank.title}>{rankEmoji}</span>
                             <span className={`truncate ${isMe ? "text-amber-300 font-bold" : "text-paper"}`}>{row.name}</span>
-                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{isMe ? Math.max(row.level || 1, getPlayerLevel(profile.totalXp || 0)) : (row.level || 1)}</span>
+                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{isMe ? getPlayerLevel(profile.totalXp || 0) : (row.level || 1)}</span>
                             {isMe && (
                               <span className="rounded bg-amber-400 px-1.5 py-0.2 text-[9px] font-black text-ink uppercase tracking-wider shadow">
                                 DU
@@ -982,17 +988,21 @@ export function GameScreen() {
                   }
                   setNameError(null); setNamed(true);
                   setActiveUserName(cl);
+                  gameOverHandledRef.current = true;
                   const base = loadProfile(cl);
                   const nextP = {
                     ...base,
                     name: cl,
-                    highScore: Math.max(base.highScore || 0, hud.score)
+                    highScore: Math.max(base.highScore || 0, hud.score),
+                    gamesPlayed: (base.gamesPlayed || 0) + 1,
+                    totalHits: (base.totalHits || 0) + (hud.hits || 0),
+                    totalXp: (base.totalXp || 0) + (hud.score > 0 ? hud.score : 0)
                   };
                   saveProfile(nextP);
                   setProfile(nextP);
                   setProfileInput(nextP.name);
                   setIsEditing(false);
-                  const calculatedLvl = getPlayerLevel(nextP.totalXp || hud.score);
+                  const calculatedLvl = getPlayerLevel(nextP.totalXp);
                   const up = await submitScore(cl, hud.score, calculatedLvl); setBoard(up);
                 }}>
                   <label className="text-left text-[11px] font-medium tracking-[0.14em] text-paper-dim uppercase">Name für die 🏆 Bestenliste</label>
@@ -1039,7 +1049,7 @@ export function GameScreen() {
                           </span>
                           <span className="text-sm select-none" title={rank.title}>{rankEmoji}</span>
                           <span className={`truncate ${isMe ? "text-amber-300 font-bold" : "text-paper"}`}>{row.name}</span>
-                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{isMe ? Math.max(row.level || 1, getPlayerLevel(profile.totalXp || 0)) : (row.level || 1)}</span>
+                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{isMe ? getPlayerLevel(profile.totalXp || 0) : (row.level || 1)}</span>
                           {isMe && (
                             <span className="rounded bg-amber-400 px-1.5 py-0.2 text-[9px] font-black text-ink uppercase tracking-wider shadow">
                               DU
