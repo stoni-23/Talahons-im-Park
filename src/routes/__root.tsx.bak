@@ -3,7 +3,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Talahons im Park - Parabellum Edition";
+const APP_NAME = "Bankgeheimnis im Park";
 
 export const Route = createRootRoute({
   notFoundComponent: () => null,
@@ -15,10 +15,10 @@ export const Route = createRootRoute({
       { name: "theme-color", content: "#0a0a0a" },
       {
         name: "description",
-        content: "Hilf Omma bei der Parkreinigung und knack den Highscore! 🧶💥",
+        content: "Die Oma, die Parabellum und zu viele Talahons im Park. Kannst du den Highscore knacken?",
       },
-      { property: "og:title", content: "Talahons im Park - Parabellum Edition" },
-      { property: "og:description", content: "Hilf Omma bei der Parkreinigung und knack den Highscore! 🧶💥" },
+      { property: "og:title", content: "Bankgeheimnis im Park – Moorhuhn-Action" },
+      { property: "og:description", content: "Die Oma, die Parabellum und zu viele Talahons im Park. Knacke den Highscore!" },
       { property: "og:image", content: "https://talahons-im-park.vercel.app/logo.png" },
       { property: "og:url", content: "https://talahons-im-park.vercel.app" },
       { property: "og:type", content: "website" },

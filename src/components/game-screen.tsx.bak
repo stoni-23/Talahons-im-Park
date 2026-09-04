@@ -719,29 +719,17 @@ export function GameScreen() {
                 <button
                   type="button"
                   onClick={async () => {
-                    const title = "Talahons im Park - Parabellum Edition";
-                    const text = "Hilf Omma bei der Parkreinigung und knack den Highscore! 🧶💥";
-                    const url = window.location.href;
+                    const shareData = {
+                      title: "Bankgeheimnis im Park",
+                      text: "Zock das legendäre Parkbank-Spiel und knack den Highscore! 🧶💥",
+                      url: window.location.href
+                    };
                     try {
-                      let shared = false;
-                      try {
-                        const imgRes = await fetch("/logo.png");
-                        if (imgRes.ok) {
-                          const blob = await imgRes.blob();
-                          const file = new File([blob], "talahons-im-park.png", { type: "image/png" });
-                          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                            await navigator.share({ title, text: `${title}\n\n${text}\n${url}`, files: [file] });
-                            shared = true;
-                          }
-                        }
-                      } catch {}
-                      if (!shared) {
-                        if (navigator.share) {
-                          await navigator.share({ title, text, url });
-                        } else {
-                          await navigator.clipboard.writeText(url);
-                          alert("Link kopiert!");
-                        }
+                      if (navigator.share) {
+                        await navigator.share(shareData);
+                      } else {
+                        await navigator.clipboard.writeText(shareData.url);
+                        alert("Link kopiert! Du kannst ihn jetzt einfügen.");
                       }
                     } catch (e) {}
                   }}

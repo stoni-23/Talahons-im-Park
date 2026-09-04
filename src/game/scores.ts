@@ -5,6 +5,7 @@ export interface ScoreEntry {
   name: string;
   score: number;
   at?: number;
+  level?: number;
 }
 
 export function loadBoard(): ScoreEntry[] {
@@ -28,7 +29,7 @@ export function qualifies(score: number): boolean {
 export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/highscores?select=name,score&order=score.desc&limit=500`,
+      `${SUPABASE_URL}/rest/v1/highscores?select=name,score,level&order=score.desc&limit=500`,
       {
         headers: {
           apikey: SUPABASE_KEY,
@@ -52,7 +53,7 @@ export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
 
       if (!seenNames.has(key)) {
         seenNames.add(key);
-        mapped.push({ name, score, at: Date.now() });
+        mapped.push({ name, score, level: Number(d.level) || 1, at: Date.now() });
       }
 
       if (mapped.length >= 100) break;
@@ -69,7 +70,7 @@ export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
   }
 }
 
-export async function submitScore(name: string, score: number): Promise<ScoreEntry[]> {
+export async function submitScore(name: string, score: number, level: number = 1): Promise<ScoreEntry[]> {
   const cleanName = name.trim().slice(0, 16);
   const finalScore = Math.round(score);
 
@@ -84,7 +85,17 @@ export async function submitScore(name: string, score: number): Promise<ScoreEnt
         "Content-Type": "application/json",
         Prefer: "return=minimal"
       },
-      body: JSON.stringify({ name: cleanName, score: finalScore })
+      body: JSON.stringify({ name: cleanName, score: finalScore, level: Math.max(1, Math.round(level)) })
+    });
+    await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}`, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify({ level: Math.max(1, Math.round(level)) })
     });
   } catch {}
   return await fetchOnlineBoard();
