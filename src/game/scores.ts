@@ -70,6 +70,25 @@ export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
   }
 }
 
+
+export async function syncPlayerLevel(name: string, level: number): Promise<void> {
+  const cleanName = name.trim().slice(0, 16);
+  const lvl = Math.max(1, Math.round(level));
+  if (!cleanName || lvl < 1) return;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}`, {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify({ level: lvl })
+    });
+  } catch {}
+}
+
 export async function submitScore(name: string, score: number, level: number = 1): Promise<ScoreEntry[]> {
   const cleanName = name.trim().slice(0, 16);
   const finalScore = Math.round(score);
