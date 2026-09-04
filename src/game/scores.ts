@@ -106,16 +106,7 @@ export async function submitScore(name: string, score: number, level: number = 1
       },
       body: JSON.stringify({ name: cleanName, score: finalScore, level: Math.max(1, Math.round(level)) })
     });
-    await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}`, {
-      method: "PATCH",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal"
-      },
-      body: JSON.stringify({ level: Math.max(1, Math.round(level)) })
-    });
+    // Kein Down-Patching mehr
   } catch {}
   return await fetchOnlineBoard();
 }

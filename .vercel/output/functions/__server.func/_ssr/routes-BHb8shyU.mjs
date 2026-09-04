@@ -1,8 +1,8 @@
 import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
 import { I as require_jsx_runtime, L as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as Smartphone, c as Pause, l as LogOut, n as Volume2, o as Share2, r as User, s as Play, t as VolumeX } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-CGfhE0i6.js
-var routes_CGfhE0i6_exports = /* @__PURE__ */ __exportAll({
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BHb8shyU.js
+var routes_BHb8shyU_exports = /* @__PURE__ */ __exportAll({
 	C: () => stopParkAmbience,
 	S: () => stopOmaKommando,
 	T: () => unlockAudio,
@@ -300,23 +300,6 @@ async function fetchOnlineBoard() {
 		return loadBoard();
 	}
 }
-async function syncPlayerLevel(name, level) {
-	const cleanName = name.trim().slice(0, 16);
-	const lvl = Math.max(1, Math.round(level));
-	if (!cleanName || lvl < 1) return;
-	try {
-		await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}`, {
-			method: "PATCH",
-			headers: {
-				apikey: SUPABASE_KEY,
-				Authorization: `Bearer ${SUPABASE_KEY}`,
-				"Content-Type": "application/json",
-				Prefer: "return=minimal"
-			},
-			body: JSON.stringify({ level: lvl })
-		});
-	} catch {}
-}
 async function submitScore(name, score, level = 1) {
 	const cleanName = name.trim().slice(0, 16);
 	const finalScore = Math.round(score);
@@ -335,16 +318,6 @@ async function submitScore(name, score, level = 1) {
 				score: finalScore,
 				level: Math.max(1, Math.round(level))
 			})
-		});
-		await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}`, {
-			method: "PATCH",
-			headers: {
-				apikey: SUPABASE_KEY,
-				Authorization: `Bearer ${SUPABASE_KEY}`,
-				"Content-Type": "application/json",
-				Prefer: "return=minimal"
-			},
-			body: JSON.stringify({ level: Math.max(1, Math.round(level)) })
 		});
 	} catch {}
 	return await fetchOnlineBoard();
@@ -923,7 +896,7 @@ var GameEngine = class {
 	}
 	spawnCarpet() {
 		if (this.targets.some((t) => t.act === "carpet" && t.state === "alive")) return;
-		import("./audio-JzB8VvrZ.mjs").then((a) => a.playTalahinIntro());
+		import("./audio-DEc3fehP.mjs").then((a) => a.playTalahinIntro());
 		const fromRight = Math.random() < .5;
 		const speed = 190;
 		this.targets.push({
@@ -962,7 +935,7 @@ var GameEngine = class {
 	}
 	spawnRocker() {
 		if (this.targets.some((t) => t.act === "rocker" && t.state === "alive")) return;
-		import("./audio-JzB8VvrZ.mjs").then((a) => a.playRocker());
+		import("./audio-DEc3fehP.mjs").then((a) => a.playRocker());
 		const fromRight = Math.random() < .5;
 		const speed = 260;
 		this.targets.push({
@@ -1736,6 +1709,10 @@ var GameEngine = class {
 		document.removeEventListener("visibilitychange", this.onVis);
 	}
 };
+function getPlayerLevel(xp) {
+	if (!xp || xp <= 0) return 1;
+	return Math.max(1, Math.floor(Math.sqrt(xp / 2500)) + 1);
+}
 function getLevelProgress(xp) {
 	const currentXp = Math.max(0, xp || 0);
 	const level = getPlayerLevel(currentXp);
@@ -1752,10 +1729,6 @@ function getLevelProgress(xp) {
 		needed,
 		percent: Math.min(100, Math.max(0, Math.floor(progressInLevel / needed * 100)))
 	};
-}
-function getPlayerLevel(xp) {
-	if (!xp || xp <= 0) return 1;
-	return Math.max(1, Math.floor(Math.sqrt(xp / 2500)) + 1);
 }
 var ACTIVE_USER_KEY = "bankgeheimnis_active_user";
 var USER_PREFIX = "bankgeheimnis_user_";
@@ -1786,31 +1759,37 @@ function loadProfile(name) {
 	};
 	try {
 		const parsed = JSON.parse(data);
+		const bestScore = Math.max(0, Number(parsed.highScore) || 0);
+		const rawXp = Number(parsed.totalXp) || 0;
+		const resolvedXp = Math.max(rawXp, bestScore);
 		return {
 			name: currentName,
-			highScore: Number(parsed.highScore) || 0,
-			gamesPlayed: Number(parsed.gamesPlayed) || 0,
-			totalHits: Number(parsed.totalHits) || 0,
-			totalXp: Number(parsed.totalXp) || 0
+			highScore: bestScore,
+			gamesPlayed: Math.max(0, Number(parsed.gamesPlayed) || 0),
+			totalHits: Math.max(0, Number(parsed.totalHits) || 0),
+			totalXp: resolvedXp
 		};
 	} catch {
 		return {
 			name: currentName,
 			highScore: 0,
 			gamesPlayed: 0,
-			totalHits: 0
+			totalHits: 0,
+			totalXp: 0
 		};
 	}
 }
 function saveProfile(profile) {
 	if (typeof window === "undefined" || !profile.name.trim()) return;
 	setActiveUserName(profile.name);
+	const bestScore = Math.max(0, profile.highScore || 0);
+	const resolvedXp = Math.max(0, profile.totalXp || 0, bestScore);
 	localStorage.setItem(USER_PREFIX + profile.name.trim().toLowerCase(), JSON.stringify({
 		name: profile.name.trim(),
-		highScore: Math.max(0, profile.highScore),
-		gamesPlayed: Math.max(0, profile.gamesPlayed),
-		totalHits: Math.max(0, profile.totalHits),
-		totalXp: Math.max(0, profile.totalXp || 0)
+		highScore: bestScore,
+		gamesPlayed: Math.max(0, profile.gamesPlayed || 0),
+		totalHits: Math.max(0, profile.totalHits || 0),
+		totalXp: resolvedXp
 	}));
 }
 function getOmaRank(score) {
@@ -1871,7 +1850,8 @@ function GameScreen() {
 		name: "",
 		highScore: 0,
 		gamesPlayed: 0,
-		totalHits: 0
+		totalHits: 0,
+		totalXp: 0
 	});
 	const [profileInput, setProfileInput] = (0, import_react.useState)("");
 	const [passwordInput, setPasswordInput] = (0, import_react.useState)("");
@@ -1885,9 +1865,6 @@ function GameScreen() {
 	const [chatMsgs, setChatMsgs] = (0, import_react.useState)([]);
 	const [chatInput, setChatInput] = (0, import_react.useState)("");
 	const chatRef = (0, import_react.useRef)(null);
-	(0, import_react.useEffect)(() => {
-		if (profile?.name?.trim() && (profile?.totalXp || 0) > 0) syncPlayerLevel(profile.name.trim(), getPlayerLevel(profile.totalXp));
-	}, [profile.name, profile.totalXp]);
 	(0, import_react.useEffect)(() => {
 		if (!profile || !profile.name || isEditing) return;
 		const fetchChat = async () => {
@@ -1924,9 +1901,29 @@ function GameScreen() {
 	}, []);
 	(0, import_react.useEffect)(() => {
 		const p = loadProfile();
-		setProfile(p);
-		setProfileInput(p.name);
-		if (!p.name) setIsEditing(true);
+		if (!p.name) {
+			setIsEditing(true);
+			setProfile(p);
+			setProfileInput("");
+			return;
+		}
+		fetchOnlineBoard().then((boardData) => {
+			const entry = boardData.find((x) => x.name.toLowerCase() === p.name.toLowerCase());
+			const onlineScore = entry ? Number(entry.score) || 0 : 0;
+			const best = Math.max(p.highScore || 0, onlineScore);
+			const totalXp = Math.max(p.totalXp || 0, best);
+			const fixed = {
+				...p,
+				highScore: best,
+				totalXp
+			};
+			saveProfile(fixed);
+			setProfile(fixed);
+			setProfileInput(fixed.name);
+		}).catch(() => {
+			setProfile(p);
+			setProfileInput(p.name);
+		});
 	}, []);
 	(0, import_react.useEffect)(() => {
 		fetchOnlineBoard().then((data) => {
@@ -1987,7 +1984,7 @@ function GameScreen() {
 			if (activeName) {
 				setNamed(true);
 				setName(activeName);
-				if (hud.score > 0) submitScore(activeName, hud.score, getPlayerLevel(loadProfile(activeName).totalXp)).then((up) => {
+				if (hud.score > 0) submitScore(activeName, hud.score, Math.max(getPlayerLevel(loadProfile(activeName).totalXp), getPlayerLevel(loadProfile(activeName).highScore))).then((up) => {
 					if (up && up.length > 0) setBoard(up);
 				});
 				else fetchOnlineBoard().then((data) => {
@@ -2108,14 +2105,15 @@ function GameScreen() {
 			}
 			const sStats = data && data[0] && typeof data[0].stats === "object" && data[0].stats ? data[0].stats : {};
 			const ex = loadProfile(clName);
-			if (typeof existingBoardScore === "number" && existingBoardScore > (ex.bestScore || 0)) ex.bestScore = existingBoardScore;
-			const mergedGames = Math.max(ex.gamesPlayed || 0, Number(sStats.gamesPlayed) || 0);
-			const mergedHits = Math.max(ex.totalHits || 0, Number(sStats.totalHits) || 0);
+			const onlineEntry = (await fetchOnlineBoard()).find((x) => x.name.toLowerCase() === clName.toLowerCase());
+			const boardScore = onlineEntry ? Number(onlineEntry.score) || 0 : 0;
+			const finalHighScore = Math.max(ex.highScore || 0, boardScore, Number(sStats.highScore) || 0);
 			const up = {
 				name: clName,
-				highScore: ex.highScore,
-				gamesPlayed: mergedGames,
-				totalHits: mergedHits
+				highScore: finalHighScore,
+				gamesPlayed: Math.max(ex.gamesPlayed || 0, Number(sStats.gamesPlayed) || 0),
+				totalHits: Math.max(ex.totalHits || 0, Number(sStats.totalHits) || 0),
+				totalXp: Math.max(ex.totalXp || 0, Number(sStats.totalXp) || 0, finalHighScore)
 			};
 			saveProfile(up);
 			setProfile(up);
@@ -2426,7 +2424,7 @@ function GameScreen() {
 													}),
 													/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 														className: "ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none",
-														children: ["Lv.", isMe ? getPlayerLevel(profile.totalXp || 0) : row.level || 1]
+														children: ["Lv.", Math.max(row.level || 1, getPlayerLevel(row.score))]
 													}),
 													isMe && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 														className: "rounded bg-amber-400 px-1.5 py-0.2 text-[9px] font-black text-ink uppercase tracking-wider shadow",
@@ -2735,7 +2733,7 @@ function GameScreen() {
 									className: "grid grid-cols-2 gap-y-3 text-left text-xs sm:text-sm text-paper-dim",
 									children: [
 										(() => {
-											const prog = getLevelProgress(profile.totalXp || 0);
+											const prog = getLevelProgress(Math.max(profile.totalXp || 0, profile.highScore || 0));
 											return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
 												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
 													className: "text-amber-300 font-bold",
@@ -2774,7 +2772,7 @@ function GameScreen() {
 										})
 									]
 								}), (() => {
-									const prog = getLevelProgress(profile.totalXp || 0);
+									const prog = getLevelProgress(Math.max(profile.totalXp || 0, profile.highScore || 0));
 									return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
 										className: "mt-4 pt-3 border-t border-line/40",
 										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -3086,7 +3084,7 @@ function GameScreen() {
 											}),
 											/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 												className: "ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none",
-												children: ["Lv.", isMe ? getPlayerLevel(profile.totalXp || 0) : row.level || 1]
+												children: ["Lv.", Math.max(row.level || 1, getPlayerLevel(row.score))]
 											}),
 											isMe && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
 												className: "rounded bg-amber-400 px-1.5 py-0.2 text-[9px] font-black text-ink uppercase tracking-wider shadow",
@@ -3167,4 +3165,4 @@ function Home() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GameScreen, {});
 }
 //#endregion
-export { stopParkAmbience as C, routes_CGfhE0i6_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
+export { stopParkAmbience as C, routes_BHb8shyU_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
