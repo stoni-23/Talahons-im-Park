@@ -2,8 +2,8 @@ import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
 import { I as require_jsx_runtime, L as require_react, _ as useRouter, f as createRouter, g as createRootRoute, h as createFileRoute, l as Scripts, m as lazyRouteComponent, p as Outlet, u as HeadContent } from "../_libs/@tanstack/react-router+[...].mjs";
 import { i as TriangleAlert } from "../_libs/lucide-react.mjs";
 import { a as union, i as string, n as number, r as object, t as literal } from "../_libs/zod.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/router-BVFYPp-I.js
-var router_BVFYPp_I_exports = /* @__PURE__ */ __exportAll({ getRouter: () => getRouter });
+//#region node_modules/.nitro/vite/services/ssr/assets/router-0nF4IXG6.js
+var router_0nF4IXG6_exports = /* @__PURE__ */ __exportAll({ getRouter: () => getRouter });
 var import_react = /* @__PURE__ */ __toESM(require_react());
 var import_jsx_runtime = require_jsx_runtime();
 function AppErrorComponent({ error }) {
@@ -272,7 +272,7 @@ function PreviewHostBridge() {
 	}, [router]);
 	return null;
 }
-var styles_default = "/assets/styles-QF1sV1rg.css";
+var styles_default = "/assets/styles-DGJXRlFo.css";
 var APP_NAME = "Talahons im Park - Parabellum Edition";
 var Route$1 = createRootRoute({
 	notFoundComponent: () => null,
@@ -366,7 +366,7 @@ var Route$1 = createRootRoute({
 		})]
 	})
 });
-var $$splitComponentImporter = () => import("./routes-BHb8shyU.mjs").then((n) => n.E);
+var $$splitComponentImporter = () => import("./routes-EFF6x2Fm.mjs").then((n) => n.E);
 var rootRouteChildren = { IndexRoute: createFileRoute("/")({ component: lazyRouteComponent($$splitComponentImporter, "component") }).update({
 	id: "/",
 	path: "/",
@@ -381,4 +381,4 @@ function getRouter() {
 	});
 }
 //#endregion
-export { getRouter, router_BVFYPp_I_exports as t };
+export { getRouter, router_0nF4IXG6_exports as t };
