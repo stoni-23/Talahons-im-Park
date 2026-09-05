@@ -1,3 +1,13 @@
+function bestSingleRound(localHigh: number, totalXp: number, gamesPlayed: number, boardScore: number, statsHigh = 0) {
+  const sum = Math.max(0, totalXp || 0);
+  const polluted = (v: number) => (gamesPlayed || 0) > 1 && sum > 0 && Math.max(0, v || 0) === sum;
+  let rec = 0;
+  if (!polluted(localHigh)) rec = Math.max(rec, localHigh || 0);
+  if (!polluted(statsHigh)) rec = Math.max(rec, statsHigh || 0);
+  rec = Math.max(rec, boardScore || 0);
+  return rec;
+}
+
 function getOmaRank(score: number) {
   if (score >= 40000) return { title: "👑 Die scharfe Sibylle", desc: "Endgegnerin: Meisterin der Parabellum, absolute Herrscherin über den Park.", color: "text-amber-400 border-amber-500/50 bg-amber-950/40" };
   if (score >= 30000) return { title: "💥 Parabellum-Gretel", desc: "Schneller am Abzug als jede Kappe fliegen kann.", color: "text-red-400 border-red-500/50 bg-red-950/40" };
@@ -139,8 +149,8 @@ export function GameScreen() {
     fetchOnlineBoard().then((boardData) => {
       const entry = boardData.find((x) => x.name.toLowerCase() === p.name.toLowerCase());
       const onlineScore = entry ? (Number(entry.score) || 0) : 0;
-      const best = Math.max(p.highScore || 0, onlineScore);
-      const totalXp = Math.max(p.totalXp || 0, best);
+      const best = bestSingleRound(p.highScore || 0, p.totalXp || 0, p.gamesPlayed || 0, onlineScore);
+      const totalXp = Math.max(p.totalXp || 0, 0);
 
       const fixed = {
         ...p,
@@ -213,15 +223,20 @@ export function GameScreen() {
             "Content-Type": "application/json",
             Prefer: "return=minimal",
           },
-          body: JSON.stringify({ stats: { gamesPlayed: p.gamesPlayed, totalHits: p.totalHits } })
+          body: JSON.stringify({
+            stats: {
+              gamesPlayed: p.gamesPlayed,
+              totalHits: p.totalHits,
+              totalXp: p.totalXp,
+              highScore: p.highScore
+            }
+          })
         }).catch(() => {});
-      }
 
-      if (activeName) {
         setNamed(true);
         setName(activeName);
-        if (hud.score > 0) {
-          submitScore(activeName, hud.score, Math.max(getPlayerLevel(loadProfile(activeName).totalXp), getPlayerLevel(loadProfile(activeName).highScore))).then((up) => {
+        if (p.highScore > 0 || hud.score > 0) {
+          submitScore(activeName, Math.max(p.highScore || 0, hud.score || 0), getPlayerLevel(p.totalXp || 0)).then((up) => {
             if (up && up.length > 0) setBoard(up);
           });
         } else {
@@ -362,19 +377,15 @@ export function GameScreen() {
       const onlineEntry = onlineBoard.find((x) => x.name.toLowerCase() === clName.toLowerCase());
       const boardScore = onlineEntry ? (Number(onlineEntry.score) || 0) : 0;
 
-      const finalHighScore = Math.max(
-        ex.highScore || 0,
-        boardScore,
-        Number(sStats.highScore) || 0
-      );
-
       const mergedGames = Math.max(ex.gamesPlayed || 0, Number(sStats.gamesPlayed) || 0);
       const mergedHits = Math.max(ex.totalHits || 0, Number(sStats.totalHits) || 0);
-
-      const mergedXp = Math.max(
-        ex.totalXp || 0,
-        Number(sStats.totalXp) || 0,
-        finalHighScore
+      const mergedXp = Math.max(ex.totalXp || 0, Number(sStats.totalXp) || 0);
+      const finalHighScore = bestSingleRound(
+        ex.highScore || 0,
+        mergedXp,
+        mergedGames,
+        boardScore,
+        Number(sStats.highScore) || 0
       );
 
       const up = {
@@ -389,6 +400,30 @@ export function GameScreen() {
       setProfile(up);
       setPasswordInput("");
       setIsEditing(false);
+
+      fetch(`${SUPA_URL}/rest/v1/accounts?username=eq.${encodeURIComponent(clName)}`, {
+        method: "PATCH",
+        headers: {
+          apikey: SUPA_KEY,
+          Authorization: `Bearer ${SUPA_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify({
+          stats: {
+            gamesPlayed: up.gamesPlayed,
+            totalHits: up.totalHits,
+            totalXp: up.totalXp,
+            highScore: up.highScore
+          }
+        })
+      }).catch(() => {});
+
+      if (up.highScore > 0) {
+        submitScore(clName, up.highScore, getPlayerLevel(up.totalXp || 0)).then((boardData) => {
+          if (boardData && boardData.length > 0) setBoard(boardData);
+        }).catch(() => {});
+      }
     } catch (e) {
       setProfileError("Fehler bei der Server-Verbindung.");
     } finally {
@@ -673,7 +708,7 @@ export function GameScreen() {
                             </span>
                             <span className="text-sm select-none" title={rank.title}>{rankEmoji}</span>
                             <span className={`truncate ${isMe ? "text-amber-300 font-bold" : "text-paper"}`}>{row.name}</span>
-                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{isMe ? getPlayerLevel(Math.max(profile.totalXp || 0, row.score)) : getPlayerLevel(row.score)}</span>
+                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{isMe ? getPlayerLevel(profile.totalXp || 0) : Math.max(1, Number(row.level) || 1)}</span>
                             {isMe && (
                               <span className="rounded bg-amber-400 px-1.5 py-0.2 text-[9px] font-black text-ink uppercase tracking-wider shadow">
                                 DU
@@ -875,7 +910,7 @@ export function GameScreen() {
               <div className="my-5 w-full rounded-xl border border-line bg-ink-3 p-4">
                 <dl className="grid grid-cols-2 gap-y-3 text-left text-xs sm:text-sm text-paper-dim">
                   {(() => {
-                    const prog = getLevelProgress(Math.max(profile.totalXp || 0, profile.highScore || 0));
+                    const prog = getLevelProgress(profile.totalXp || 0);
                     return (
                       <>
                         <dt className="text-amber-300 font-bold">Aktuelles Level</dt>
@@ -897,7 +932,7 @@ export function GameScreen() {
                   </dd>
                 </dl>
                 {(() => {
-                  const prog = getLevelProgress(Math.max(profile.totalXp || 0, profile.highScore || 0));
+                  const prog = getLevelProgress(profile.totalXp || 0);
                   return (
                     <div className="mt-4 pt-3 border-t border-line/40">
                       <div className="flex justify-between text-[11px] mb-1.5">
@@ -1055,8 +1090,8 @@ export function GameScreen() {
                   setProfile(nextP);
                   setProfileInput(nextP.name);
                   setIsEditing(false);
-                  const calculatedLvl = getPlayerLevel(nextP.totalXp);
-                  const up = await submitScore(cl, hud.score, calculatedLvl); setBoard(up);
+                  const calculatedLvl = getPlayerLevel(nextP.totalXp || 0);
+                  const up = await submitScore(cl, nextP.highScore, calculatedLvl); setBoard(up);
                 }}>
                   <label className="text-left text-[11px] font-medium tracking-[0.14em] text-paper-dim uppercase">Name für die 🏆 Bestenliste</label>
                   {nameError && <p className="text-left text-xs font-bold text-red-400">⚠️ {nameError}</p>}
@@ -1102,7 +1137,7 @@ export function GameScreen() {
                           </span>
                           <span className="text-sm select-none" title={rank.title}>{rankEmoji}</span>
                           <span className={`truncate ${isMe ? "text-amber-300 font-bold" : "text-paper"}`}>{row.name}</span>
-                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{isMe ? getPlayerLevel(Math.max(profile.totalXp || 0, row.score)) : getPlayerLevel(row.score)}</span>
+                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{isMe ? getPlayerLevel(profile.totalXp || 0) : Math.max(1, Number(row.level) || 1)}</span>
                           {isMe && (
                             <span className="rounded bg-amber-400 px-1.5 py-0.2 text-[9px] font-black text-ink uppercase tracking-wider shadow">
                               DU

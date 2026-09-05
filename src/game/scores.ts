@@ -8,6 +8,14 @@ export interface ScoreEntry {
   level?: number;
 }
 
+function headers(extra: Record<string, string> = {}) {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    ...extra
+  };
+}
+
 export function loadBoard(): ScoreEntry[] {
   try {
     const raw = typeof window !== "undefined" ? localStorage.getItem("bankgeheimnis_board") : null;
@@ -30,12 +38,7 @@ export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/highscores?select=name,score,level&order=score.desc&limit=500`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`
-        }
-      }
+      { headers: headers() }
     );
     if (!res.ok) return loadBoard();
     const data = await res.json();
@@ -70,43 +73,76 @@ export async function fetchOnlineBoard(): Promise<ScoreEntry[]> {
   }
 }
 
-
 export async function syncPlayerLevel(name: string, level: number): Promise<void> {
   const cleanName = name.trim().slice(0, 16);
   const lvl = Math.max(1, Math.round(level));
-  if (!cleanName || lvl <= 1) return; // Verhindert strikt das Überschreiben mit Level 1!
+  if (!cleanName || lvl <= 1) return;
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}&level=lt.${lvl}`, {
       method: "PATCH",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
+      headers: headers({
         "Content-Type": "application/json",
         Prefer: "return=minimal"
-      },
+      }),
       body: JSON.stringify({ level: lvl })
     });
   } catch {}
 }
 
-export async function submitScore(name: string, score: number, level: number = 1): Promise<ScoreEntry[]> {
+/** score = beste Einzelrunde. Niemals Summe. Niemals nach unten. */
+export async function submitScore(name: string, bestRound: number, level: number = 1): Promise<ScoreEntry[]> {
   const cleanName = name.trim().slice(0, 16);
-  const finalScore = Math.round(score);
+  const incoming = Math.max(0, Math.round(bestRound));
+  const incomingLevel = Math.max(1, Math.round(level));
 
-  if (!cleanName || finalScore <= 0) return await fetchOnlineBoard();
+  if (!cleanName || incoming <= 0) return await fetchOnlineBoard();
 
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/highscores`, {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        "Content-Type": "application/json",
-        Prefer: "return=minimal"
-      },
-      body: JSON.stringify({ name: cleanName, score: finalScore, level: Math.max(1, Math.round(level)) })
-    });
-    // Kein Down-Patching mehr
+    const existingRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}&select=score,level`,
+      { headers: headers() }
+    );
+
+    let hasRow = false;
+    let existingScore = 0;
+    let existingLevel = 1;
+
+    if (existingRes.ok) {
+      const rows = await existingRes.json();
+      if (Array.isArray(rows) && rows.length > 0) {
+        hasRow = true;
+        for (const row of rows) {
+          existingScore = Math.max(existingScore, Number(row.score) || 0);
+          existingLevel = Math.max(existingLevel, Number(row.level) || 1);
+        }
+      }
+    }
+
+    const nextScore = Math.max(existingScore, incoming);
+    const nextLevel = Math.max(existingLevel, incomingLevel);
+
+    if (hasRow) {
+      if (nextScore > existingScore || nextLevel > existingLevel) {
+        await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}`, {
+          method: "PATCH",
+          headers: headers({
+            "Content-Type": "application/json",
+            Prefer: "return=minimal"
+          }),
+          body: JSON.stringify({ score: nextScore, level: nextLevel })
+        });
+      }
+    } else {
+      await fetch(`${SUPABASE_URL}/rest/v1/highscores`, {
+        method: "POST",
+        headers: headers({
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        }),
+        body: JSON.stringify({ name: cleanName, score: nextScore, level: nextLevel })
+      });
+    }
   } catch {}
+
   return await fetchOnlineBoard();
 }
