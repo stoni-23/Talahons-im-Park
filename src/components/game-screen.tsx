@@ -22,6 +22,20 @@ const ghostBtn =
   "h-11 rounded-md border border-line px-6 text-sm font-medium text-paper-dim transition-colors hover:bg-ink-3 hover:text-paper";
 
 export function GameScreen() {
+  useEffect(() => {
+    const lockScroll = () => {
+      window.scrollTo(0, 0);
+      if (document.body) document.body.scrollTop = 0;
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+    };
+    lockScroll();
+    window.addEventListener("resize", lockScroll);
+    window.addEventListener("orientationchange", lockScroll);
+    return () => {
+      window.removeEventListener("resize", lockScroll);
+      window.removeEventListener("orientationchange", lockScroll);
+    };
+  }, []);
   const [showAllScores, setShowAllScores] = React.useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
@@ -465,7 +479,7 @@ export function GameScreen() {
   const min = Math.floor(hud.timeLeft / 60);
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
-    <div className="relative flex h-[100dvh] w-full items-center justify-center overflow-hidden bg-ink text-paper">
+    <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
       {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.0.5 BETA</div>}
       <div
         className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
