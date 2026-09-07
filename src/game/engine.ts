@@ -294,7 +294,7 @@ export class GameEngine {
         }
       }),
     );
-    await preloadSounds();
+    try { await preloadSounds(); } catch {}
     this.ready = true;
     this.emit();
     this.loop(performance.now());
