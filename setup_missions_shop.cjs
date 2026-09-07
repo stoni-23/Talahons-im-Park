@@ -1,0 +1,214 @@
+const fs = require("fs");
+const { execSync } = require("child_process");
+
+console.log("=== 1. src/lib/shop.ts anpassen ===");
+const shopPath = "src/lib/shop.ts";
+const shopContent = `export type ShopCategory = "visier" | "badge" | "wechselstube";
+export interface ShopCategoryInfo { id: ShopCategory; label: string; icon: string; }
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: ShopCategory;
+  icon: string;
+  rarity?: "standard" | "selten" | "episch" | "legendaer";
+  xpReward?: number;
+  crosshairColor?: string;
+  badgeIcon?: string;
+  available?: boolean;
+}
+
+export const POINTS_PER_COIN = 200;
+export function calculateEarnedCoins(points: number): number {
+  if (!points || points <= 0) return 0;
+  return Math.floor(points / POINTS_PER_COIN);
+}
+
+export const SHOP_CATEGORIES: ShopCategoryInfo[] = [
+  { id: "wechselstube", label: "XP-Wechselstube", icon: "🔋" },
+  { id: "badge", label: "Park-Badges", icon: "🎖️" },
+  { id: "visier", label: "Visier-Farben", icon: "🎯" }
+];
+
+export const SHOP_ITEMS: ShopItem[] = [
+  {
+    id: "xp_paket_klein",
+    name: "Kleiner XP-Schub (+500 XP)",
+    description: "Ein Schluck Kamillentee für den nächsten Levelaufstieg.",
+    price: 3,
+    category: "wechselstube",
+    icon: "☕",
+    rarity: "standard",
+    xpReward: 500,
+    available: true
+  },
+  {
+    id: "xp_paket_mittel",
+    name: "Doppel-Espresso (+1.500 XP)",
+    description: "Pusht deine Level-XP spürbar nach vorne!",
+    price: 8,
+    category: "wechselstube",
+    icon: "🔋",
+    rarity: "selten",
+    xpReward: 1500,
+    available: false
+  },
+  {
+    id: "xp_paket_gross",
+    name: "Omas Geheimrezept (+4.000 XP)",
+    description: "Ein gigantischer Schub für deinen Rang in der Bestenliste.",
+    price: 20,
+    category: "wechselstube",
+    icon: "🧪",
+    rarity: "episch",
+    xpReward: 4000,
+    available: false
+  },
+  {
+    id: "badge_neuling",
+    name: "Park-Besucher",
+    description: "Zeigt jedem, dass du die Bank betreten hast.",
+    price: 0,
+    category: "badge",
+    icon: "🌿",
+    badgeIcon: "🌿",
+    rarity: "standard",
+    available: true
+  },
+  {
+    id: "badge_tauben",
+    name: "Tauben-Flüsterer",
+    description: "Die Park-Tauben weichen deinen Schüssen aus.",
+    price: 10,
+    category: "badge",
+    icon: "🕊️",
+    badgeIcon: "🕊️",
+    rarity: "selten",
+    available: false
+  },
+  {
+    id: "badge_sheriff",
+    name: "Park-Sheriff",
+    description: "Sorgt für Zucht und Ordnung unter den Parkbänken.",
+    price: 25,
+    category: "badge",
+    icon: "🛡️",
+    badgeIcon: "🛡️",
+    rarity: "episch",
+    available: false
+  },
+  {
+    id: "badge_boss",
+    name: "Boss der Parkbank",
+    description: "Reiner Respekt. Zeigt die goldene Krone neben deinem Namen.",
+    price: 50,
+    category: "badge",
+    icon: "👑",
+    badgeIcon: "👑",
+    rarity: "legendaer",
+    available: false
+  },
+  {
+    id: "visier_standard",
+    name: "Klassisch Weiß",
+    description: "Das schlichte Standard-Fadenkreuz. Unverzichtbar für jeden Schützen.",
+    price: 0,
+    category: "visier",
+    icon: "⚪",
+    crosshairColor: "#ffffff",
+    rarity: "standard",
+    available: true
+  },
+  {
+    id: "visier_rot",
+    name: "Scharfschützen-Rot",
+    description: "Aggressives rotes Zielvisier für maximale Zielerfassung.",
+    price: 5,
+    category: "visier",
+    icon: "🔴",
+    crosshairColor: "#ef4444",
+    rarity: "selten",
+    available: false
+  },
+  {
+    id: "visier_neon",
+    name: "Giftgrün-Laser",
+    description: "Exklusiv über Park-Missionen freischaltbar! 🟢",
+    price: 0,
+    category: "visier",
+    icon: "🟢",
+    crosshairColor: "#22c55e",
+    rarity: "episch",
+    available: false
+  },
+  {
+    id: "visier_gold",
+    name: "Goldenes Meister-Visier",
+    description: "Aus purem Gold geschmiedetes Fadenkreuz.",
+    price: 30,
+    category: "visier",
+    icon: "🟡",
+    crosshairColor: "#eab308",
+    rarity: "legendaer",
+    available: false
+  }
+];
+
+export function getItemById(id: string): ShopItem | undefined {
+  return SHOP_ITEMS.find((i) => i.id === id);
+}
+
+export function isItemPurchased(inv: string[] | undefined, id: string): boolean {
+  if (id === "visier_standard") return true;
+  if (!Array.isArray(inv)) return false;
+  return inv.includes(id);
+}
+
+export function isItemEquipped(eq: Record<string, string> | undefined, it: ShopItem): boolean {
+  if (!eq) return it.id === "visier_standard";
+  if (it.category === "visier") {
+    return (eq.visier || "visier_standard") === it.id;
+  }
+  return eq[it.category] === it.id;
+}
+
+export function getActiveBadgeIcon(eq: Record<string, string> | undefined): string | null {
+  if (!eq || !eq.badge) return null;
+  const it = getItemById(eq.badge);
+  return it?.badgeIcon ?? null;
+}
+
+export function getActiveCrosshairColor(eq: Record<string, string> | undefined): string {
+  if (!eq || !eq.visier) return "#ffffff";
+  const it = getItemById(eq.visier);
+  return it?.crosshairColor ?? "#ffffff";
+}
+
+export function getOwnedItemsCount(inv: string[] | undefined): number {
+  return SHOP_ITEMS.filter((i) => isItemPurchased(inv, i.id)).length;
+}
+`;
+fs.writeFileSync(shopPath, shopContent, "utf8");
+console.log("  [+] shop.ts aktualisiert.");
+
+console.log("\n=== 2. src/components/kiosk-modal.tsx anpassen ===");
+const kioskPath = "src/components/kiosk-modal.tsx";
+let km = fs.readFileSync(kioskPath, "utf8");
+
+km = km.replace(
+  /🔒 Noch nicht verfügbar/g,
+  `{item.id === "visier_neon" ? "🎯 Nur über Missionen" : "🔒 Noch nicht verfügbar"}`
+);
+fs.writeFileSync(kioskPath, km, "utf8");
+console.log("  [+] Button-Beschriftung für Giftgrün-Laser aktualisiert.");
+
+console.log("\n=== 3. Vite Build testen ===");
+try {
+  execSync("npm run build", { stdio: "inherit" });
+  console.log("\n🎉 ERFOLG: Kiosk-Regeln scharf geschaltet!");
+} catch (err) {
+  console.error("Fehler beim Build!");
+  process.exit(1);
+}
