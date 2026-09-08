@@ -8,6 +8,7 @@ export interface PlayerProfile {
   inventory?: string[];
   equipped?: Record<string, string>;
   missions?: any[];
+  dailyReward?: { streak: number; lastClaimDate: string };
 }
 
 export function getPlayerLevel(xp: number): number {
@@ -81,6 +82,7 @@ export function saveProfile(profile: PlayerProfile): void {
     JSON.stringify({
       name: profile.name.trim(),
       missions: profile.missions,
+    dailyReward: profile.dailyReward,
       highScore: bestScore,
       gamesPlayed: Math.max(0, profile.gamesPlayed || 0),
       totalHits: Math.max(0, profile.totalHits || 0),

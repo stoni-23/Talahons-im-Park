@@ -1194,15 +1194,66 @@ export function GameScreen() {
         isOpen={isDailyRewardOpen}
         onClose={() => setIsDailyRewardOpen(false)}
         profile={profile}
-        onProfileUpdate={(updated) => {
-          setProfile(updated);
-          try {
-            localStorage.setItem("park_profile", JSON.stringify(updated));
-            if (typeof saveProfile === "function") saveProfile(updated);
-            if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
-          } catch (e) {
-            console.error(e);
-          }
+        onClaim={() => {
+          const status = getDailyRewardStatus(profile);
+          if (!status.canClaim) return;
+
+          const dayNumber = status.canClaim;
+          const today = new Date().toISOString().split("T")[0];
+
+          // Belohnungen nach Tag:
+          // Tag 1: 3 Groschen
+          // Tag 2: 100 XP
+          // Tag 3: 6 Groschen
+          // Tag 4: 100 XP
+          // Tag 5: 6 Groschen + 100 XP
+          // Tag 6: 10 Groschen
+          // Tag 7: Tauben-Badge (badge_tauben)
+          const rewards: Record<number, { coins: number; xp: number; badge?: string }> = {
+            1: { coins: 3, xp: 0 },
+            2: { coins: 0, xp: 100 },
+            3: { coins: 6, xp: 0 },
+            4: { coins: 0, xp: 100 },
+            5: { coins: 6, xp: 100 },
+            6: { coins: 10, xp: 0 },
+            7: { coins: 0, xp: 0, badge: "badge_tauben" }
+          };
+
+          const r = rewards[dayNumber] || { coins: 1, xp: 0 };
+
+          setProfile((p: any) => {
+            const currentCoins = Number(p.coins) || 0;
+            const currentXp = Number(p.totalXp) || 0;
+            const currentInv = Array.isArray(p.inventory) ? [...p.inventory] : [];
+            const currentEquipped = { ...(p.equipped || {}) };
+
+            if (r.badge) {
+              if (!currentInv.includes(r.badge)) currentInv.push(r.badge);
+              currentEquipped.badge = r.badge;
+            }
+
+            const updated = {
+              ...p,
+              coins: currentCoins + r.coins,
+              totalXp: currentXp + r.xp,
+              inventory: currentInv,
+              equipped: currentEquipped,
+              dailyReward: {
+                streak: dayNumber,
+                lastClaimDate: today
+              }
+            };
+
+            try {
+              localStorage.setItem("park_profile", JSON.stringify(updated));
+              if (typeof saveProfile === "function") saveProfile(updated);
+              if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
+            } catch (err) {
+              console.error(err);
+            }
+
+            return updated;
+          });
         }}
       />
       <MissionsModal
