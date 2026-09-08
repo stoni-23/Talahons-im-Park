@@ -205,7 +205,7 @@ export function GameScreen() {
         setProfile((current: any) => {
           const merged = {
             ...current,
-            coins: Math.max(current.coins || 0, Number(onlineStats.coins) || 0),
+            coins: (onlineStats.coins !== undefined && onlineStats.coins !== null) ? Number(onlineStats.coins) : (current.coins || 0),
             totalXp: Math.max(current.totalXp || 0, Number(onlineStats.totalXp) || 0),
             inventory: Array.from(new Set([...(current.inventory || []), ...(onlineStats.inventory || [])])),
             equipped: { ...(onlineStats.equipped || {}), ...(current.equipped || {}) },
@@ -1187,7 +1187,8 @@ export function GameScreen() {
           onClose={() => setIsKioskOpen(false)}
           onUpdateProfile={(updated) => {
             setProfile(updated);
-            saveProfile(updated);syncProfileOnline(updated);
+            saveProfile(updated);
+            syncProfileOnline(updated).catch(console.error);
           }}
         />
         <DailyRewardModal

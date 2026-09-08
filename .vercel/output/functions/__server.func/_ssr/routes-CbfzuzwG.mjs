@@ -1,8 +1,8 @@
 import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
 import { I as require_jsx_runtime, L as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as Smartphone, c as Pause, l as LogOut, n as Volume2, o as Share2, r as User, s as Play, t as VolumeX } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BoJp1gKR.js
-var routes_BoJp1gKR_exports = /* @__PURE__ */ __exportAll({
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-CbfzuzwG.js
+var routes_CbfzuzwG_exports = /* @__PURE__ */ __exportAll({
 	C: () => stopParkAmbience,
 	S: () => stopOmaKommando,
 	T: () => unlockAudio,
@@ -2103,7 +2103,7 @@ var GameEngine = class {
 	}
 	spawnCarpet() {
 		if (this.targets.some((t) => t.act === "carpet" && t.state === "alive")) return;
-		import("./audio-D6Q-pna5.mjs").then((a) => a.playTalahinIntro());
+		import("./audio-wJmp3ZwZ.mjs").then((a) => a.playTalahinIntro());
 		const fromRight = Math.random() < .5;
 		const speed = 190;
 		this.targets.push({
@@ -2142,7 +2142,7 @@ var GameEngine = class {
 	}
 	spawnRocker() {
 		if (this.targets.some((t) => t.act === "rocker" && t.state === "alive")) return;
-		import("./audio-D6Q-pna5.mjs").then((a) => a.playRocker());
+		import("./audio-wJmp3ZwZ.mjs").then((a) => a.playRocker());
 		const fromRight = Math.random() < .5;
 		const speed = 260;
 		this.targets.push({
@@ -3094,7 +3094,7 @@ function GameScreen() {
 			setProfile((current) => {
 				const merged = {
 					...current,
-					coins: Math.max(current.coins || 0, Number(onlineStats.coins) || 0),
+					coins: onlineStats.coins !== void 0 && onlineStats.coins !== null ? Number(onlineStats.coins) : current.coins || 0,
 					totalXp: Math.max(current.totalXp || 0, Number(onlineStats.totalXp) || 0),
 					inventory: Array.from(/* @__PURE__ */ new Set([...current.inventory || [], ...onlineStats.inventory || []])),
 					equipped: {
@@ -4240,7 +4240,7 @@ function GameScreen() {
 					onUpdateProfile: (updated) => {
 						setProfile(updated);
 						saveProfile$1(updated);
-						syncProfileOnline(updated);
+						syncProfileOnline(updated).catch(console.error);
 					}
 				}),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DailyRewardModal, {
@@ -4751,4 +4751,4 @@ function Home() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GameScreen, {});
 }
 //#endregion
-export { stopParkAmbience as C, routes_BoJp1gKR_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
+export { stopParkAmbience as C, routes_CbfzuzwG_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
