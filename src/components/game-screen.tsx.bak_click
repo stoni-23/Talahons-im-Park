@@ -59,7 +59,6 @@ export function GameScreen() {
   }, []);
   const [showAllScores, setShowAllScores] = React.useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
-  const [inspectedPlayer, setInspectedPlayer] = useState<any | null>(null);
     const [isKioskOpen, setIsKioskOpen] = React.useState(false);
   const [isMissionsOpen, setIsMissionsOpen] = React.useState(false);
   
@@ -862,7 +861,7 @@ export function GameScreen() {
                       }
 
                       return (
-                        <li key={`${row.name}-${i}-${row.score}`} onClick={() => setInspectedPlayer(row)} className={itemStyle + " cursor-pointer active:scale-95 hover:opacity-90"}>
+                        <li key={`${row.name}-${i}-${row.score}`} className={itemStyle}>
                           <span className="flex items-center gap-1.5 truncate">
                             <span className="w-6 font-mono font-bold text-center">
                               {isGold ? "🥇 1." : isSilver ? "🥈 2." : isBronze ? "🥉 3." : `${i + 1}.`}
@@ -1061,26 +1060,17 @@ export function GameScreen() {
         )}
 
         
-        {(showStatsModal || inspectedPlayer) && (() => {
-          const statsTarget: any = inspectedPlayer ? {
-            name: inspectedPlayer.name,
-            totalXp: inspectedPlayer.totalXp || inspectedPlayer.total_xp || inspectedPlayer.score || 0,
-            gamesPlayed: inspectedPlayer.gamesPlayed || 0,
-            totalHits: inspectedPlayer.totalHits || 0,
-            highScore: inspectedPlayer.score || 0,
-            equipped: inspectedPlayer.equipped || {}
-          } : profile;
-          return (
+        {showStatsModal && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-ink/80 p-4">
             <div className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-line bg-ink p-6 text-center shadow-2xl">
               <p className="font-display text-3xl tracking-wide text-paper">📊 Statistik</p>
               <p className="mt-1 text-xs text-paper-dim">
-                Spieler: <span className="font-bold text-amber-400">{getActiveBadgeIcon(statsTarget?.equipped) && <span className="mr-1 text-sm">{getActiveBadgeIcon(statsTarget?.equipped)}</span>}{statsTarget.name}</span>
+                Spieler: <span className="font-bold text-amber-400">{getActiveBadgeIcon(profile?.equipped) && <span className="mr-1 text-sm">{getActiveBadgeIcon(profile?.equipped)}</span>}{profile.name}</span>
               </p>
               <div className="my-5 w-full rounded-xl border border-line bg-ink-3 p-4">
                 <dl className="grid grid-cols-2 gap-y-3 text-left text-xs sm:text-sm text-paper-dim">
                   {(() => {
-                    const prog = getLevelProgress(statsTarget.totalXp || 0);
+                    const prog = getLevelProgress(profile.totalXp || 0);
                     return (
                       <>
                         <dt className="text-amber-300 font-bold">Aktuelles Level</dt>
@@ -1090,23 +1080,19 @@ export function GameScreen() {
                       </>
                     );
                   })()}
+                  <dt>Gespielte Runden</dt>
+                  <dd className="text-right font-mono font-bold text-paper">{profile.gamesPlayed || 0}</dd>
+                  <dt>Gesamte Treffer</dt>
+                  <dd className="text-right font-mono font-bold text-paper">{profile.totalHits || 0}</dd>
                   <dt>Rekord</dt>
-                  <dd className="text-right font-mono font-bold text-amber-400">{statsTarget.highScore || 0} Pkt</dd>
-                  {!inspectedPlayer && (
-                    <>
-                      <dt>Gespielte Runden</dt>
-                      <dd className="text-right font-mono font-bold text-paper">{statsTarget.gamesPlayed || 0}</dd>
-                      <dt>Gesamte Treffer</dt>
-                      <dd className="text-right font-mono font-bold text-paper">{statsTarget.totalHits || 0}</dd>
-                      <dt>Ø Treffer / Runde</dt>
-                      <dd className="text-right font-mono font-bold text-paper">
-                        {statsTarget.gamesPlayed > 0 ? Math.round(statsTarget.totalHits / statsTarget.gamesPlayed) : 0}
-                      </dd>
-                    </>
-                  )}
+                  <dd className="text-right font-mono font-bold text-amber-400">{profile.highScore || 0} Pkt</dd>
+                  <dt>Ø Treffer / Runde</dt>
+                  <dd className="text-right font-mono font-bold text-paper">
+                    {profile.gamesPlayed > 0 ? Math.round(profile.totalHits / profile.gamesPlayed) : 0}
+                  </dd>
                 </dl>
-                {!inspectedPlayer && (() => {
-                  const prog = getLevelProgress(statsTarget.totalXp || 0);
+                {(() => {
+                  const prog = getLevelProgress(profile.totalXp || 0);
                   return (
                     <div className="mt-4 pt-3 border-t border-line/40">
                       <div className="flex justify-between text-[11px] mb-1.5">
@@ -1120,13 +1106,12 @@ export function GameScreen() {
                   );
                 })()}
               </div>
-              <button type="button" onClick={() => { setShowStatsModal(false); setInspectedPlayer(null); }} className={primaryBtn}>
+              <button type="button" onClick={() => setShowStatsModal(false)} className={primaryBtn}>
                 Schließen
               </button>
             </div>
           </div>
-          );
-        })()}
+        )}
 
         <KioskModal
           isOpen={isKioskOpen}

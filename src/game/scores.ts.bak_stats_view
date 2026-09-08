@@ -12,9 +12,6 @@ export interface LeaderboardEntry {
   date?: string;
   at?: number;
   isCurrentUser?: boolean;
-  gamesPlayed?: number;
-  totalHits?: number;
-  equipped?: Record<string, string>;
 }
 
 export type ScoreEntry = LeaderboardEntry;
@@ -283,8 +280,6 @@ export async function fetchOnlineBoard(
           const totalXp = Number(acc?.stats?.totalXp || acc?.stats?.total_xp) || 0;
           const highScore = Number(acc?.stats?.highScore || acc?.stats?.score) || 0;
           const gamesPlayed = Number(acc?.stats?.gamesPlayed) || 0;
-          const totalHits = Number(acc?.stats?.totalHits) || 0;
-          const equipped = acc?.stats?.equipped || {};
 
           if (totalXp <= 0 && highScore <= 0 && gamesPlayed <= 0) continue;
 
@@ -298,10 +293,7 @@ export async function fetchOnlineBoard(
             totalXp: effectiveXp,
             total_xp: effectiveXp,
             level,
-            at: Date.now(),
-            gamesPlayed,
-            totalHits,
-            equipped
+            at: Date.now()
           });
         }
       }

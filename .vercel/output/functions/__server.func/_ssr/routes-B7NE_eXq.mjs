@@ -1,8 +1,8 @@
 import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
 import { I as require_jsx_runtime, L as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as Smartphone, c as Pause, l as LogOut, n as Volume2, o as Share2, r as User, s as Play, t as VolumeX } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BIHLK93O.js
-var routes_BIHLK93O_exports = /* @__PURE__ */ __exportAll({
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-B7NE_eXq.js
+var routes_B7NE_eXq_exports = /* @__PURE__ */ __exportAll({
 	C: () => stopParkAmbience,
 	S: () => stopOmaKommando,
 	T: () => unlockAudio,
@@ -523,6 +523,8 @@ async function fetchOnlineBoard(mode = "single") {
 				const totalXp = Number(acc?.stats?.totalXp || acc?.stats?.total_xp) || 0;
 				const highScore = Number(acc?.stats?.highScore || acc?.stats?.score) || 0;
 				const gamesPlayed = Number(acc?.stats?.gamesPlayed) || 0;
+				const totalHits = Number(acc?.stats?.totalHits) || 0;
+				const equipped = acc?.stats?.equipped || {};
 				if (totalXp <= 0 && highScore <= 0 && gamesPlayed <= 0) continue;
 				const norm = rawName.toLowerCase();
 				const effectiveXp = Math.max(totalXp, highScore);
@@ -533,7 +535,10 @@ async function fetchOnlineBoard(mode = "single") {
 					totalXp: effectiveXp,
 					total_xp: effectiveXp,
 					level,
-					at: Date.now()
+					at: Date.now(),
+					gamesPlayed,
+					totalHits,
+					equipped
 				});
 			}
 		}
@@ -567,7 +572,12 @@ async function fetchOnlineBoard(mode = "single") {
 				}
 			}
 		}
-		const entries = Array.from(playerMap.values());
+		const entries = Array.from(playerMap.values()).filter((p) => {
+			const xp = Number(p.totalXp || p.total_xp || 0);
+			const sc = Number(p.score || 0);
+			if (mode === "total" || mode === "xp") return xp > 0;
+			return sc > 0 || xp > 0;
+		});
 		if (mode === "total" || mode === "xp") entries.sort((a, b) => {
 			const diff = (b.totalXp || 0) - (a.totalXp || 0);
 			return diff !== 0 ? diff : (b.score || 0) - (a.score || 0);
@@ -1627,7 +1637,9 @@ var GameEngine = class {
 				this.images.set(key, img);
 			} catch {}
 		}));
-		await preloadSounds();
+		try {
+			await preloadSounds();
+		} catch {}
 		this.ready = true;
 		this.emit();
 		this.loop(performance.now());
@@ -1915,7 +1927,7 @@ var GameEngine = class {
 	}
 	spawnCarpet() {
 		if (this.targets.some((t) => t.act === "carpet" && t.state === "alive")) return;
-		import("./audio-s5h1XG-H.mjs").then((a) => a.playTalahinIntro());
+		import("./audio-R-FoknNu.mjs").then((a) => a.playTalahinIntro());
 		const fromRight = Math.random() < .5;
 		const speed = 190;
 		this.targets.push({
@@ -1954,7 +1966,7 @@ var GameEngine = class {
 	}
 	spawnRocker() {
 		if (this.targets.some((t) => t.act === "rocker" && t.state === "alive")) return;
-		import("./audio-s5h1XG-H.mjs").then((a) => a.playRocker());
+		import("./audio-R-FoknNu.mjs").then((a) => a.playRocker());
 		const fromRight = Math.random() < .5;
 		const speed = 260;
 		this.targets.push({
@@ -2798,6 +2810,7 @@ function GameScreen() {
 	}, []);
 	const [showAllScores, setShowAllScores] = import_react.useState(false);
 	const [showStatsModal, setShowStatsModal] = (0, import_react.useState)(false);
+	const [inspectedPlayer, setInspectedPlayer] = (0, import_react.useState)(null);
 	const [isKioskOpen, setIsKioskOpen] = import_react.useState(false);
 	const [isMissionsOpen, setIsMissionsOpen] = import_react.useState(false);
 	import_react.useEffect(() => {
@@ -3565,7 +3578,8 @@ function GameScreen() {
 										else if (isBronze) itemStyle += "bg-orange-700/20 border border-orange-500/40 text-orange-300 font-medium";
 										else itemStyle += "border-b border-line/30 text-paper-dim";
 										return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-											className: itemStyle,
+											onClick: () => setInspectedPlayer(row),
+											className: itemStyle + " cursor-pointer active:scale-95 hover:opacity-90",
 											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 												className: "flex items-center gap-1.5 truncate",
 												children: [
@@ -3871,108 +3885,123 @@ function GameScreen() {
 						})
 					})
 				] }),
-				showStatsModal && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-					className: "absolute inset-0 z-50 flex items-center justify-center bg-ink/80 p-4",
-					children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-						className: "flex w-full max-w-sm flex-col items-center rounded-2xl border border-line bg-ink p-6 text-center shadow-2xl",
-						children: [
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
-								className: "font-display text-3xl tracking-wide text-paper",
-								children: "📊 Statistik"
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
-								className: "mt-1 text-xs text-paper-dim",
-								children: ["Spieler: ", /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-									className: "font-bold text-amber-400",
-									children: [getActiveBadgeIcon(profile?.equipped) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
-										className: "mr-1 text-sm",
-										children: getActiveBadgeIcon(profile?.equipped)
-									}), profile.name]
-								})]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-								className: "my-5 w-full rounded-xl border border-line bg-ink-3 p-4",
-								children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
-									className: "grid grid-cols-2 gap-y-3 text-left text-xs sm:text-sm text-paper-dim",
-									children: [
-										(() => {
-											const prog = getLevelProgress(profile.totalXp || 0);
-											return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
-												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
-													className: "text-amber-300 font-bold",
-													children: "Aktuelles Level"
-												}),
-												/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dd", {
-													className: "text-right font-mono font-bold text-amber-400 text-sm",
-													children: ["Lv. ", prog.level]
-												}),
-												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Gesamt-Erfahrung" }),
-												/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dd", {
+				(showStatsModal || inspectedPlayer) && (() => {
+					const statsTarget = inspectedPlayer ? {
+						name: inspectedPlayer.name,
+						totalXp: inspectedPlayer.totalXp || inspectedPlayer.total_xp || inspectedPlayer.score || 0,
+						gamesPlayed: inspectedPlayer.gamesPlayed || 0,
+						totalHits: inspectedPlayer.totalHits || 0,
+						highScore: inspectedPlayer.score || 0,
+						equipped: inspectedPlayer.equipped || {}
+					} : profile;
+					return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+						className: "absolute inset-0 z-50 flex items-center justify-center bg-ink/80 p-4",
+						children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+							className: "flex w-full max-w-sm flex-col items-center rounded-2xl border border-line bg-ink p-6 text-center shadow-2xl",
+							children: [
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("p", {
+									className: "font-display text-3xl tracking-wide text-paper",
+									children: "📊 Statistik"
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("p", {
+									className: "mt-1 text-xs text-paper-dim",
+									children: ["Spieler: ", /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+										className: "font-bold text-amber-400",
+										children: [getActiveBadgeIcon(statsTarget?.equipped) && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", {
+											className: "mr-1 text-sm",
+											children: getActiveBadgeIcon(statsTarget?.equipped)
+										}), statsTarget.name]
+									})]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+									className: "my-5 w-full rounded-xl border border-line bg-ink-3 p-4",
+									children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dl", {
+										className: "grid grid-cols-2 gap-y-3 text-left text-xs sm:text-sm text-paper-dim",
+										children: [
+											(() => {
+												const prog = getLevelProgress(statsTarget.totalXp || 0);
+												return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+													/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", {
+														className: "text-amber-300 font-bold",
+														children: "Aktuelles Level"
+													}),
+													/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dd", {
+														className: "text-right font-mono font-bold text-amber-400 text-sm",
+														children: ["Lv. ", prog.level]
+													}),
+													/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Gesamt-Erfahrung" }),
+													/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dd", {
+														className: "text-right font-mono font-bold text-paper",
+														children: [prog.currentXp, " XP"]
+													})
+												] });
+											})(),
+											/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Rekord" }),
+											/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dd", {
+												className: "text-right font-mono font-bold text-amber-400",
+												children: [statsTarget.highScore || 0, " Pkt"]
+											}),
+											!inspectedPlayer && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, { children: [
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Gespielte Runden" }),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
 													className: "text-right font-mono font-bold text-paper",
-													children: [prog.currentXp, " XP"]
+													children: statsTarget.gamesPlayed || 0
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Gesamte Treffer" }),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+													className: "text-right font-mono font-bold text-paper",
+													children: statsTarget.totalHits || 0
+												}),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Ø Treffer / Runde" }),
+												/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
+													className: "text-right font-mono font-bold text-paper",
+													children: statsTarget.gamesPlayed > 0 ? Math.round(statsTarget.totalHits / statsTarget.gamesPlayed) : 0
 												})
-											] });
-										})(),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Gespielte Runden" }),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-											className: "text-right font-mono font-bold text-paper",
-											children: profile.gamesPlayed || 0
-										}),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Gesamte Treffer" }),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-											className: "text-right font-mono font-bold text-paper",
-											children: profile.totalHits || 0
-										}),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Rekord" }),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("dd", {
-											className: "text-right font-mono font-bold text-amber-400",
-											children: [profile.highScore || 0, " Pkt"]
-										}),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dt", { children: "Ø Treffer / Runde" }),
-										/* @__PURE__ */ (0, import_jsx_runtime.jsx)("dd", {
-											className: "text-right font-mono font-bold text-paper",
-											children: profile.gamesPlayed > 0 ? Math.round(profile.totalHits / profile.gamesPlayed) : 0
-										})
-									]
-								}), (() => {
-									const prog = getLevelProgress(profile.totalXp || 0);
-									return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-										className: "mt-4 pt-3 border-t border-line/40",
-										children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
-											className: "flex justify-between text-[11px] mb-1.5",
-											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-												className: "text-paper-dim",
-												children: ["Fortschritt zu Lv. ", prog.level + 1]
-											}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
-												className: "font-mono text-amber-400 font-bold",
-												children: [
-													prog.progressInLevel,
-													" / ",
-													prog.needed,
-													" XP (",
-													prog.percent,
-													"%)"
-												]
+											] })
+										]
+									}), !inspectedPlayer && (() => {
+										const prog = getLevelProgress(statsTarget.totalXp || 0);
+										return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+											className: "mt-4 pt-3 border-t border-line/40",
+											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
+												className: "flex justify-between text-[11px] mb-1.5",
+												children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+													className: "text-paper-dim",
+													children: ["Fortschritt zu Lv. ", prog.level + 1]
+												}), /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
+													className: "font-mono text-amber-400 font-bold",
+													children: [
+														prog.progressInLevel,
+														" / ",
+														prog.needed,
+														" XP (",
+														prog.percent,
+														"%)"
+													]
+												})]
+											}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+												className: "h-2.5 w-full overflow-hidden rounded-full bg-ink border border-line",
+												children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
+													className: "h-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-all duration-300 rounded-full",
+													style: { width: `${prog.percent}%` }
+												})
 											})]
-										}), /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-											className: "h-2.5 w-full overflow-hidden rounded-full bg-ink border border-line",
-											children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
-												className: "h-full bg-gradient-to-r from-amber-500 to-yellow-400 transition-all duration-300 rounded-full",
-												style: { width: `${prog.percent}%` }
-											})
-										})]
-									});
-								})()]
-							}),
-							/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
-								type: "button",
-								onClick: () => setShowStatsModal(false),
-								className: primaryBtn,
-								children: "Schließen"
-							})
-						]
-					})
-				}),
+										});
+									})()]
+								}),
+								/* @__PURE__ */ (0, import_jsx_runtime.jsx)("button", {
+									type: "button",
+									onClick: () => {
+										setShowStatsModal(false);
+										setInspectedPlayer(null);
+									},
+									className: primaryBtn,
+									children: "Schließen"
+								})
+							]
+						})
+					});
+				})(),
 				/* @__PURE__ */ (0, import_jsx_runtime.jsx)(KioskModal, {
 					isOpen: isKioskOpen,
 					initialTab: kioskTab,
@@ -4418,4 +4447,4 @@ function Home() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GameScreen, {});
 }
 //#endregion
-export { stopParkAmbience as C, routes_BIHLK93O_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
+export { stopParkAmbience as C, routes_B7NE_eXq_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
