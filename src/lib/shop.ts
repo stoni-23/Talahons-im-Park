@@ -75,7 +75,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: "badge_tauben",
     name: "Tauben-Flüsterer",
-    description: "Die Park-Tauben weichen deinen Schüssen aus.",
+    description: "Exklusiv über den 7-Tage Login-Bonus! Zeigt die Taube vor deinem Namen. 🕊️",
     price: 10,
     category: "badge",
     icon: "🕊️",

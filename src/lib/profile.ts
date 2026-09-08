@@ -64,6 +64,7 @@ export function loadProfile(name?: string): PlayerProfile {
     inventory: Array.isArray(parsed.inventory) ? parsed.inventory : [],
     equipped: (parsed.equipped && typeof parsed.equipped === "object") ? parsed.equipped : {},
       missions: Array.isArray(parsed.missions) ? parsed.missions : undefined,
+      dailyReward: parsed.dailyReward && typeof parsed.dailyReward === "object" ? parsed.dailyReward : undefined,
     };
   } catch {
     return { name: currentName, highScore: 0, gamesPlayed: 0, totalHits: 0, totalXp: 0 };

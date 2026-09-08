@@ -2,6 +2,8 @@ import { syncProfileOnline } from "@/game/scores";
 import {  getOwnedItemsCount , getActiveCrosshairColor } from "@/lib/shop";
 import { getActiveBadgeIcon } from "../lib/shop";
 import { KioskModal, type KioskTab } from "./kiosk-modal";
+import { DailyRewardModal } from "@/components/daily-reward-modal";
+import { getDailyRewardStatus } from "@/lib/daily-reward";
 import { MissionsModal } from "./missions-modal";
 import { INITIAL_MISSIONS, updateMissionProgress, type Mission } from "@/lib/missions";
 function minXpForLevel(level: number): number {
@@ -33,7 +35,7 @@ import React, { useEffect, useRef, useState, type FormEvent, type ReactNode } fr
 import { Pause, Play, Volume2, VolumeX, User, Trash2, Edit2, Share2, Maximize, Minimize, Smartphone, LogOut } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
 import { unlockAudio } from "@/game/audio";
-import { qualifies, submitScore, fetchOnlineBoard, syncPlayerLevel, persistAccountStats, type ScoreEntry } from "@/game/scores";
+import { qualifies, submitScore, fetchOnlineBoard, syncPlayerLevel, persistAccountStats, fetchAccountStats, type ScoreEntry } from "@/game/scores";
 import { loadProfile, saveProfile, resetCurrentProfile, type PlayerProfile, setActiveUserName, getPlayerLevel, getLevelProgress } from "@/lib/profile";
 import type { Hud } from "@/game/types";
 
@@ -62,6 +64,7 @@ export function GameScreen() {
   const [inspectedPlayer, setInspectedPlayer] = useState<any | null>(null);
     const [isKioskOpen, setIsKioskOpen] = React.useState(false);
   const [isMissionsOpen, setIsMissionsOpen] = React.useState(false);
+  const [isDailyRewardOpen, setIsDailyRewardOpen] = React.useState(false);
   
 
   React.useEffect(() => {
@@ -195,6 +198,28 @@ export function GameScreen() {
 
   useEffect(() => {
     const p = loadProfile();
+    if (p.name) {
+      // Sicherheits-Sync: Lade echte Stats direkt aus Supabase (schützt vor gelöschtem Cache)
+      fetchAccountStats(p.name).then((onlineStats) => {
+        if (!onlineStats) return;
+        setProfile((current: any) => {
+          const merged = {
+            ...current,
+            coins: Math.max(current.coins || 0, Number(onlineStats.coins) || 0),
+            totalXp: Math.max(current.totalXp || 0, Number(onlineStats.totalXp) || 0),
+            inventory: Array.from(new Set([...(current.inventory || []), ...(onlineStats.inventory || [])])),
+            equipped: { ...(onlineStats.equipped || {}), ...(current.equipped || {}) },
+            // Wenn in Supabase heute schon abgeholt wurde, greift Supabase als Single Source of Truth:
+            dailyReward: onlineStats.dailyReward || current.dailyReward
+          };
+          try {
+            localStorage.setItem("park_profile", JSON.stringify(merged));
+            localStorage.setItem("bankgeheimnis_user_" + p.name.toLowerCase(), JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+      }).catch(() => {});
+    }
     if (!p.name) {
       setIsEditing(true);
       setProfile(p);
@@ -619,7 +644,7 @@ export function GameScreen() {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.0.7 BETA</div>}
+      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.0.9 BETA</div>}
       <div
         className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
         style={{ touchAction: "none" }}
@@ -771,6 +796,33 @@ export function GameScreen() {
               {missions.filter(m => m.claimed).length} / {missions.length} Erledigt
             </span>
           </button>
+
+          {/* 7-Tage Login-Bonus Button */}
+          {(() => {
+            const dailyStatus = getDailyRewardStatus(profile);
+            const canClaim = Boolean(dailyStatus.canClaim);
+            return (
+              <button
+                type="button"
+                onClick={() => setIsDailyRewardOpen(true)}
+                onTouchEnd={(e) => { e.stopPropagation(); setIsDailyRewardOpen(true); }}
+                className="mt-2.5 w-full flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-500/10 py-3 px-3.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all shadow-sm cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🎁</span>
+                  <span className="text-sm">7-Tage Login-Bonus</span>
+                </div>
+                {canClaim ? (
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse shadow">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+                    ABHOLEN!
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-neutral-400 font-medium font-mono">Tag {dailyStatus.streak}/7 ✓</span>
+                )}
+              </button>
+            );
+          })()}
         </div>
         )}
         {profile.name && !isEditing && (
@@ -1138,7 +1190,22 @@ export function GameScreen() {
             saveProfile(updated);syncProfileOnline(updated);
           }}
         />
-        <MissionsModal
+        <DailyRewardModal
+        isOpen={isDailyRewardOpen}
+        onClose={() => setIsDailyRewardOpen(false)}
+        profile={profile}
+        onProfileUpdate={(updated) => {
+          setProfile(updated);
+          try {
+            localStorage.setItem("park_profile", JSON.stringify(updated));
+            if (typeof saveProfile === "function") saveProfile(updated);
+            if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
+          } catch (e) {
+            console.error(e);
+          }
+        }}
+      />
+      <MissionsModal
           onClaimLaser={() => {
             setProfile((prev: any) => {
               const inv = Array.isArray(prev.inventory) ? prev.inventory : [];
