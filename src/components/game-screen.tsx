@@ -162,6 +162,13 @@ export function GameScreen() {
   const [name, setName] = useState("");
   const [named, setNamed] = useState(false);
   const [resultsDelay, setResultsDelay] = useState(false);
+  const [endXpDisplay, setEndXpDisplay] = useState<{
+    startTotal: number;
+    gained: number;
+    liveTotal: number;
+    oldLevel: number;
+    newLevel: number;
+  }>({ startTotal: 0, gained: 0, liveTotal: 0, oldLevel: 1, newLevel: 1 });
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   
@@ -314,8 +321,36 @@ export function GameScreen() {
       const finalActs = [...pendingMissionActsRef.current];
       pendingMissionActsRef.current = [];
 
+      const prevTotal = Number(profile?.totalXp) || 0;
+      const gainedPoints = Number(hud.score) || 0;
+      const finalTotal = prevTotal + gainedPoints;
+      const lvlBefore = getPlayerLevel(prevTotal);
+      const lvlAfter = getPlayerLevel(finalTotal);
+
+      setEndXpDisplay({
+        startTotal: prevTotal,
+        gained: gainedPoints,
+        liveTotal: prevTotal,
+        oldLevel: lvlBefore,
+        newLevel: lvlAfter
+      });
+
       setResultsDelay(true);
-      const t = window.setTimeout(() => setResultsDelay(false), 2000);
+      const t = window.setTimeout(() => {
+        setResultsDelay(false);
+        const startTime = performance.now();
+        const duration = 1200;
+        const tick = (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          const current = Math.round(prevTotal + (finalTotal - prevTotal) * progress);
+          setEndXpDisplay((prev) => ({ ...prev, liveTotal: current }));
+          if (progress < 1) {
+            requestAnimationFrame(tick);
+          }
+        };
+        requestAnimationFrame(tick);
+      }, 2000);
 
       const activeName = profile?.name?.trim() || "";
       if (activeName) {
@@ -1404,7 +1439,27 @@ export function GameScreen() {
         {hud.mode === "results" && !resultsDelay && (
           <Modal>
             <p className="font-display text-4xl tracking-wide">Runde vorbei</p>
-            <p className="mt-2 font-display text-5xl tabular-nums tracking-wide text-amber-400">{hud.score} Pkt</p>
+            <div className="mt-1 flex flex-col items-center justify-center">
+              <div className="flex items-center gap-2">
+                <span className="font-display text-5xl tabular-nums tracking-wide text-amber-400">
+                  {hud.score.toLocaleString()} PKT
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 text-xs font-black animate-pulse">
+                  +{endXpDisplay.gained.toLocaleString()}
+                </span>
+              </div>
+              <div className="mt-1 flex items-center gap-1.5 text-xs text-paper-dim">
+                <span>Gesamt:</span>
+                <span className="font-mono font-bold text-white tabular-nums text-sm">
+                  {endXpDisplay.liveTotal.toLocaleString()} XP
+                </span>
+              </div>
+              {endXpDisplay.newLevel > endXpDisplay.oldLevel && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-yellow-400 bg-amber-500/20 text-yellow-300 text-xs font-black animate-bounce shadow">
+                  <span>🎉 NEUES LEVEL {endXpDisplay.newLevel}!</span>
+                </div>
+              )}
+            </div>
             <dl className="mt-4 grid w-full max-w-xs grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:text-sm text-paper-dim">
               <dt>Treffer</dt>
               <dd className="text-right tabular-nums text-paper">{hud.hits} / {hud.shots}</dd>
