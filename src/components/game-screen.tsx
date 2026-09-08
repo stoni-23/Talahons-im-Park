@@ -524,12 +524,13 @@ export function GameScreen() {
         gamesPlayed: mergedGames,
         totalHits: mergedHits,
         totalXp: mergedXp,
-        coins: Math.max(Number(ex.coins) || 0, Number(sStats.coins) || 0),
+        coins: (sStats && sStats.coins !== undefined && sStats.coins !== null) ? Number(sStats.coins) : (Number(ex.coins) || 0),
         inventory: Array.from(new Set([...(Array.isArray(ex.inventory) ? ex.inventory : []), ...(Array.isArray(sStats.inventory) ? sStats.inventory : [])])),
         equipped: { ...(sStats.equipped || {}), ...(ex.equipped || {}) },
         missions: Array.isArray(sStats.missions) && sStats.missions.length > 0 
           ? sStats.missions 
-          : (Array.isArray(ex.missions) && ex.missions.length > 0 ? ex.missions : INITIAL_MISSIONS)
+          : (Array.isArray(ex.missions) && ex.missions.length > 0 ? ex.missions : INITIAL_MISSIONS),
+        dailyReward: (sStats && sStats.dailyReward) ? sStats.dailyReward : (ex.dailyReward || null)
       };
 
       saveProfile(up);
