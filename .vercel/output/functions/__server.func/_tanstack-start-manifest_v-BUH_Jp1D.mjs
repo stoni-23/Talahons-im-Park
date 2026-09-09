@@ -1,19 +1,19 @@
-//#region \0tanstack-start-manifest:v
+//#region node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-BUH_Jp1D.js
 var tsrStartManifest = () => ({ routes: {
 	__root__: {
 		filePath: "/data/data/com.termux/files/home/spiel/src/routes/__root.tsx",
 		children: ["/"],
-		preloads: ["/assets/index-Dzq1wehm.js"],
+		preloads: ["/assets/index-BgYQJu0f.js"],
 		scripts: [{ attrs: {
 			type: "module",
 			async: !0,
-			src: "/assets/index-Dzq1wehm.js"
+			src: "/assets/index-BgYQJu0f.js"
 		} }]
 	},
 	"/": {
 		filePath: "/data/data/com.termux/files/home/spiel/src/routes/index.tsx",
 		children: void 0,
-		preloads: ["/assets/routes-BhHxFspE.js"]
+		preloads: ["/assets/routes-BfttQ6zf.js"]
 	}
 } });
 //#endregion

@@ -89,7 +89,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
 
   if (!isOpen) return null;
 
-  const persist = (updated: PlayerProfile) => {
+  function persist(updated: PlayerProfile) {
     try {
       localStorage.setItem("park_profile", JSON.stringify(updated));
       localStorage.setItem("player_profile", JSON.stringify(updated));

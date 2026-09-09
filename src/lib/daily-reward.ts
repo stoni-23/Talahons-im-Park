@@ -33,17 +33,8 @@ export interface DailyRewardState {
   lastClaimDate: string | null;
 }
 
-function getTodayString(): string {
+export function getLocalDateString(): string {
   const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function getYesterdayString(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
@@ -61,80 +52,54 @@ export function getDailyRewardStatus(profile: any): {
     lastClaimDate: null
   };
 
-  const today = getTodayString();
-  const yesterday = getYesterdayString();
-  const lastClaim = rawState.lastClaimDate;
+  const todayStr = getLocalDateString();
+  const lastClaimStr = rawState.lastClaimDate ? String(rawState.lastClaimDate).substring(0, 10) : null;
 
-  if (lastClaim === today) {
+  // 1. Noch nie abgeholt -> Tag 1 bereit
+  if (!lastClaimStr) {
     return {
-      streak: rawState.streak,
+      streak: 0,
+      canClaim: 1,
+      nextDayToClaim: 1,
+      isClaimedToday: false
+    };
+  }
+
+  // 2. Heute bereits abgeholt -> ABSOLUT GESPERRT!
+  if (lastClaimStr === todayStr) {
+    const currentStreak = Math.min(7, Math.max(1, Number(rawState.streak) || 1));
+    return {
+      streak: currentStreak,
       canClaim: null,
-      nextDayToClaim: (rawState.streak % 7) + 1,
+      nextDayToClaim: currentStreak >= 7 ? 1 : currentStreak + 1,
       isClaimedToday: true
     };
   }
 
-  if (lastClaim === yesterday) {
-    const nextDay = rawState.streak >= 7 ? 1 : rawState.streak + 1;
+  // 3. Kalendertage berechnen
+  const todayParts = todayStr.split("-").map(Number);
+  const lastParts = lastClaimStr.split("-").map(Number);
+  const d1 = new Date(todayParts[0], todayParts[1] - 1, todayParts[2]);
+  const d2 = new Date(lastParts[0], lastParts[1] - 1, lastParts[2]);
+  const diffDays = Math.round((d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 1) {
+    // Genau gestern abgeholt -> Nächster Tag
+    const prevStreak = Number(rawState.streak) || 0;
+    const nextDay = prevStreak >= 7 ? 1 : prevStreak + 1;
     return {
-      streak: rawState.streak >= 7 ? 0 : rawState.streak,
+      streak: prevStreak,
       canClaim: nextDay,
       nextDayToClaim: nextDay,
       isClaimedToday: false
     };
   }
 
+  // Mehr als 1 Tag her -> Streak abgerissen, Tag 1
   return {
     streak: 0,
     canClaim: 1,
     nextDayToClaim: 1,
     isClaimedToday: false
   };
-}
-
-export function claimDailyReward(profile: PlayerProfile): {
-  updatedProfile: PlayerProfile;
-  claimedDay: DailyRewardDay;
-} {
-  const status = getDailyRewardStatus(profile);
-  if (!status.canClaim) {
-    throw new Error("Heute bereits abgeholt!");
-  }
-
-  const dayNumber = status.canClaim;
-  const reward = DAILY_REWARD_DAYS.find((d) => d.day === dayNumber)!;
-  const today = getTodayString();
-
-  const nextStreak = dayNumber;
-  const nextCoins = (profile.coins || 0) + reward.coins;
-  const nextXp = (profile.totalXp || 0) + reward.xp;
-
-  const currentInventory = Array.isArray(profile.inventory)
-    ? [...profile.inventory]
-    : [];
-
-  const currentEquipped = { ...(profile.equipped || {}) };
-
-  if (reward.badgeId) {
-    if (!currentInventory.includes(reward.badgeId)) {
-      currentInventory.push(reward.badgeId);
-    }
-    currentEquipped.badge = reward.badgeId;
-  }
-
-  const updatedProfile: PlayerProfile = {
-    ...profile,
-    coins: nextCoins,
-    totalXp: nextXp,
-    inventory: currentInventory,
-    equipped: currentEquipped,
-    ...({
-      dailyReward: {
-        streak: nextStreak,
-        lastClaimDate: today
-      }
-    } as any)
-  };
-
-  return { updatedProfile, claimedDay: reward };
 }

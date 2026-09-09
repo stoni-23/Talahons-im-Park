@@ -18,7 +18,15 @@ export const DailyRewardModal: React.FC<DailyRewardModalProps> = ({
   if (!isOpen) return null;
 
   const status = getDailyRewardStatus(profile);
-  const canClaim = status.canClaim !== null;
+  const [claimedSession, setClaimedSession] = React.useState(false);
+
+  const canClaimNow = Boolean(status.canClaim) && !claimedSession;
+
+  const handleClickClaim = () => {
+    if (!canClaimNow) return;
+    setClaimedSession(true);
+    onClaim();
+  };
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-ink/80 p-4">
@@ -33,12 +41,14 @@ export const DailyRewardModal: React.FC<DailyRewardModalProps> = ({
         <div className="my-4 grid grid-cols-4 gap-2 w-full">
           {DAILY_REWARD_DAYS.map((item) => {
             const isClaimed = item.day <= status.streak;
-            const isTodayTarget = item.day === status.canClaim;
+            const isTodayTarget = item.day === status.canClaim && !claimedSession;
             const isDay7 = item.day === 7;
 
             let cardStyle =
               "flex flex-col items-center justify-between p-2 rounded-xl border text-center transition-all ";
-            if (isDay7) cardStyle += "col-span-2 ";
+            if (isDay7) {
+              cardStyle += "col-span-2 ";
+            }
 
             if (isClaimed) {
               cardStyle += "bg-emerald-950/40 border-emerald-500/40 text-emerald-400 opacity-80";
@@ -71,10 +81,10 @@ export const DailyRewardModal: React.FC<DailyRewardModalProps> = ({
           })}
         </div>
 
-        {canClaim ? (
+        {canClaimNow ? (
           <button
             type="button"
-            onClick={onClaim}
+            onClick={handleClickClaim}
             className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-ink font-bold text-sm tracking-wide shadow-lg active:scale-95 transition cursor-pointer"
           >
             🎁 Tag {status.canClaim} Belohnung abholen!

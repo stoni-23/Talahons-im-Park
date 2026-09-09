@@ -1,8 +1,8 @@
 import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
 import { I as require_jsx_runtime, L as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as Smartphone, c as Pause, l as LogOut, n as Volume2, o as Share2, r as User, s as Play, t as VolumeX } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-irFl9g0-.js
-var routes_irFl9g0__exports = /* @__PURE__ */ __exportAll({
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-BhLPq7tf.js
+var routes_BhLPq7tf_exports = /* @__PURE__ */ __exportAll({
 	C: () => stopParkAmbience,
 	S: () => stopOmaKommando,
 	T: () => unlockAudio,
@@ -249,98 +249,9 @@ function resumeAudio() {
 function unlockAudio() {
 	getCtx();
 }
-function getPlayerLevel(xp) {
+function getPlayerLevel$1(xp) {
 	if (!xp || xp <= 0) return 1;
 	return Math.max(1, Math.floor(Math.sqrt(xp / 2500)) + 1);
-}
-function getLevelProgress(xp) {
-	const currentXp = Math.max(0, xp || 0);
-	const level = getPlayerLevel(currentXp);
-	const currentLevelBaseXp = Math.pow(level - 1, 2) * 2500;
-	const nextLevelBaseXp = Math.pow(level, 2) * 2500;
-	const needed = nextLevelBaseXp - currentLevelBaseXp;
-	const progressInLevel = currentXp - currentLevelBaseXp;
-	return {
-		level,
-		currentXp,
-		currentLevelBaseXp,
-		nextLevelBaseXp,
-		progressInLevel,
-		needed,
-		percent: Math.min(100, Math.max(0, Math.floor(progressInLevel / needed * 100)))
-	};
-}
-var ACTIVE_USER_KEY = "bankgeheimnis_active_user";
-var USER_PREFIX = "bankgeheimnis_user_";
-function getActiveUserName() {
-	if (typeof window === "undefined") return "";
-	return localStorage.getItem(ACTIVE_USER_KEY) || "";
-}
-function setActiveUserName(name) {
-	if (typeof window === "undefined") return;
-	localStorage.setItem(ACTIVE_USER_KEY, name.trim());
-}
-function loadProfile$1(name) {
-	const currentName = name !== void 0 ? name.trim() : getActiveUserName();
-	if (!currentName || typeof window === "undefined") return {
-		name: "",
-		highScore: 0,
-		gamesPlayed: 0,
-		totalHits: 0,
-		totalXp: 0
-	};
-	const data = localStorage.getItem(USER_PREFIX + currentName.toLowerCase());
-	if (!data) return {
-		name: currentName,
-		highScore: 0,
-		gamesPlayed: 0,
-		totalHits: 0,
-		totalXp: 0
-	};
-	try {
-		const parsed = JSON.parse(data);
-		const bestScore = Math.max(0, Number(parsed.highScore) || 0);
-		const rawXp = Number(parsed.totalXp) || 0;
-		const resolvedXp = Math.max(0, rawXp);
-		return {
-			name: currentName,
-			highScore: bestScore,
-			gamesPlayed: Math.max(0, Number(parsed.gamesPlayed) || 0),
-			totalHits: Math.max(0, Number(parsed.totalHits) || 0),
-			totalXp: resolvedXp,
-			coins: Number(parsed.coins) || 0,
-			inventory: Array.isArray(parsed.inventory) ? parsed.inventory : [],
-			equipped: parsed.equipped && typeof parsed.equipped === "object" ? parsed.equipped : {},
-			missions: Array.isArray(parsed.missions) ? parsed.missions : void 0,
-			dailyReward: parsed.dailyReward && typeof parsed.dailyReward === "object" ? parsed.dailyReward : void 0
-		};
-	} catch {
-		return {
-			name: currentName,
-			highScore: 0,
-			gamesPlayed: 0,
-			totalHits: 0,
-			totalXp: 0
-		};
-	}
-}
-function saveProfile$1(profile) {
-	if (typeof window === "undefined" || !profile.name.trim()) return;
-	setActiveUserName(profile.name);
-	const bestScore = Math.max(0, profile.highScore || 0);
-	const resolvedXp = Math.max(0, profile.totalXp || 0);
-	localStorage.setItem(USER_PREFIX + profile.name.trim().toLowerCase(), JSON.stringify({
-		name: profile.name.trim(),
-		missions: profile.missions,
-		dailyReward: profile.dailyReward,
-		highScore: bestScore,
-		gamesPlayed: Math.max(0, profile.gamesPlayed || 0),
-		totalHits: Math.max(0, profile.totalHits || 0),
-		totalXp: resolvedXp,
-		coins: typeof profile.coins === "number" ? profile.coins : 0,
-		inventory: Array.isArray(profile.inventory) ? profile.inventory : [],
-		equipped: profile.equipped && typeof profile.equipped === "object" ? profile.equipped : {}
-	}));
 }
 var SUPABASE_URL = "https://lforuvtpskrnydlburpt.supabase.co";
 var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmb3J1dnRwc2tybnlkbGJ1cnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NjAwMDQsImV4cCI6MjEwMzQzNjAwNH0.dXH7H7VhUPYNcMSGztdJT9L6CYZrnJEdj75xAXo0RPY";
@@ -428,7 +339,7 @@ async function persistAccountStats(username, roundScoreOrStats, additionalStats 
 			gamesPlayed: nextGames,
 			totalHits: nextHits
 		};
-		const calculatedLevel = getPlayerLevel(updatedStats.totalXp);
+		const calculatedLevel = getPlayerLevel$1(updatedStats.totalXp);
 		await fetch(`${SUPABASE_URL}/rest/v1/accounts?username=ilike.${encodeURIComponent(cleanName)}`, {
 			method: "PATCH",
 			headers: headers({
@@ -479,7 +390,7 @@ async function submitScore(name, roundScore, passedLevelOrXp) {
 		let totalXp = Number(prevStats?.totalXp) || 0;
 		if (totalXp <= 0 && passedLevelOrXp && passedLevelOrXp > 100) totalXp = passedLevelOrXp;
 		if (totalXp <= 0) totalXp = Math.max(0, roundScore);
-		const calculatedLevel = getPlayerLevel(totalXp);
+		const calculatedLevel = getPlayerLevel$1(totalXp);
 		const existing = await (await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(cleanName)}&select=id,score`, { headers: headers() })).json().catch(() => []);
 		if (Array.isArray(existing) && existing.length > 0) {
 			const best = Math.max(Number(existing[0].score) || 0, roundScore);
@@ -530,7 +441,7 @@ async function fetchOnlineBoard(mode = "single") {
 				if (totalXp <= 0 && highScore <= 0 && gamesPlayed <= 0) continue;
 				const norm = rawName.toLowerCase();
 				const effectiveXp = Math.max(totalXp, highScore);
-				const level = getPlayerLevel(effectiveXp);
+				const level = getPlayerLevel$1(effectiveXp);
 				playerMap.set(norm, {
 					name: rawName,
 					score: highScore,
@@ -558,7 +469,7 @@ async function fetchOnlineBoard(mode = "single") {
 					existing.score = Math.max(existing.score, score);
 					existing.totalXp = Math.max(existing.totalXp, rowXp, existing.score);
 					existing.total_xp = existing.totalXp;
-					existing.level = getPlayerLevel(existing.totalXp);
+					existing.level = getPlayerLevel$1(existing.totalXp);
 					if (hs.created_at) existing.date = hs.created_at;
 				} else {
 					const totalXp = Math.max(rowXp, score);
@@ -567,7 +478,7 @@ async function fetchOnlineBoard(mode = "single") {
 						score,
 						totalXp,
 						total_xp: totalXp,
-						level: getPlayerLevel(totalXp),
+						level: getPlayerLevel$1(totalXp),
 						date: hs.created_at,
 						at: Date.now()
 					});
@@ -598,7 +509,7 @@ async function fetchOnlineBoard(mode = "single") {
 }
 async function syncProfileOnline(p) {
 	if (!p?.name?.trim()) return;
-	const n = p.name.trim(), x = Number(p.totalXp) || 0, l = getPlayerLevel(x), s = {
+	const n = p.name.trim(), x = Number(p.totalXp) || 0, l = getPlayerLevel$1(x), s = {
 		highScore: Number(p.highScore) || 0,
 		gamesPlayed: Number(p.gamesPlayed) || 0,
 		totalHits: Number(p.totalHits) || 0,
@@ -832,14 +743,11 @@ var KioskModal = ({ isOpen, onClose, profile, onUpdateProfile, initialTab = "sho
 		}
 		const cleanInventory = (profile.inventory || []).filter((id) => !xpIds.includes(id));
 		if (cleanInventory.length !== (profile.inventory || []).length) changed = true;
-		if (changed) {
-			const updated = {
-				...profile,
-				inventory: cleanInventory,
-				equipped: cleanEquipped
-			};
-			persist(updated);
-		}
+		if (changed) persist({
+			...profile,
+			inventory: cleanInventory,
+			equipped: cleanEquipped
+		});
 	}, [profile?.name]);
 	const ownedItems = (0, import_react.useMemo)(() => {
 		return SHOP_ITEMS.filter((item) => !item.xpReward && item.category !== "wechselstube" && isItemPurchased(inventory, item.id));
@@ -854,13 +762,13 @@ var KioskModal = ({ isOpen, onClose, profile, onUpdateProfile, initialTab = "sho
 		ownedItems
 	]);
 	if (!isOpen) return null;
-	const persist = (updated) => {
+	function persist(updated) {
 		try {
 			localStorage.setItem("park_profile", JSON.stringify(updated));
 			localStorage.setItem("player_profile", JSON.stringify(updated));
 		} catch (e) {}
 		onUpdateProfile?.(updated);
-	};
+	}
 	const handleBuy = (item) => {
 		if (!profile) return;
 		if (currentCoins < item.price) {
@@ -873,14 +781,13 @@ var KioskModal = ({ isOpen, onClose, profile, onUpdateProfile, initialTab = "sho
 			const cleanedInventory = inventory.filter((id) => id !== item.id);
 			const cleanedEquipped = { ...equipped };
 			delete cleanedEquipped[item.category];
-			const updated = {
+			persist({
 				...profile,
 				coins: updatedCoins,
 				totalXp: (Number(profile.totalXp) || 0) + xpToAdd,
 				inventory: cleanedInventory,
 				equipped: cleanedEquipped
-			};
-			persist(updated);
+			});
 			showToast(`+${xpToAdd} XP erhalten! 🔋`);
 			return;
 		}
@@ -892,13 +799,12 @@ var KioskModal = ({ isOpen, onClose, profile, onUpdateProfile, initialTab = "sho
 		const updatedInventory = Array.from(/* @__PURE__ */ new Set([...inventory, item.id]));
 		setHasNewItemInModal(true);
 		if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("kiosk:new_item"));
-		const updated = {
+		persist({
 			...profile,
 			coins: updatedCoins,
 			inventory: updatedInventory,
 			equipped
-		};
-		persist(updated);
+		});
 		showToast(`"${item.name}" liegt jetzt in der Handtasche! 👜`);
 	};
 	const handleToggleEquip = (item) => {
@@ -916,11 +822,10 @@ var KioskModal = ({ isOpen, onClose, profile, onUpdateProfile, initialTab = "sho
 			updatedEquipped[item.category] = item.id;
 			showToast(`"${item.name}" angelegt! ✨`);
 		}
-		const updated = {
+		persist({
 			...profile,
 			equipped: updatedEquipped
-		};
-		persist(updated);
+		});
 	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		className: "fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm sm:p-4",
@@ -1131,13 +1036,8 @@ var DAILY_REWARD_DAYS = [
 		icon: "🕊️"
 	}
 ];
-function getTodayString() {
+function getLocalDateString() {
 	const d = /* @__PURE__ */ new Date();
-	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-function getYesterdayString() {
-	const d = /* @__PURE__ */ new Date();
-	d.setDate(d.getDate() - 1);
 	return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 function getDailyRewardStatus(profile) {
@@ -1145,19 +1045,32 @@ function getDailyRewardStatus(profile) {
 		streak: 0,
 		lastClaimDate: null
 	};
-	const today = getTodayString();
-	const yesterday = getYesterdayString();
-	const lastClaim = rawState.lastClaimDate;
-	if (lastClaim === today) return {
-		streak: rawState.streak,
-		canClaim: null,
-		nextDayToClaim: rawState.streak % 7 + 1,
-		isClaimedToday: true
+	const todayStr = getLocalDateString();
+	const lastClaimStr = rawState.lastClaimDate ? String(rawState.lastClaimDate).substring(0, 10) : null;
+	if (!lastClaimStr) return {
+		streak: 0,
+		canClaim: 1,
+		nextDayToClaim: 1,
+		isClaimedToday: false
 	};
-	if (lastClaim === yesterday) {
-		const nextDay = rawState.streak >= 7 ? 1 : rawState.streak + 1;
+	if (lastClaimStr === todayStr) {
+		const currentStreak = Math.min(7, Math.max(1, Number(rawState.streak) || 1));
 		return {
-			streak: rawState.streak >= 7 ? 0 : rawState.streak,
+			streak: currentStreak,
+			canClaim: null,
+			nextDayToClaim: currentStreak >= 7 ? 1 : currentStreak + 1,
+			isClaimedToday: true
+		};
+	}
+	const todayParts = todayStr.split("-").map(Number);
+	const lastParts = lastClaimStr.split("-").map(Number);
+	const d1 = new Date(todayParts[0], todayParts[1] - 1, todayParts[2]);
+	const d2 = new Date(lastParts[0], lastParts[1] - 1, lastParts[2]);
+	if (Math.round((d1.getTime() - d2.getTime()) / 864e5) === 1) {
+		const prevStreak = Number(rawState.streak) || 0;
+		const nextDay = prevStreak >= 7 ? 1 : prevStreak + 1;
+		return {
+			streak: prevStreak,
 			canClaim: nextDay,
 			nextDayToClaim: nextDay,
 			isClaimedToday: false
@@ -1173,7 +1086,13 @@ function getDailyRewardStatus(profile) {
 var DailyRewardModal = ({ isOpen, onClose, profile, onClaim }) => {
 	if (!isOpen) return null;
 	const status = getDailyRewardStatus(profile);
-	const canClaim = status.canClaim !== null;
+	const [claimedSession, setClaimedSession] = import_react.useState(false);
+	const canClaimNow = Boolean(status.canClaim) && !claimedSession;
+	const handleClickClaim = () => {
+		if (!canClaimNow) return;
+		setClaimedSession(true);
+		onClaim();
+	};
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", {
 		className: "absolute inset-0 z-50 flex items-center justify-center bg-ink/80 p-4",
 		children: /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", {
@@ -1191,7 +1110,7 @@ var DailyRewardModal = ({ isOpen, onClose, profile, onClaim }) => {
 					className: "my-4 grid grid-cols-4 gap-2 w-full",
 					children: DAILY_REWARD_DAYS.map((item) => {
 						const isClaimed = item.day <= status.streak;
-						const isTodayTarget = item.day === status.canClaim;
+						const isTodayTarget = item.day === status.canClaim && !claimedSession;
 						const isDay7 = item.day === 7;
 						let cardStyle = "flex flex-col items-center justify-between p-2 rounded-xl border text-center transition-all ";
 						if (isDay7) cardStyle += "col-span-2 ";
@@ -1227,9 +1146,9 @@ var DailyRewardModal = ({ isOpen, onClose, profile, onClaim }) => {
 						}, item.day);
 					})
 				}),
-				canClaim ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
+				canClaimNow ? /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("button", {
 					type: "button",
-					onClick: onClaim,
+					onClick: handleClickClaim,
 					className: "w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 text-ink font-bold text-sm tracking-wide shadow-lg active:scale-95 transition cursor-pointer",
 					children: [
 						"🎁 Tag ",
@@ -1647,7 +1566,7 @@ function defaultProfile() {
 		totalHits: 0
 	};
 }
-function loadProfile() {
+function loadProfile$1() {
 	try {
 		const raw = localStorage.getItem(PROFILE_KEY);
 		if (!raw) return defaultProfile();
@@ -1662,7 +1581,7 @@ function loadProfile() {
 		return defaultProfile();
 	}
 }
-function saveProfile(p) {
+function saveProfile$1(p) {
 	try {
 		localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
 	} catch {}
@@ -1758,10 +1677,10 @@ var GameEngine = class {
 			desynchronized: true
 		}) ?? canvas.getContext("2d");
 		this.onHud = onHud;
-		this.profile = loadProfile();
+		this.profile = loadProfile$1();
 		this.highScore = Math.max(topScore(), this.profile.highScore);
 		this.profile.highScore = this.highScore;
-		saveProfile(this.profile);
+		saveProfile$1(this.profile);
 		this.reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		this.lowPower = this.detectLowPower();
 		this.bind();
@@ -1895,7 +1814,7 @@ var GameEngine = class {
 	ensureName() {
 		if (this.profile.name) return;
 		this.profile.name = "Spieler";
-		saveProfile(this.profile);
+		saveProfile$1(this.profile);
 		this.emit();
 	}
 	start() {
@@ -1993,7 +1912,7 @@ var GameEngine = class {
 		this.profile.totalHits += this.hits;
 		this.profile.highScore = Math.max(this.profile.highScore, this.highScore);
 		if (!this.profile.name) this.profile.name = "Spieler";
-		saveProfile(this.profile);
+		saveProfile$1(this.profile);
 		submitHighscore(this.profile.name, this.score, this.profile.highScore);
 		this.emit();
 	}
@@ -2103,7 +2022,7 @@ var GameEngine = class {
 	}
 	spawnCarpet() {
 		if (this.targets.some((t) => t.act === "carpet" && t.state === "alive")) return;
-		import("./audio-BhYPbTpG.mjs").then((a) => a.playTalahinIntro());
+		import("./audio-BYOoGR4i.mjs").then((a) => a.playTalahinIntro());
 		const fromRight = Math.random() < .5;
 		const speed = 190;
 		this.targets.push({
@@ -2142,7 +2061,7 @@ var GameEngine = class {
 	}
 	spawnRocker() {
 		if (this.targets.some((t) => t.act === "rocker" && t.state === "alive")) return;
-		import("./audio-BhYPbTpG.mjs").then((a) => a.playRocker());
+		import("./audio-BYOoGR4i.mjs").then((a) => a.playRocker());
 		const fromRight = Math.random() < .5;
 		const speed = 260;
 		this.targets.push({
@@ -2918,6 +2837,99 @@ var GameEngine = class {
 		document.removeEventListener("visibilitychange", this.onVis);
 	}
 };
+function getPlayerLevel(xp) {
+	if (!xp || xp <= 0) return 1;
+	return Math.max(1, Math.floor(Math.sqrt(xp / 2500)) + 1);
+}
+function getLevelProgress(xp) {
+	const currentXp = Math.max(0, xp || 0);
+	const level = getPlayerLevel(currentXp);
+	const currentLevelBaseXp = Math.pow(level - 1, 2) * 2500;
+	const nextLevelBaseXp = Math.pow(level, 2) * 2500;
+	const needed = nextLevelBaseXp - currentLevelBaseXp;
+	const progressInLevel = currentXp - currentLevelBaseXp;
+	return {
+		level,
+		currentXp,
+		currentLevelBaseXp,
+		nextLevelBaseXp,
+		progressInLevel,
+		needed,
+		percent: Math.min(100, Math.max(0, Math.floor(progressInLevel / needed * 100)))
+	};
+}
+var ACTIVE_USER_KEY = "bankgeheimnis_active_user";
+var USER_PREFIX = "bankgeheimnis_user_";
+function getActiveUserName() {
+	if (typeof window === "undefined") return "";
+	return localStorage.getItem(ACTIVE_USER_KEY) || "";
+}
+function setActiveUserName(name) {
+	if (typeof window === "undefined") return;
+	localStorage.setItem(ACTIVE_USER_KEY, name.trim());
+}
+function loadProfile(name) {
+	const currentName = name !== void 0 ? name.trim() : getActiveUserName();
+	if (!currentName || typeof window === "undefined") return {
+		name: "",
+		highScore: 0,
+		gamesPlayed: 0,
+		totalHits: 0,
+		totalXp: 0
+	};
+	const data = localStorage.getItem(USER_PREFIX + currentName.toLowerCase());
+	if (!data) return {
+		name: currentName,
+		highScore: 0,
+		gamesPlayed: 0,
+		totalHits: 0,
+		totalXp: 0
+	};
+	try {
+		const parsed = JSON.parse(data);
+		const bestScore = Math.max(0, Number(parsed.highScore) || 0);
+		const rawXp = Number(parsed.totalXp) || 0;
+		const resolvedXp = Math.max(0, rawXp);
+		return {
+			name: currentName,
+			highScore: bestScore,
+			gamesPlayed: Math.max(0, Number(parsed.gamesPlayed) || 0),
+			totalHits: Math.max(0, Number(parsed.totalHits) || 0),
+			totalXp: resolvedXp,
+			coins: Number(parsed.coins) || 0,
+			inventory: Array.isArray(parsed.inventory) ? parsed.inventory : [],
+			equipped: parsed.equipped && typeof parsed.equipped === "object" ? parsed.equipped : {},
+			missions: Array.isArray(parsed.missions) ? parsed.missions : void 0,
+			dailyReward: parsed.dailyReward && typeof parsed.dailyReward === "object" ? parsed.dailyReward : void 0
+		};
+	} catch {
+		return {
+			name: currentName,
+			highScore: 0,
+			gamesPlayed: 0,
+			totalHits: 0,
+			totalXp: 0
+		};
+	}
+}
+function saveProfile(profile) {
+	if (typeof window === "undefined" || !profile.name.trim()) return;
+	setActiveUserName(profile.name);
+	const bestScore = Math.max(0, profile.highScore || 0);
+	const resolvedXp = Math.max(0, profile.totalXp || 0);
+	localStorage.setItem(USER_PREFIX + profile.name.trim().toLowerCase(), JSON.stringify({
+		name: profile.name.trim(),
+		missions: profile.missions,
+		dailyReward: profile.dailyReward,
+		highScore: bestScore,
+		gamesPlayed: Math.max(0, profile.gamesPlayed || 0),
+		totalHits: Math.max(0, profile.totalHits || 0),
+		totalXp: resolvedXp,
+		coins: typeof profile.coins === "number" ? profile.coins : 0,
+		inventory: Array.isArray(profile.inventory) ? profile.inventory : [],
+		equipped: profile.equipped && typeof profile.equipped === "object" ? profile.equipped : {}
+	}));
+}
 function minXpForLevel(level) {
 	return Math.pow(Math.max(1, Math.round(level || 1)) - 1, 2) * 2500;
 }
@@ -3095,7 +3107,7 @@ function GameScreen() {
 		return () => document.removeEventListener("fullscreenchange", handleFs);
 	}, []);
 	(0, import_react.useEffect)(() => {
-		const p = loadProfile$1();
+		const p = loadProfile();
 		if (p.name) fetchAccountStats(p.name).then((onlineStats) => {
 			if (!onlineStats) return;
 			setProfile((current) => {
@@ -3136,7 +3148,7 @@ function GameScreen() {
 				highScore: best,
 				totalXp
 			};
-			saveProfile$1(fixed);
+			saveProfile(fixed);
 			setProfile(fixed);
 			setProfileInput(fixed.name);
 			persistAccountStats(fixed.name, {
@@ -3240,7 +3252,7 @@ function GameScreen() {
 			const activeName = profile?.name?.trim() || "";
 			if (activeName) {
 				gameOverHandledRef.current = true;
-				const p = loadProfile$1(activeName);
+				const p = loadProfile(activeName);
 				let currentMissions = Array.isArray(p.missions) && p.missions.length > 0 ? p.missions : Array.isArray(profile.missions) && profile.missions.length > 0 ? profile.missions : missions;
 				for (const act of finalActs) currentMissions = updateMissionProgress(currentMissions, {
 					type: "hit",
@@ -3255,7 +3267,7 @@ function GameScreen() {
 				p.totalXp = (p.totalXp || 0) + hud.score;
 				if (hud.score > p.highScore) p.highScore = hud.score;
 				p.missions = currentMissions;
-				saveProfile$1(p);
+				saveProfile(p);
 				setMissions(currentMissions);
 				setProfile(p);
 				try {
@@ -3391,7 +3403,7 @@ function GameScreen() {
 				}
 			}
 			const sStats = data && data[0] && typeof data[0].stats === "object" && data[0].stats ? data[0].stats : {};
-			const ex = loadProfile$1(clName);
+			const ex = loadProfile(clName);
 			const onlineEntry = (await fetchOnlineBoard()).find((x) => x.name.toLowerCase() === clName.toLowerCase());
 			const boardScore = onlineEntry ? Number(onlineEntry.score) || 0 : 0;
 			const boardLevel = onlineEntry ? Number(onlineEntry.level) || 1 : 1;
@@ -3416,7 +3428,7 @@ function GameScreen() {
 				missions: Array.isArray(sStats.missions) && sStats.missions.length > 0 ? sStats.missions : Array.isArray(ex.missions) && ex.missions.length > 0 ? ex.missions : INITIAL_MISSIONS,
 				dailyReward: sStats && sStats.dailyReward ? sStats.dailyReward : ex.dailyReward || null
 			};
-			saveProfile$1(up);
+			saveProfile(up);
 			setProfile(up);
 			if (Array.isArray(up.missions) && up.missions.length > 0) setMissions(up.missions);
 			setPasswordInput("");
@@ -3503,7 +3515,7 @@ function GameScreen() {
 				...profile,
 				highScore: entry.score
 			};
-			saveProfile$1(up);
+			saveProfile(up);
 			setProfile(up);
 		}
 	}, [
@@ -3843,7 +3855,17 @@ function GameScreen() {
 										else if (isBronze) itemStyle += "bg-orange-700/20 border border-orange-500/40 text-orange-300 font-medium";
 										else itemStyle += "border-b border-line/30 text-paper-dim";
 										return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("li", {
-											onClick: () => setInspectedPlayer(row),
+											onClick: async () => {
+												setInspectedPlayer(row);
+												try {
+													const acc = await fetchAccountStats(row.name);
+													if (acc) setInspectedPlayer((prev) => prev ? {
+														...prev,
+														...acc,
+														equipped: acc.equipped || {}
+													} : prev);
+												} catch {}
+											},
 											className: itemStyle + " cursor-pointer active:scale-95 hover:opacity-90",
 											children: [/* @__PURE__ */ (0, import_jsx_runtime.jsxs)("span", {
 												className: "flex items-center gap-1.5 truncate",
@@ -4274,7 +4296,7 @@ function GameScreen() {
 					onClose: () => setIsKioskOpen(false),
 					onUpdateProfile: (updated) => {
 						setProfile(updated);
-						saveProfile$1(updated);
+						saveProfile(updated);
 						syncProfileOnline(updated).catch(console.error);
 					}
 				}),
@@ -4286,7 +4308,8 @@ function GameScreen() {
 						const status = getDailyRewardStatus(profile);
 						if (!status.canClaim) return;
 						const dayNumber = status.canClaim;
-						const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+						const d = /* @__PURE__ */ new Date();
+						const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 						const r = {
 							1: {
 								coins: 3,
@@ -4328,7 +4351,6 @@ function GameScreen() {
 							const currentEquipped = { ...p.equipped || {} };
 							if (r.badge) {
 								if (!currentInv.includes(r.badge)) currentInv.push(r.badge);
-								currentEquipped.badge = r.badge;
 							}
 							const updated = {
 								...p,
@@ -4343,7 +4365,7 @@ function GameScreen() {
 							};
 							try {
 								localStorage.setItem("park_profile", JSON.stringify(updated));
-								if (typeof saveProfile$1 === "function") saveProfile$1(updated);
+								if (typeof saveProfile === "function") saveProfile(updated);
 								if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
 							} catch (err) {
 								console.error(err);
@@ -4369,7 +4391,7 @@ function GameScreen() {
 							};
 							try {
 								localStorage.setItem("park_profile", JSON.stringify(updated));
-								if (typeof saveProfile$1 === "function") saveProfile$1(updated);
+								if (typeof saveProfile === "function") saveProfile(updated);
 								if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
 							} catch {}
 							return updated;
@@ -4394,7 +4416,7 @@ function GameScreen() {
 							};
 							try {
 								localStorage.setItem("park_profile", JSON.stringify(updated));
-								if (typeof saveProfile$1 === "function") saveProfile$1(updated);
+								if (typeof saveProfile === "function") saveProfile(updated);
 								if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
 							} catch {}
 							return updated;
@@ -4419,7 +4441,7 @@ function GameScreen() {
 							};
 							try {
 								localStorage.setItem("park_profile", JSON.stringify(updated));
-								if (typeof saveProfile$1 === "function") saveProfile$1(updated);
+								if (typeof saveProfile === "function") saveProfile(updated);
 								if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
 							} catch {}
 							return updated;
@@ -4637,7 +4659,7 @@ function GameScreen() {
 								setNamed(true);
 								setActiveUserName(cl);
 								gameOverHandledRef.current = true;
-								const base = loadProfile$1(cl);
+								const base = loadProfile(cl);
 								const nextP = {
 									...base,
 									name: cl,
@@ -4646,7 +4668,7 @@ function GameScreen() {
 									totalHits: (base.totalHits || 0) + (hud.hits || 0),
 									totalXp: (base.totalXp || 0) + (hud.score > 0 ? hud.score : 0)
 								};
-								saveProfile$1(nextP);
+								saveProfile(nextP);
 								setProfile(nextP);
 								setProfileInput(nextP.name);
 								setIsEditing(false);
@@ -4812,4 +4834,4 @@ function Home() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GameScreen, {});
 }
 //#endregion
-export { stopParkAmbience as C, routes_irFl9g0__exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
+export { stopParkAmbience as C, routes_BhLPq7tf_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };

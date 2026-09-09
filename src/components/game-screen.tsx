@@ -950,7 +950,19 @@ export function GameScreen() {
                       }
 
                       return (
-                        <li key={`${row.name}-${i}-${row.score}`} onClick={() => setInspectedPlayer(row)} className={itemStyle + " cursor-pointer active:scale-95 hover:opacity-90"}>
+                        <li key={`${row.name}-${i}-${row.score}`} onClick={async () => {
+  setInspectedPlayer(row);
+  try {
+    const acc = await fetchAccountStats(row.name);
+    if (acc) {
+      setInspectedPlayer((prev: any) => prev ? {
+        ...prev,
+        ...acc,
+        equipped: acc.equipped || {}
+      } : prev);
+    }
+  } catch {}
+}} className={itemStyle + " cursor-pointer active:scale-95 hover:opacity-90"}>
                           <span className="flex items-center gap-1.5 truncate">
                             <span className="w-6 font-mono font-bold text-center">
                               {isGold ? "🥇 1." : isSilver ? "🥈 2." : isBronze ? "🥉 3." : `${i + 1}.`}
@@ -1236,7 +1248,7 @@ export function GameScreen() {
           if (!status.canClaim) return;
 
           const dayNumber = status.canClaim;
-          const today = new Date().toISOString().split("T")[0];
+          const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
           // Belohnungen nach Tag:
           // Tag 1: 3 Groschen
@@ -1266,7 +1278,7 @@ export function GameScreen() {
 
             if (r.badge) {
               if (!currentInv.includes(r.badge)) currentInv.push(r.badge);
-              currentEquipped.badge = r.badge;
+              // Taube wandert nur in die Tasche (roter Punkt), nicht automatisch anlegen!
             }
 
             const updated = {

@@ -1,4 +1,7 @@
-import { getPlayerLevel } from '../lib/profile';
+function getPlayerLevel(xp: number): number {
+  if (!xp || xp <= 0) return 1;
+  return Math.max(1, Math.floor(Math.sqrt(xp / 2500)) + 1);
+}
 
 const SUPABASE_URL = "https://lforuvtpskrnydlburpt.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmb3J1dnRwc2tybnlkbGJ1cnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NjAwMDQsImV4cCI6MjEwMzQzNjAwNH0.dXH7H7VhUPYNcMSGztdJT9L6CYZrnJEdj75xAXo0RPY";
