@@ -694,8 +694,8 @@ export function GameScreen() {
         />
 
         {hud.mode === "title" && (
-          <div className="absolute inset-0 flex justify-center overflow-y-auto bg-ink/80 px-4 py-6" style={{ touchAction: "pan-y" }}>
-            <div className="flex w-full max-w-lg flex-col items-center gap-2 py-4">
+          <div className="absolute inset-0 flex items-center justify-center bg-ink/80 px-4 py-8">
+            <div className="flex max-h-full w-full max-w-lg flex-col items-center gap-2 overflow-y-auto" style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}>
               <img
                 src="/assets/logo.png?v=2"
                 alt="Bankgeheimnis im Park"
