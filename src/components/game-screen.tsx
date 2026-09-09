@@ -1,5 +1,5 @@
 import { syncProfileOnline } from "@/game/scores";
-import {  getOwnedItemsCount , getActiveCrosshairColor } from "@/lib/shop";
+import { getOwnedItemsCount, getActiveCrosshairColor, getActiveSkin } from "@/lib/shop";
 import { getActiveBadgeIcon } from "../lib/shop";
 import { KioskModal, type KioskTab } from "./kiosk-modal";
 import { DailyRewardModal } from "@/components/daily-reward-modal";
@@ -285,6 +285,7 @@ export function GameScreen() {
     const engine = new GameEngine(canvas, setHud);
     if (profile?.equipped) {
       engine.setCrosshairColor(getActiveCrosshairColor(profile.equipped));
+      engine.setSkin(getActiveSkin(profile.equipped));
     }
     engineRef.current = engine;
     return () => {
@@ -297,6 +298,7 @@ export function GameScreen() {
     if (engineRef.current && profile?.equipped) {
       const color = getActiveCrosshairColor(profile.equipped);
       engineRef.current.setCrosshairColor(color);
+      engineRef.current.setSkin(getActiveSkin(profile.equipped));
     }
   }, [profile?.equipped]);
 
@@ -859,6 +861,41 @@ export function GameScreen() {
                   </span>
                 ) : (
                   <span className="text-[11px] text-neutral-400 font-medium font-mono">Tag {dailyStatus.streak}/7 ✓</span>
+                )}
+              </button>
+            );
+          })()}
+
+          {/* Level 10 Golden Parabellum Skin Teaser */}
+          {(() => {
+            const currentLvl = getPlayerLevel(profile.totalXp || 0);
+            const isUnlocked = currentLvl >= 10;
+            return (
+              <button
+                type="button"
+                onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
+                onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
+                className="mt-2.5 w-full flex items-center justify-between rounded-xl border border-yellow-500/50 bg-gradient-to-r from-amber-500/15 via-yellow-500/10 to-amber-500/15 py-2.5 px-3.5 text-xs font-bold text-yellow-300 hover:bg-yellow-500/25 active:scale-95 transition-all shadow-md shadow-yellow-950/20 cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🔫</span>
+                  <div className="text-left">
+                    <div className="text-xs font-extrabold text-amber-200 flex items-center gap-1.5">
+                      Golden Parabellum Skin
+                    </div>
+                    <div className="text-[10px] font-normal text-amber-400/80">
+                      Exklusive Level-10-Belohnung
+                    </div>
+                  </div>
+                </div>
+                {isUnlocked ? (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-yellow-500/30 border border-yellow-400/60 text-yellow-200 text-[10px] font-bold shadow-sm animate-pulse">
+                    ✨ Bereit!
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-900/80 border border-amber-500/30 text-amber-400/90 text-[10px] font-mono">
+                    🔒 Lv. {currentLvl}/10
+                  </span>
                 )}
               </button>
             );

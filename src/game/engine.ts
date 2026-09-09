@@ -55,6 +55,8 @@ const ASSET_KEYS = [
   "foliage",
   "oma",
   "oma-recoil",
+  "oma-goldenpara",
+  "oma-goldenpara-recoil",
   "bahndidos",
   "tonne-zu",
   "tonne-hippie",
@@ -170,6 +172,13 @@ function emptyHud(): Hud {
 
 export class GameEngine {
   crosshairColor: string = "#ffffff";
+  skin: string = "default";
+
+  setSkin(skin: string) {
+    if (skin && typeof skin === "string") {
+      this.skin = skin;
+    }
+  };
 
   setCrosshairColor(color: string) {
     if (color && typeof color === "string") {
@@ -909,7 +918,10 @@ export class GameEngine {
   }
 
   omaRect() {
-    const img = this.img(this.recoil > 0.02 ? "oma-recoil" : "oma");
+    const omaKey = this.skin === "skin_golden_parabellum"
+      ? (this.recoil > 0.02 ? "oma-goldenpara-recoil" : "oma-goldenpara")
+      : (this.recoil > 0.02 ? "oma-recoil" : "oma");
+    const img = this.img(omaKey);
     const h = 560;
     const w = img ? h * (img.width / img.height) : 530;
     const x = -10;
@@ -1329,7 +1341,10 @@ export class GameEngine {
     if (foliage) ctx.drawImage(foliage, 0, WORLD_H - 260, WORLD_W, 260);
     const oma = this.omaRect();
     ctx.globalAlpha = 1.0;
-    const omaImg = this.img(this.recoil > 0.02 ? "oma-recoil" : "oma");
+    const omaDrawKey = this.skin === "skin_golden_parabellum"
+      ? (this.recoil > 0.02 ? "oma-goldenpara-recoil" : "oma-goldenpara")
+      : (this.recoil > 0.02 ? "oma-recoil" : "oma");
+    const omaImg = this.img(omaDrawKey);
     if (omaImg) {
       const kick = this.recoil > 0 ? -6 : 0;
       ctx.drawImage(omaImg, oma.x, oma.y + kick, oma.w, oma.h);

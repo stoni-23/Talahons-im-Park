@@ -1,4 +1,4 @@
-export type ShopCategory = "visier" | "badge" | "wechselstube";
+export type ShopCategory = "visier" | "badge" | "wechselstube" | "skin";
 export interface ShopCategoryInfo { id: ShopCategory; label: string; icon: string; }
 
 export interface ShopItem {
@@ -13,6 +13,7 @@ export interface ShopItem {
   crosshairColor?: string;
   badgeIcon?: string;
   available?: boolean;
+  minLevel?: number;
 }
 
 export const POINTS_PER_COIN = 200;
@@ -22,12 +23,24 @@ export function calculateEarnedCoins(points: number): number {
 }
 
 export const SHOP_CATEGORIES: ShopCategoryInfo[] = [
-  { id: "wechselstube", label: "XP-Wechselstube", icon: "🔋" },
+  { id: "skin", label: "Oma-Skins", icon: "👵" },
+  { id: "visier", label: "Visier-Farben", icon: "🎯" },
   { id: "badge", label: "Park-Badges", icon: "🎖️" },
-  { id: "visier", label: "Visier-Farben", icon: "🎯" }
+  { id: "wechselstube", label: "XP-Wechselstube", icon: "🔋" }
 ];
 
 export const SHOP_ITEMS: ShopItem[] = [
+  {
+    id: "skin_golden_parabellum",
+    name: "Golden Parabellum",
+    description: "Exklusive Level-10-Belohnung! Vergoldete Eleganz auf der Parkbank mit P08 im Hochglanz-Look.",
+    price: 0,
+    category: "skin",
+    icon: "🔫",
+    rarity: "legendaer",
+    minLevel: 10,
+    available: true
+  },
   {
     id: "xp_paket_klein",
     name: "Kleiner XP-Schub (+500 XP)",
@@ -87,7 +100,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: "badge_sheriff",
     name: "Park-Sheriff",
     description: "Sorgt für Zucht und Ordnung unter den Parkbänken.",
-    price: 25,
+    price: 3,
     category: "badge",
     icon: "🛡️",
     badgeIcon: "🛡️",
@@ -179,6 +192,10 @@ export function getActiveCrosshairColor(eq: Record<string, string> | undefined):
   if (!eq || !eq.visier) return "#ffffff";
   const it = getItemById(eq.visier);
   return it?.crosshairColor ?? "#ffffff";
+}
+
+export function getActiveSkin(eq: Record<string, string> | undefined): string {
+  return eq?.skin || "default";
 }
 
 export function getOwnedItemsCount(inv: string[] | undefined): number {

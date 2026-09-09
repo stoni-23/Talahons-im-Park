@@ -1,3 +1,4 @@
+import { getPlayerLevel } from "@/lib/profile";
 import React, { useState, useMemo, useEffect } from "react";
 import { SHOP_ITEMS, SHOP_CATEGORIES, type ShopCategory, type ShopItem, isItemPurchased, isItemEquipped } from "../lib/shop";
 import type { PlayerProfile } from "../lib/profile";
@@ -287,6 +288,14 @@ export const KioskModal: React.FC<KioskModalProps> = ({
                           className="cursor-default rounded-lg border border-neutral-800 bg-neutral-900/80 px-2.5 py-1 text-[11px] font-medium text-neutral-500"
                         >
                           Liegt unterm Strickzeug
+                        </button>
+                      ) : (item.minLevel && (getPlayerLevel(profile.totalXp || 0) < item.minLevel)) ? (
+                        <button
+                          type="button"
+                          disabled
+                          className="cursor-not-allowed rounded-lg border border-amber-900/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-medium text-amber-500/80"
+                        >
+                          🔒 Ab Level {item.minLevel} (Lv. {getPlayerLevel(profile.totalXp || 0)})
                         </button>
                       ) : item.available === false ? (
                         <button

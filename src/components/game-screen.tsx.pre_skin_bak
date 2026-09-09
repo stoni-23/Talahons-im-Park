@@ -2,6 +2,8 @@ import { syncProfileOnline } from "@/game/scores";
 import {  getOwnedItemsCount , getActiveCrosshairColor } from "@/lib/shop";
 import { getActiveBadgeIcon } from "../lib/shop";
 import { KioskModal, type KioskTab } from "./kiosk-modal";
+import { DailyRewardModal } from "@/components/daily-reward-modal";
+import { getDailyRewardStatus } from "@/lib/daily-reward";
 import { MissionsModal } from "./missions-modal";
 import { INITIAL_MISSIONS, updateMissionProgress, type Mission } from "@/lib/missions";
 function minXpForLevel(level: number): number {
@@ -33,7 +35,7 @@ import React, { useEffect, useRef, useState, type FormEvent, type ReactNode } fr
 import { Pause, Play, Volume2, VolumeX, User, Trash2, Edit2, Share2, Maximize, Minimize, Smartphone, LogOut } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
 import { unlockAudio } from "@/game/audio";
-import { qualifies, submitScore, fetchOnlineBoard, syncPlayerLevel, persistAccountStats, type ScoreEntry } from "@/game/scores";
+import { qualifies, submitScore, fetchOnlineBoard, syncPlayerLevel, persistAccountStats, fetchAccountStats, type ScoreEntry } from "@/game/scores";
 import { loadProfile, saveProfile, resetCurrentProfile, type PlayerProfile, setActiveUserName, getPlayerLevel, getLevelProgress } from "@/lib/profile";
 import type { Hud } from "@/game/types";
 
@@ -59,8 +61,10 @@ export function GameScreen() {
   }, []);
   const [showAllScores, setShowAllScores] = React.useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [inspectedPlayer, setInspectedPlayer] = useState<any | null>(null);
     const [isKioskOpen, setIsKioskOpen] = React.useState(false);
   const [isMissionsOpen, setIsMissionsOpen] = React.useState(false);
+  const [isDailyRewardOpen, setIsDailyRewardOpen] = React.useState(false);
   
 
   React.useEffect(() => {
@@ -158,6 +162,13 @@ export function GameScreen() {
   const [name, setName] = useState("");
   const [named, setNamed] = useState(false);
   const [resultsDelay, setResultsDelay] = useState(false);
+  const [endXpDisplay, setEndXpDisplay] = useState<{
+    startTotal: number;
+    gained: number;
+    liveTotal: number;
+    oldLevel: number;
+    newLevel: number;
+  }>({ startTotal: 0, gained: 0, liveTotal: 0, oldLevel: 1, newLevel: 1 });
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   
@@ -194,6 +205,28 @@ export function GameScreen() {
 
   useEffect(() => {
     const p = loadProfile();
+    if (p.name) {
+      // Sicherheits-Sync: Lade echte Stats direkt aus Supabase (schützt vor gelöschtem Cache)
+      fetchAccountStats(p.name).then((onlineStats) => {
+        if (!onlineStats) return;
+        setProfile((current: any) => {
+          const merged = {
+            ...current,
+            coins: (onlineStats.coins !== undefined && onlineStats.coins !== null) ? Number(onlineStats.coins) : (current.coins || 0),
+            totalXp: Math.max(current.totalXp || 0, Number(onlineStats.totalXp) || 0),
+            inventory: Array.from(new Set([...(current.inventory || []), ...(onlineStats.inventory || [])])),
+            equipped: { ...(onlineStats.equipped || {}), ...(current.equipped || {}) },
+            // Wenn in Supabase heute schon abgeholt wurde, greift Supabase als Single Source of Truth:
+            dailyReward: onlineStats.dailyReward || current.dailyReward
+          };
+          try {
+            localStorage.setItem("park_profile", JSON.stringify(merged));
+            localStorage.setItem("bankgeheimnis_user_" + p.name.toLowerCase(), JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+      }).catch(() => {});
+    }
     if (!p.name) {
       setIsEditing(true);
       setProfile(p);
@@ -288,8 +321,36 @@ export function GameScreen() {
       const finalActs = [...pendingMissionActsRef.current];
       pendingMissionActsRef.current = [];
 
+      const prevTotal = Number(profile?.totalXp) || 0;
+      const gainedPoints = Number(hud.score) || 0;
+      const finalTotal = prevTotal + gainedPoints;
+      const lvlBefore = getPlayerLevel(prevTotal);
+      const lvlAfter = getPlayerLevel(finalTotal);
+
+      setEndXpDisplay({
+        startTotal: prevTotal,
+        gained: gainedPoints,
+        liveTotal: prevTotal,
+        oldLevel: lvlBefore,
+        newLevel: lvlAfter
+      });
+
       setResultsDelay(true);
-      const t = window.setTimeout(() => setResultsDelay(false), 2000);
+      const t = window.setTimeout(() => {
+        setResultsDelay(false);
+        const startTime = performance.now();
+        const duration = 1200;
+        const tick = (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(1, elapsed / duration);
+          const current = Math.round(prevTotal + (finalTotal - prevTotal) * progress);
+          setEndXpDisplay((prev) => ({ ...prev, liveTotal: current }));
+          if (progress < 1) {
+            requestAnimationFrame(tick);
+          }
+        };
+        requestAnimationFrame(tick);
+      }, 2000);
 
       const activeName = profile?.name?.trim() || "";
       if (activeName) {
@@ -498,12 +559,13 @@ export function GameScreen() {
         gamesPlayed: mergedGames,
         totalHits: mergedHits,
         totalXp: mergedXp,
-        coins: Math.max(Number(ex.coins) || 0, Number(sStats.coins) || 0),
+        coins: (sStats && sStats.coins !== undefined && sStats.coins !== null) ? Number(sStats.coins) : (Number(ex.coins) || 0),
         inventory: Array.from(new Set([...(Array.isArray(ex.inventory) ? ex.inventory : []), ...(Array.isArray(sStats.inventory) ? sStats.inventory : [])])),
         equipped: { ...(sStats.equipped || {}), ...(ex.equipped || {}) },
         missions: Array.isArray(sStats.missions) && sStats.missions.length > 0 
           ? sStats.missions 
-          : (Array.isArray(ex.missions) && ex.missions.length > 0 ? ex.missions : INITIAL_MISSIONS)
+          : (Array.isArray(ex.missions) && ex.missions.length > 0 ? ex.missions : INITIAL_MISSIONS),
+        dailyReward: (sStats && sStats.dailyReward) ? sStats.dailyReward : (ex.dailyReward || null)
       };
 
       saveProfile(up);
@@ -618,7 +680,7 @@ export function GameScreen() {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.0.7 BETA</div>}
+      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.0.9 BETA</div>}
       <div
         className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
         style={{ touchAction: "none" }}
@@ -723,7 +785,11 @@ export function GameScreen() {
                       type="text"
                       maxLength={16}
                       value={profileInput}
-                      onChange={(e) => { setProfileInput(e.target.value); setProfileError(null); }}
+                      onChange={(e) => {
+                      const clean = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
+                      setProfileInput(clean);
+                      setProfileError(null);
+                    }}
                       placeholder="Name (min. 2 Zeichen)"
                       className="h-9 w-full rounded-md border border-line bg-ink px-3 text-xs text-paper outline-none placeholder:text-muted"
                     />
@@ -770,6 +836,33 @@ export function GameScreen() {
               {missions.filter(m => m.claimed).length} / {missions.length} Erledigt
             </span>
           </button>
+
+          {/* 7-Tage Login-Bonus Button */}
+          {(() => {
+            const dailyStatus = getDailyRewardStatus(profile);
+            const canClaim = Boolean(dailyStatus.canClaim);
+            return (
+              <button
+                type="button"
+                onClick={() => setIsDailyRewardOpen(true)}
+                onTouchEnd={(e) => { e.stopPropagation(); setIsDailyRewardOpen(true); }}
+                className="mt-2.5 w-full flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-500/10 py-3 px-3.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all shadow-sm cursor-pointer"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🎁</span>
+                  <span className="text-sm">7-Tage Login-Bonus</span>
+                </div>
+                {canClaim ? (
+                  <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse shadow">
+                    <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
+                    ABHOLEN!
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-neutral-400 font-medium font-mono">Tag {dailyStatus.streak}/7 ✓</span>
+                )}
+              </button>
+            );
+          })()}
         </div>
         )}
         {profile.name && !isEditing && (
@@ -861,7 +954,19 @@ export function GameScreen() {
                       }
 
                       return (
-                        <li key={`${row.name}-${i}-${row.score}`} className={itemStyle}>
+                        <li key={`${row.name}-${i}-${row.score}`} onClick={async () => {
+  setInspectedPlayer(row);
+  try {
+    const acc = await fetchAccountStats(row.name);
+    if (acc) {
+      setInspectedPlayer((prev: any) => prev ? {
+        ...prev,
+        ...acc,
+        equipped: acc.equipped || {}
+      } : prev);
+    }
+  } catch {}
+}} className={itemStyle + " cursor-pointer active:scale-95 hover:opacity-90"}>
                           <span className="flex items-center gap-1.5 truncate">
                             <span className="w-6 font-mono font-bold text-center">
                               {isGold ? "🥇 1." : isSilver ? "🥈 2." : isBronze ? "🥉 3." : `${i + 1}.`}
@@ -1060,17 +1165,26 @@ export function GameScreen() {
         )}
 
         
-        {showStatsModal && (
+        {(showStatsModal || inspectedPlayer) && (() => {
+          const statsTarget: any = inspectedPlayer ? {
+            name: inspectedPlayer.name,
+            totalXp: inspectedPlayer.totalXp || inspectedPlayer.total_xp || inspectedPlayer.score || 0,
+            gamesPlayed: inspectedPlayer.gamesPlayed || 0,
+            totalHits: inspectedPlayer.totalHits || 0,
+            highScore: inspectedPlayer.score || 0,
+            equipped: inspectedPlayer.equipped || {}
+          } : profile;
+          return (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-ink/80 p-4">
             <div className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-line bg-ink p-6 text-center shadow-2xl">
               <p className="font-display text-3xl tracking-wide text-paper">📊 Statistik</p>
               <p className="mt-1 text-xs text-paper-dim">
-                Spieler: <span className="font-bold text-amber-400">{getActiveBadgeIcon(profile?.equipped) && <span className="mr-1 text-sm">{getActiveBadgeIcon(profile?.equipped)}</span>}{profile.name}</span>
+                Spieler: <span className="font-bold text-amber-400">{getActiveBadgeIcon(statsTarget?.equipped) && <span className="mr-1 text-sm">{getActiveBadgeIcon(statsTarget?.equipped)}</span>}{statsTarget.name}</span>
               </p>
               <div className="my-5 w-full rounded-xl border border-line bg-ink-3 p-4">
                 <dl className="grid grid-cols-2 gap-y-3 text-left text-xs sm:text-sm text-paper-dim">
                   {(() => {
-                    const prog = getLevelProgress(profile.totalXp || 0);
+                    const prog = getLevelProgress(statsTarget.totalXp || 0);
                     return (
                       <>
                         <dt className="text-amber-300 font-bold">Aktuelles Level</dt>
@@ -1080,19 +1194,23 @@ export function GameScreen() {
                       </>
                     );
                   })()}
-                  <dt>Gespielte Runden</dt>
-                  <dd className="text-right font-mono font-bold text-paper">{profile.gamesPlayed || 0}</dd>
-                  <dt>Gesamte Treffer</dt>
-                  <dd className="text-right font-mono font-bold text-paper">{profile.totalHits || 0}</dd>
                   <dt>Rekord</dt>
-                  <dd className="text-right font-mono font-bold text-amber-400">{profile.highScore || 0} Pkt</dd>
-                  <dt>Ø Treffer / Runde</dt>
-                  <dd className="text-right font-mono font-bold text-paper">
-                    {profile.gamesPlayed > 0 ? Math.round(profile.totalHits / profile.gamesPlayed) : 0}
-                  </dd>
+                  <dd className="text-right font-mono font-bold text-amber-400">{statsTarget.highScore || 0} Pkt</dd>
+                  {!inspectedPlayer && (
+                    <>
+                      <dt>Gespielte Runden</dt>
+                      <dd className="text-right font-mono font-bold text-paper">{statsTarget.gamesPlayed || 0}</dd>
+                      <dt>Gesamte Treffer</dt>
+                      <dd className="text-right font-mono font-bold text-paper">{statsTarget.totalHits || 0}</dd>
+                      <dt>Ø Treffer / Runde</dt>
+                      <dd className="text-right font-mono font-bold text-paper">
+                        {statsTarget.gamesPlayed > 0 ? Math.round(statsTarget.totalHits / statsTarget.gamesPlayed) : 0}
+                      </dd>
+                    </>
+                  )}
                 </dl>
-                {(() => {
-                  const prog = getLevelProgress(profile.totalXp || 0);
+                {!inspectedPlayer && (() => {
+                  const prog = getLevelProgress(statsTarget.totalXp || 0);
                   return (
                     <div className="mt-4 pt-3 border-t border-line/40">
                       <div className="flex justify-between text-[11px] mb-1.5">
@@ -1106,12 +1224,13 @@ export function GameScreen() {
                   );
                 })()}
               </div>
-              <button type="button" onClick={() => setShowStatsModal(false)} className={primaryBtn}>
+              <button type="button" onClick={() => { setShowStatsModal(false); setInspectedPlayer(null); }} className={primaryBtn}>
                 Schließen
               </button>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         <KioskModal
           isOpen={isKioskOpen}
@@ -1120,10 +1239,77 @@ export function GameScreen() {
           onClose={() => setIsKioskOpen(false)}
           onUpdateProfile={(updated) => {
             setProfile(updated);
-            saveProfile(updated);syncProfileOnline(updated);
+            saveProfile(updated);
+            syncProfileOnline(updated).catch(console.error);
           }}
         />
-        <MissionsModal
+        <DailyRewardModal
+        isOpen={isDailyRewardOpen}
+        onClose={() => setIsDailyRewardOpen(false)}
+        profile={profile}
+        onClaim={() => {
+          const status = getDailyRewardStatus(profile);
+          if (!status.canClaim) return;
+
+          const dayNumber = status.canClaim;
+          const d = new Date(); const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+          // Belohnungen nach Tag:
+          // Tag 1: 3 Groschen
+          // Tag 2: 100 XP
+          // Tag 3: 6 Groschen
+          // Tag 4: 100 XP
+          // Tag 5: 6 Groschen + 100 XP
+          // Tag 6: 10 Groschen
+          // Tag 7: Tauben-Badge (badge_tauben)
+          const rewards: Record<number, { coins: number; xp: number; badge?: string }> = {
+            1: { coins: 3, xp: 0 },
+            2: { coins: 0, xp: 100 },
+            3: { coins: 6, xp: 0 },
+            4: { coins: 0, xp: 100 },
+            5: { coins: 6, xp: 100 },
+            6: { coins: 10, xp: 0 },
+            7: { coins: 0, xp: 0, badge: "badge_tauben" }
+          };
+
+          const r = rewards[dayNumber] || { coins: 1, xp: 0 };
+
+          setProfile((p: any) => {
+            const currentCoins = Number(p.coins) || 0;
+            const currentXp = Number(p.totalXp) || 0;
+            const currentInv = Array.isArray(p.inventory) ? [...p.inventory] : [];
+            const currentEquipped = { ...(p.equipped || {}) };
+
+            if (r.badge) {
+              if (!currentInv.includes(r.badge)) currentInv.push(r.badge);
+              // Taube wandert nur in die Tasche (roter Punkt), nicht automatisch anlegen!
+            }
+
+            const updated = {
+              ...p,
+              coins: currentCoins + r.coins,
+              totalXp: currentXp + r.xp,
+              inventory: currentInv,
+              equipped: currentEquipped,
+              dailyReward: {
+                streak: dayNumber,
+                lastClaimDate: today
+              }
+            };
+
+            try {
+              localStorage.setItem("park_profile", JSON.stringify(updated));
+              if (typeof saveProfile === "function") saveProfile(updated);
+              if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
+            } catch (err) {
+              console.error(err);
+            }
+
+            return updated;
+          });
+        }}
+      />
+      <MissionsModal
           onClaimLaser={() => {
             setProfile((prev: any) => {
               const inv = Array.isArray(prev.inventory) ? prev.inventory : [];
@@ -1269,7 +1455,27 @@ export function GameScreen() {
         {hud.mode === "results" && !resultsDelay && (
           <Modal>
             <p className="font-display text-4xl tracking-wide">Runde vorbei</p>
-            <p className="mt-2 font-display text-5xl tabular-nums tracking-wide text-amber-400">{hud.score} Pkt</p>
+            <div className="mt-1 flex flex-col items-center justify-center">
+              <div className="flex items-center gap-2">
+                <span className="font-display text-5xl tabular-nums tracking-wide text-amber-400">
+                  {hud.score.toLocaleString()} PKT
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 text-xs font-black animate-pulse">
+                  +{endXpDisplay.gained.toLocaleString()}
+                </span>
+              </div>
+              <div className="mt-1 flex items-center gap-1.5 text-xs text-paper-dim">
+                <span>Gesamt:</span>
+                <span className="font-mono font-bold text-white tabular-nums text-sm">
+                  {endXpDisplay.liveTotal.toLocaleString()} XP
+                </span>
+              </div>
+              {endXpDisplay.newLevel > endXpDisplay.oldLevel && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-yellow-400 bg-amber-500/20 text-yellow-300 text-xs font-black animate-bounce shadow">
+                  <span>🎉 NEUES LEVEL {endXpDisplay.newLevel}!</span>
+                </div>
+              )}
+            </div>
             <dl className="mt-4 grid w-full max-w-xs grid-cols-2 gap-x-6 gap-y-1.5 text-xs sm:text-sm text-paper-dim">
               <dt>Treffer</dt>
               <dd className="text-right tabular-nums text-paper">{hud.hits} / {hud.shots}</dd>
@@ -1296,6 +1502,7 @@ export function GameScreen() {
                   e.preventDefault();
                   const cl = name.trim();
                   if (!cl || cl.length < 2) return setNameError("Mindestens 2 Zeichen!");
+                  if (!/^[a-zA-Z0-9_-]+$/.test(cl)) return setNameError("Nur Buchstaben, Zahlen, - und _ erlaubt (keine Leerzeichen/Emojis)!");
                   const b = await fetchOnlineBoard();
                   if (b.some(x => x.name.toLowerCase() === cl.toLowerCase() && cl.toLowerCase() !== (profile.name || "").toLowerCase())) {
                     return setNameError("Name bereits vergeben!");
@@ -1322,7 +1529,11 @@ export function GameScreen() {
                   <label className="text-left text-[11px] font-medium tracking-[0.14em] text-paper-dim uppercase">Name für die 🏆 Bestenliste</label>
                   {nameError && <p className="text-left text-xs font-bold text-red-400">⚠️ {nameError}</p>}
                   <div className="flex gap-2">
-                    <input autoFocus maxLength={16} value={name} onChange={(e) => { setName(e.target.value); setNameError(null); }} placeholder="Dein Name" className="h-11 flex-1 rounded-md border border-line bg-ink px-3 text-sm text-paper outline-none placeholder:text-muted" />
+                    <input autoFocus maxLength={16} value={name} onChange={(e) => {
+                      const cleanVal = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
+                      setName(cleanVal);
+                      setNameError(null);
+                    }} placeholder="Dein Name" className="h-11 flex-1 rounded-md border border-line bg-ink px-3 text-sm text-paper outline-none placeholder:text-muted" />
                     <button type="submit" className="h-11 rounded-md bg-paper px-4 font-semibold text-sm text-ink">Speichern</button>
                   </div>
                 </form>
