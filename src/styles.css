@@ -68,3 +68,27 @@ html, body {
 * {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* LANDSCAPE BLOCKER */
+@media screen and (orientation: landscape) and (max-height: 550px) {
+  body::before {
+    content: "📱 Bitte Smartphone aufrecht halten!\A\ATALAHONS IM PARK 🔫 PARABELLUM EDITION\Awird im Hochformat gespielt.";
+    position: fixed;
+    inset: 0;
+    z-index: 9999999;
+    background-color: #0a0a0a;
+    color: #fbbf24;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: pre-wrap;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    line-height: 1.6;
+    padding: 24px;
+    box-sizing: border-box;
+    letter-spacing: 0.5px;
+  }
+}
