@@ -682,10 +682,10 @@ export function GameScreen() {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.1.0 BETA</div>}
+      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.0.9 BETA</div>}
       <div
         className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
-        style={{ touchAction: playing ? "none" : "pan-y" }}
+        style={{ touchAction: "none" }}
       >
         <canvas
           ref={canvasRef}
@@ -694,20 +694,20 @@ export function GameScreen() {
         />
 
         {hud.mode === "title" && (
-          <div className="absolute inset-0 flex justify-center overflow-y-auto bg-ink/80 px-4 py-6" style={{ touchAction: "pan-y" }}>
-            <div className="flex w-full max-w-lg flex-col items-center gap-2 py-4">
+          <div className="absolute inset-0 flex items-center justify-center bg-ink/80 px-4 py-8">
+            <div className="flex max-h-full w-full max-w-lg flex-col items-center gap-4 overflow-y-auto">
               <img
                 src="/assets/logo.png?v=2"
                 alt="Bankgeheimnis im Park"
                 className="h-auto w-[min(55vw,170px)] select-none"
                 draggable={false}
               />
-              <p className="max-w-sm text-center text-xs italic leading-snug text-paper-dim my-3 px-2">
-                „Meine Parabellum-Halbautomatik, Kaliber 9 mm, mit erweitertem Magazin unter meinem Strickzeug. Die macht euch Beine, noch bevor ihr ‚Ali Baba und die 40 Räuber‘ sagen könnt.“
+              <p className="max-w-sm text-center text-xs italic leading-relaxed text-paper-dim">
+                „Ich rede von meiner kleinen Parabellum-Halbautomatik, Kaliber 9 mm, mit erweitertem Magazin unter meinem Strickzeug. Die macht euch Beine, noch bevor ihr überhaupt ‚Guli Guli Ram Sam Sam‘ singen könnt …“
               </p>
 
               {/* Spieler & Rekord Box */}
-              <div className="w-full max-w-sm rounded-lg border border-line bg-ink/90 p-2 shadow-md">
+              <div className="w-full max-w-sm rounded-xl border border-line bg-ink/90 p-3 shadow-lg">
                 <div className="mb-2 flex items-center justify-between">
                   <p className="flex items-center gap-1.5 text-xs font-bold tracking-[0.14em] text-paper uppercase">
                     <User className="size-3.5 text-amber-400" /> Profil
@@ -820,36 +820,11 @@ export function GameScreen() {
                 )}
               </div>
 
-              {/* --- HAUPT-AKTIONEN & SPÄTI KASTEN --- */}
-        <div className={profile.name && !isEditing ? "rounded-2xl border border-neutral-800 bg-neutral-900/90 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full"}>
-          {/* 1. JETZT SPIELEN BUTTON GANZ OBEN (KEIN SCROLLEN MEHR) */}
-          <button
-            type="button"
-            disabled={!hud.ready}
-            onClick={() => {
-              unlockAudio();
-              engine?.start();
-            }}
-            onTouchEnd={(e) => {
-              e.stopPropagation();
-              if (hud.ready) {
-                unlockAudio();
-                engine?.start();
-              }
-            }}
-            className={profile.name && !isEditing 
-              ? "w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-red-600 via-rose-500 to-red-600 py-2.5 px-4 font-black tracking-wider text-white shadow-lg shadow-red-950/50 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-2 cursor-pointer border border-rose-400/40"
-              : "w-64 max-w-[280px] relative group overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-rose-500 to-red-600 py-3.5 px-6 font-black tracking-wider text-white shadow-xl shadow-red-950/60 active:scale-[0.97] hover:brightness-110 transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-rose-400/50"}
-          >
-            <span className="text-xl">🎮</span>
-            <span className="text-base sm:text-lg font-black tracking-wider uppercase drop-shadow-sm">
-              {hud.ready ? "JETZT SPIELEN" : "Laden…"}
-            </span>
-          </button>
-
+              {/* --- SPÄTI & MISSIONS KASTEN (2x2 DESIGN) --- */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/90 p-3 shadow-xl my-3">
           {profile.name && !isEditing && (
-            <>
-              {/* 2. LEVEL 10 GOLDEN PARABELLUM CARD MIT KONTRAST */}
+            <div className="space-y-2.5">
+              {/* Level 10 Golden Parabellum Reward Card */}
               {(() => {
                 const currentLvl = getPlayerLevel(profile.totalXp || 0);
                 const isUnlocked = currentLvl >= 10;
@@ -859,18 +834,18 @@ export function GameScreen() {
                     type="button"
                     onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
                     onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
-                    className="w-full relative overflow-hidden rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-neutral-900 to-black p-2.5 text-left shadow-md transition-all active:scale-[0.98] hover:border-amber-400/70 cursor-pointer"
+                    className="w-full relative overflow-hidden rounded-2xl border border-amber-500/50 bg-gradient-to-br from-amber-950/70 via-black/85 to-amber-950/40 p-3 text-left shadow-lg shadow-amber-950/30 transition-all active:scale-[0.98] hover:border-amber-400/80 cursor-pointer"
                   >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-950 border border-amber-400/60 text-lg shadow-inner">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 text-lg shadow-md shadow-amber-500/20">
                           🔫
                         </div>
                         <div>
-                          <div className="text-xs font-black tracking-wide text-amber-300 flex items-center gap-1.5">
+                          <div className="text-xs font-black tracking-wide text-amber-200">
                             GOLDEN PARABELLUM
                           </div>
-                          <div className="text-[10px] text-neutral-400 font-medium">
+                          <div className="text-[10px] text-amber-400/70 font-medium">
                             Exklusive Level-10-Belohnung
                           </div>
                         </div>
@@ -880,34 +855,34 @@ export function GameScreen() {
                           ✨ Bereit!
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/80 border border-amber-500/50 text-amber-300 text-[10px] font-mono font-bold">
-                          {"🔒 Lv. " + currentLvl + "/10"}
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-900/90 border border-amber-500/40 text-amber-400 text-[10px] font-mono font-bold">
+                          🔒 Lv. ${currentLvl}/10
                         </span>
                       )}
                     </div>
 
-                    <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden border border-neutral-700/50">
+                    <div className="w-full h-1.5 rounded-full bg-neutral-800/90 overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 rounded-full transition-all duration-500"
-                        style={{ width: progressPercent + "%" }}
+                        className="h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-full transition-all duration-500"
+                        style={{ width: `${progressPercent}%` }}
                       />
                     </div>
                   </button>
                 );
               })()}
 
-              {/* 3. 2x2 GRID */}
+              {/* 2x2 Grid */}
               <div className="grid grid-cols-2 gap-2">
                 {/* Missionen */}
                 <button
                   type="button"
                   onClick={() => setIsMissionsOpen(true)}
                   onTouchEnd={(e) => { e.stopPropagation(); setIsMissionsOpen(true); }}
-                  className="flex flex-col justify-between rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-2.5 text-left transition-all active:scale-95 hover:bg-emerald-950/30 cursor-pointer shadow-sm"
+                  className="flex flex-col justify-between rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-2.5 text-left transition-all active:scale-95 hover:bg-emerald-950/35 cursor-pointer shadow-sm"
                 >
                   <div className="flex items-center justify-between w-full mb-1">
                     <span className="text-xl">🎯</span>
-                    <span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-300 border border-emerald-500/30">
+                    <span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-mono text-emerald-300 border border-emerald-500/30">
                       {missions.filter(m => m.claimed).length}/{missions.length}
                     </span>
                   </div>
@@ -926,7 +901,7 @@ export function GameScreen() {
                       type="button"
                       onClick={() => setIsDailyRewardOpen(true)}
                       onTouchEnd={(e) => { e.stopPropagation(); setIsDailyRewardOpen(true); }}
-                      className="flex flex-col justify-between rounded-xl border border-amber-500/30 bg-amber-950/20 p-2.5 text-left transition-all active:scale-95 hover:bg-amber-950/30 cursor-pointer shadow-sm"
+                      className="flex flex-col justify-between rounded-xl border border-amber-500/40 bg-amber-950/20 p-2.5 text-left transition-all active:scale-95 hover:bg-amber-950/35 cursor-pointer shadow-sm"
                     >
                       <div className="flex items-center justify-between w-full mb-1">
                         <span className="text-xl">🎁</span>
@@ -935,8 +910,8 @@ export function GameScreen() {
                             NEU!
                           </span>
                         ) : (
-                          <span className="text-[9px] text-neutral-400 font-mono font-medium">
-                            {"Tag " + dailyStatus.streak + "/7 ✓"}
+                          <span className="text-[9px] text-neutral-400 font-mono">
+                            Tag ${dailyStatus.streak}/7 ✓
                           </span>
                         )}
                       </div>
@@ -953,11 +928,11 @@ export function GameScreen() {
                   type="button"
                   onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
                   onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
-                  className="flex flex-col justify-between rounded-xl border border-neutral-700 bg-neutral-900/60 p-2.5 text-left transition-all active:scale-95 hover:bg-neutral-800/80 cursor-pointer shadow-sm"
+                  className="flex flex-col justify-between rounded-xl border border-amber-600/40 bg-neutral-900/60 p-2.5 text-left transition-all active:scale-95 hover:bg-neutral-800/80 cursor-pointer shadow-sm"
                 >
                   <div className="flex items-center justify-between w-full mb-1">
                     <span className="text-xl">🏪</span>
-                    <span className="text-[9px] text-amber-400/90 font-mono font-bold">Späti</span>
+                    <span className="text-[9px] text-amber-400/80 font-mono">Späti</span>
                   </div>
                   <div>
                     <div className="text-xs font-bold text-amber-100">Kiosk</div>
@@ -974,7 +949,7 @@ export function GameScreen() {
                 >
                   <div className="flex items-center justify-between w-full mb-1">
                     <span className="text-xl">👜</span>
-                    <span className="rounded-md bg-neutral-800 px-1.5 py-0.5 text-[9px] font-mono text-neutral-300 border border-neutral-700 font-bold">
+                    <span className="rounded-md bg-neutral-800 px-1.5 py-0.5 text-[9px] font-mono text-neutral-300 border border-neutral-700">
                       {profile.inventory?.length || 0}
                     </span>
                   </div>
@@ -984,12 +959,27 @@ export function GameScreen() {
                   </div>
                 </button>
               </div>
-            </>
+            </div>
           )}
         </div>
 
-        {/* Highscore Liste */}
-              <div className="w-full max-w-sm rounded-lg border border-line bg-ink/90 p-2 shadow-md">
+            <button
+                type="button"
+                disabled={!hud.ready}
+                onClick={() => {
+                  unlockAudio();
+                  engine?.start();
+                }}
+                className={primaryBtn}
+              >
+
+      
+
+                {hud.ready ? "🎮 JETZT SPIELEN" : "Laden…"}
+              </button>
+
+              {/* Highscore Liste */}
+              <div className="w-full max-w-sm rounded-xl border border-line bg-ink/90 p-3 shadow-lg">
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-xs font-bold tracking-[0.14em] text-paper uppercase">
                     🏆 {showAllScores ? "Top 100 Rangliste" : "Top 5 Bestenliste"}
@@ -1072,7 +1062,7 @@ export function GameScreen() {
               
               {/* Chat-Bereich (Nur sichtbar wenn Name gesetzt) */}
               {!isEditing && profile?.name && (
-                <div className="w-full max-w-sm rounded-lg border border-line bg-ink/90 p-2 shadow-md flex flex-col mb-4">
+                <div className="w-full max-w-sm rounded-xl border border-line bg-ink/90 p-3 shadow-lg flex flex-col mb-4">
                   <p className="mb-2 text-xs font-bold tracking-[0.14em] text-paper uppercase flex items-center gap-1.5">
                     💬 Parkbank-Chat
                   </p>
@@ -1259,7 +1249,7 @@ export function GameScreen() {
               <p className="mt-1 text-xs text-paper-dim">
                 Spieler: <span className="font-bold text-amber-400">{getActiveBadgeIcon(statsTarget?.equipped) && <span className="mr-1 text-sm">{getActiveBadgeIcon(statsTarget?.equipped)}</span>}{statsTarget.name}</span>
               </p>
-              <div className="my-2 w-full rounded-xl border border-line bg-ink-3 p-4">
+              <div className="my-5 w-full rounded-xl border border-line bg-ink-3 p-4">
                 <dl className="grid grid-cols-2 gap-y-3 text-left text-xs sm:text-sm text-paper-dim">
                   {(() => {
                     const prog = getLevelProgress(statsTarget.totalXp || 0);
@@ -1451,11 +1441,11 @@ export function GameScreen() {
                 Spieler: <span className="font-bold text-amber-400">{getActiveBadgeIcon(profile?.equipped) && <span className="mr-1 text-sm">{getActiveBadgeIcon(profile?.equipped)}</span>}{profile.name}</span>
               </p>
               {pwChangeSuccess ? (
-                <div className="my-2 w-full rounded-lg border border-emerald-600 bg-emerald-950/60 p-3 text-xs font-bold text-emerald-300">
+                <div className="my-5 w-full rounded-lg border border-emerald-600 bg-emerald-950/60 p-3 text-xs font-bold text-emerald-300">
                   ✅ Passwort erfolgreich geändert!
                 </div>
               ) : (
-                <div className="my-2 flex flex-col gap-2.5 w-full">
+                <div className="my-4 flex flex-col gap-2.5 w-full">
                   <input
                     type="password"
                     maxLength={32}
