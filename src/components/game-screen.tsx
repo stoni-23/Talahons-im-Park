@@ -785,7 +785,11 @@ export function GameScreen() {
                       type="text"
                       maxLength={16}
                       value={profileInput}
-                      onChange={(e) => { setProfileInput(e.target.value); setProfileError(null); }}
+                      onChange={(e) => {
+                      const clean = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
+                      setProfileInput(clean);
+                      setProfileError(null);
+                    }}
                       placeholder="Name (min. 2 Zeichen)"
                       className="h-9 w-full rounded-md border border-line bg-ink px-3 text-xs text-paper outline-none placeholder:text-muted"
                     />
@@ -1498,6 +1502,7 @@ export function GameScreen() {
                   e.preventDefault();
                   const cl = name.trim();
                   if (!cl || cl.length < 2) return setNameError("Mindestens 2 Zeichen!");
+                  if (!/^[a-zA-Z0-9_-]+$/.test(cl)) return setNameError("Nur Buchstaben, Zahlen, - und _ erlaubt (keine Leerzeichen/Emojis)!");
                   const b = await fetchOnlineBoard();
                   if (b.some(x => x.name.toLowerCase() === cl.toLowerCase() && cl.toLowerCase() !== (profile.name || "").toLowerCase())) {
                     return setNameError("Name bereits vergeben!");
@@ -1524,7 +1529,11 @@ export function GameScreen() {
                   <label className="text-left text-[11px] font-medium tracking-[0.14em] text-paper-dim uppercase">Name für die 🏆 Bestenliste</label>
                   {nameError && <p className="text-left text-xs font-bold text-red-400">⚠️ {nameError}</p>}
                   <div className="flex gap-2">
-                    <input autoFocus maxLength={16} value={name} onChange={(e) => { setName(e.target.value); setNameError(null); }} placeholder="Dein Name" className="h-11 flex-1 rounded-md border border-line bg-ink px-3 text-sm text-paper outline-none placeholder:text-muted" />
+                    <input autoFocus maxLength={16} value={name} onChange={(e) => {
+                      const cleanVal = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
+                      setName(cleanVal);
+                      setNameError(null);
+                    }} placeholder="Dein Name" className="h-11 flex-1 rounded-md border border-line bg-ink px-3 text-sm text-paper outline-none placeholder:text-muted" />
                     <button type="submit" className="h-11 rounded-md bg-paper px-4 font-semibold text-sm text-ink">Speichern</button>
                   </div>
                 </form>

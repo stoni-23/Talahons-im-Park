@@ -1,8 +1,8 @@
 import { i as __toESM, n as __exportAll } from "../_runtime.mjs";
 import { I as require_jsx_runtime, L as require_react } from "../_libs/@tanstack/react-router+[...].mjs";
 import { a as Smartphone, c as Pause, l as LogOut, n as Volume2, o as Share2, r as User, s as Play, t as VolumeX } from "../_libs/lucide-react.mjs";
-//#region node_modules/.nitro/vite/services/ssr/assets/routes-BhLPq7tf.js
-var routes_BhLPq7tf_exports = /* @__PURE__ */ __exportAll({
+//#region node_modules/.nitro/vite/services/ssr/assets/routes-C-l-fxfu.js
+var routes_C_l_fxfu_exports = /* @__PURE__ */ __exportAll({
 	C: () => stopParkAmbience,
 	S: () => stopOmaKommando,
 	T: () => unlockAudio,
@@ -2022,7 +2022,7 @@ var GameEngine = class {
 	}
 	spawnCarpet() {
 		if (this.targets.some((t) => t.act === "carpet" && t.state === "alive")) return;
-		import("./audio-BYOoGR4i.mjs").then((a) => a.playTalahinIntro());
+		import("./audio-CMSNl_p5.mjs").then((a) => a.playTalahinIntro());
 		const fromRight = Math.random() < .5;
 		const speed = 190;
 		this.targets.push({
@@ -2061,7 +2061,7 @@ var GameEngine = class {
 	}
 	spawnRocker() {
 		if (this.targets.some((t) => t.act === "rocker" && t.state === "alive")) return;
-		import("./audio-BYOoGR4i.mjs").then((a) => a.playRocker());
+		import("./audio-CMSNl_p5.mjs").then((a) => a.playRocker());
 		const fromRight = Math.random() < .5;
 		const speed = 260;
 		this.targets.push({
@@ -3661,7 +3661,8 @@ function GameScreen() {
 											maxLength: 16,
 											value: profileInput,
 											onChange: (e) => {
-												setProfileInput(e.target.value);
+												const clean = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
+												setProfileInput(clean);
 												setProfileError(null);
 											},
 											placeholder: "Name (min. 2 Zeichen)",
@@ -4654,6 +4655,7 @@ function GameScreen() {
 								e.preventDefault();
 								const cl = name.trim();
 								if (!cl || cl.length < 2) return setNameError("Mindestens 2 Zeichen!");
+								if (!/^[a-zA-Z0-9_-]+$/.test(cl)) return setNameError("Nur Buchstaben, Zahlen, - und _ erlaubt (keine Leerzeichen/Emojis)!");
 								if ((await fetchOnlineBoard()).some((x) => x.name.toLowerCase() === cl.toLowerCase() && cl.toLowerCase() !== (profile.name || "").toLowerCase())) return setNameError("Name bereits vergeben!");
 								setNameError(null);
 								setNamed(true);
@@ -4692,7 +4694,8 @@ function GameScreen() {
 										maxLength: 16,
 										value: name,
 										onChange: (e) => {
-											setName(e.target.value);
+											const cleanVal = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
+											setName(cleanVal);
 											setNameError(null);
 										},
 										placeholder: "Dein Name",
@@ -4834,4 +4837,4 @@ function Home() {
 	return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(GameScreen, {});
 }
 //#endregion
-export { stopParkAmbience as C, routes_BhLPq7tf_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
+export { stopParkAmbience as C, routes_C_l_fxfu_exports as E, stopOmaKommando as S, unlockAudio as T, resumeAudio as _, playMiss as a, startParkAmbience as b, playOmaLine as c, Home as component, playRoundEnd as d, playShot as f, preloadSounds as g, playVoice as h, playHit as i, playOpaSpawn as l, playTalahonHitVoice as m, isMuted as n, playOmaHitVoice as o, playTalahinIntro as p, onGameStartAudio as r, playOmaKommando as s, cancelOmaSpeech as t, playRocker as u, setMuted as v, tickChirps as w, stopAllVoices as x, setParkPaused as y };
