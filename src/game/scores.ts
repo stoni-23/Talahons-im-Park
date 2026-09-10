@@ -377,5 +377,36 @@ export async function fetchOnlineBoard(
     return loadBoard();
   }
 }
-export async function syncProfileOnline(p){if(!p?.name?.trim())return;const n=p.name.trim(),x=Number(p.totalXp)||0,l=getPlayerLevel(x),s={highScore:Number(p.highScore)||0,gamesPlayed:Number(p.gamesPlayed)||0,totalHits:Number(p.totalHits)||0,totalXp:x,coins:Number(p.coins)||0,inventory:Array.isArray(p.inventory)?p.inventory:[],equipped:p.equipped||{},missions: p.missions || [],
-    dailyReward: p.dailyReward || null,dailyReward:p.dailyReward||null};try{await fetch(`${SUPABASE_URL}/rest/v1/accounts?on_conflict=username`,{method:"POST",headers:headers({"Content-Type":"application/json",Prefer:"resolution=merge-duplicates,return=minimal"}),body:JSON.stringify({username:n,stats:s})});const r=await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(n)}&select=id`,{headers:headers()});const d=await r.json().catch(()=>[]);if(d?.[0]?.id)await fetch(`${SUPABASE_URL}/rest/v1/highscores?id=eq.${d[0].id}`,{method:"PATCH",headers:headers({"Content-Type":"application/json",Prefer:"return=minimal"}),body:JSON.stringify({total_xp:x,level:l})});}catch(e){}}
+export async function syncProfileOnline(p){
+  if (!p?.name?.trim()) return;
+  const n = p.name.trim();
+  const x = Number(p.totalXp) || 0;
+  const l = getPlayerLevel(x);
+  const s = {
+    highScore: Number(p.highScore) || 0,
+    gamesPlayed: Number(p.gamesPlayed) || 0,
+    totalHits: Number(p.totalHits) || 0,
+    totalXp: x,
+    coins: Number(p.coins) || 0,
+    inventory: Array.isArray(p.inventory) ? p.inventory : [],
+    equipped: p.equipped || {},
+    missions: Array.isArray(p.missions) ? p.missions : [],
+    dailyReward: p.dailyReward || null
+  };
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/accounts?username=ilike.${encodeURIComponent(n)}`, {
+      method: "PATCH",
+      headers: headers({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+      body: JSON.stringify({ stats: s })
+    });
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(n)}&select=id`, { headers: headers() });
+    const d = await r.json().catch(() => []);
+    if (d?.[0]?.id) {
+      await fetch(`${SUPABASE_URL}/rest/v1/highscores?id=eq.${d[0].id}`, {
+        method: "PATCH",
+        headers: headers({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+        body: JSON.stringify({ total_xp: x, level: l })
+      });
+    }
+  } catch (e) {}
+}
