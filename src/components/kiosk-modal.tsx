@@ -1,3 +1,22 @@
+function getIconBorderColor(r) {
+  if (r === "legendaer") return "#f59e0b"; // Orange wie Parabellum
+  if (r === "episch") return "#a855f7";    // Lila
+  if (r === "selten") return "#0ea5e9";    // Blau
+  return "#525252";                        // Neutral / Standard
+}
+function getRarityGlow(r) {
+  if (r === "legendaer") return { border: "2px solid #f59e0b", shadow: "0 0 10px rgba(245, 158, 11, 0.75)" };
+  if (r === "episch") return { border: "2px solid #a855f7", shadow: "0 0 8px rgba(168, 85, 247, 0.6)" };
+  if (r === "selten") return { border: "2px solid #0ea5e9", shadow: "0 0 8px rgba(14, 165, 233, 0.6)" };
+  return { border: "2px solid #444444", shadow: "none" };
+}
+function getIconRarity(r) {
+  if (r === "legendaer") return { border: "#f59e0b", shadow: "0 0 10px rgba(245, 158, 11, 0.7)" };
+  if (r === "episch") return { border: "#a855f7", shadow: "0 0 8px rgba(168, 85, 247, 0.6)" };
+  if (r === "selten") return { border: "#0ea5e9", shadow: "0 0 8px rgba(14, 165, 233, 0.6)" };
+  return { border: "#404040", shadow: "none" };
+}
+import { SkinPreviewModal } from "./skin-preview-modal";
 import { getPlayerLevel } from "@/lib/profile";
 import React, { useState, useMemo, useEffect } from "react";
 import { SHOP_ITEMS, SHOP_CATEGORIES, type ShopCategory, type ShopItem, isItemPurchased, isItemEquipped } from "../lib/shop";
@@ -24,6 +43,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<ShopCategory | "alle">("alle");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [hasNewItemInModal, setHasNewItemInModal] = useState(false);
+  const [previewItem, setPreviewItem] = useState<{ name: string; type: "skin" | "visier"; idle?: string; shoot?: string; color?: string } | null>(null);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -156,8 +176,8 @@ export const KioskModal: React.FC<KioskModalProps> = ({
     if (!profile) return;
     const isEq = isItemEquipped(equipped, item);
 
-    if (item.category === "visier" && isEq) {
-      showToast("Das Visier kann nicht abgelegt werden! 🎯");
+    if ((item.category === "visier" || item.category === "skin") && isEq) {
+      showToast(item.category === "skin" ? "Skin kann nicht abgelegt werden! Wähle einen anderen. 👵" : "Das Visier kann nicht abgelegt werden! 🎯");
       return;
     }
     const updatedEquipped = { ...equipped };
@@ -270,7 +290,23 @@ export const KioskModal: React.FC<KioskModalProps> = ({
                   className={`flex items-center justify-between gap-3 rounded-xl border p-2.5 ${isEq ? "border-amber-500/60 bg-amber-500/10" : "border-neutral-800 bg-neutral-900/90"}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-2xl">{item.icon}</span>
+                    <div onClick={(e) => {
+  if (item.category === "skin") {
+    e.stopPropagation();
+    const isGold = item.id === "skin_golden_parabellum";
+    setPreviewItem({ name: item.name, type: "skin", idle: isGold ? "/assets/oma-goldenpara.png" : "/assets/oma.png", shoot: isGold ? "/assets/oma-goldenpara-recoil.png" : "/assets/oma-recoil.png" });
+  } else if (item.category === "visier") {
+    e.stopPropagation();
+    setPreviewItem({ name: item.name, type: "visier", color: item.crosshairColor || "#ffffff" });
+  }
+}} style={{
+  borderColor: item.rarity === "legendaer" ? "#f59e0b" : item.rarity === "episch" ? "#a855f7" : item.rarity === "selten" ? "#0ea5e9" : "#525252",
+  borderWidth: "1.5px",
+  borderStyle: "solid"
+}} className={`relative flex items-center justify-center rounded-lg p-1 select-none ${(item.category === "skin" || item.category === "visier") ? "cursor-pointer hover:bg-neutral-800 active:scale-95 shadow-sm" : ""}`}>
+  <span className="text-2xl">{item.icon}</span>
+  {(item.category === "skin" || item.category === "visier") && <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[8px] text-black font-black">▶</span>}
+</div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="truncate text-xs font-bold text-neutral-100">{item.name}</span>
@@ -330,6 +366,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
             })
           )}
         </div>
+      <SkinPreviewModal isOpen={previewItem !== null} onClose={() => setPreviewItem(null)} title={previewItem?.name || ""} type={previewItem?.type} idleSrc={previewItem?.idle} shootSrc={previewItem?.shoot} crosshairColor={previewItem?.color} />
       </div>
     </div>
   );

@@ -31,12 +31,27 @@ export const SHOP_CATEGORIES: ShopCategoryInfo[] = [
 
 export const SHOP_ITEMS: ShopItem[] = [
   {
+    id: "skin_default",
+    name: "Klassische Oma",
+    description: "Die unerschütterliche Parkbank-Veteranin mit ihrer treuen Standard-Pistole.",
+    price: 0,
+    category: "skin",
+    icon: "👒",
+    rarity: "standard",
+    rarity: "standard",
+    rarity: "gewoehnlich",
+    available: true
+  },
+
+  {
     id: "skin_golden_parabellum",
     name: "Golden Parabellum",
     description: "Exklusive Level-10-Belohnung! Vergoldete Eleganz auf der Parkbank mit P08 im Hochglanz-Look.",
     price: 0,
     category: "skin",
     icon: "🔫",
+    rarity: "legendaer",
+    rarity: "legendaer",
     rarity: "legendaer",
     minLevel: 10,
     available: true
@@ -99,10 +114,12 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: "badge_sheriff",
     name: "Park-Sheriff",
-    description: "Sorgt für Zucht und Ordnung unter den Parkbänken.",
-    price: 3,
+    description: "Sorgt für Zucht und Ordnung.",
+    price: 35,
     category: "badge",
     icon: "🛡️",
+    badgeIcon: "🛡️",
+    rarity: "episch",
     badgeIcon: "🛡️",
     rarity: "episch",
     available: false
@@ -110,21 +127,29 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: "badge_boss",
     name: "Boss der Parkbank",
-    description: "Reiner Respekt. Zeigt die goldene Krone neben deinem Namen.",
+    description: "Reiner Respekt. Zeigt die goldene Krone vor deinem Namen.",
     price: 50,
     category: "badge",
     icon: "👑",
+    badgeIcon: "👑",
+    rarity: "legendaer",
+    badgeIcon: "👑",
+    rarity: "legendaer",
     badgeIcon: "👑",
     rarity: "legendaer",
     available: false
   },
   {
     id: "visier_standard",
-    name: "Klassisch Weiß",
-    description: "Das schlichte Standard-Fadenkreuz. Unverzichtbar für jeden Schützen.",
+    name: "Standard-Fadenkreuz",
+    description: "Präzises, weißes Fadenkreuz für den Parkalltag.",
     price: 0,
     category: "visier",
     icon: "⚪",
+    crosshairColor: "#ffffff",
+    rarity: "standard",
+    crosshairColor: "#ffffff",
+    rarity: "standard",
     crosshairColor: "#ffffff",
     rarity: "standard",
     available: true
@@ -160,6 +185,10 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: "🟡",
     crosshairColor: "#eab308",
     rarity: "legendaer",
+    crosshairColor: "#eab308",
+    rarity: "legendaer",
+    crosshairColor: "#eab308",
+    rarity: "legendaer",
     available: false
   }
 ];
@@ -169,15 +198,18 @@ export function getItemById(id: string): ShopItem | undefined {
 }
 
 export function isItemPurchased(inv: string[] | undefined, id: string): boolean {
-  if (id === "visier_standard") return true;
+  if (id === "visier_standard" || id === "skin_default") return true;
   if (!Array.isArray(inv)) return false;
   return inv.includes(id);
 }
 
 export function isItemEquipped(eq: Record<string, string> | undefined, it: ShopItem): boolean {
-  if (!eq) return it.id === "visier_standard";
+  if (!eq) return it.id === "visier_standard" || it.id === "skin_default";
   if (it.category === "visier") {
     return (eq.visier || "visier_standard") === it.id;
+  }
+  if (it.category === "skin") {
+    return (eq.skin || "skin_default") === it.id;
   }
   return eq[it.category] === it.id;
 }
