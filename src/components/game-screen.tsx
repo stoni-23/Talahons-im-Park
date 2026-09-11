@@ -388,14 +388,7 @@ export function GameScreen() {
           if (typeof syncProfileOnline === "function") syncProfileOnline(p);
         } catch {}
 
-        persistAccountStats(activeName, {
-          gamesPlayed: p.gamesPlayed,
-          totalHits: p.totalHits,
-          totalXp: p.totalXp,
-          highScore: p.highScore,
-          roundScore: hud.score,
-          roundHits: hud.hits
-        }).catch(() => {});
+        // syncProfileOnline(p) hat bereits alle Stats synchronisiert
 
         setNamed(true);
         setName(activeName);
@@ -579,12 +572,9 @@ export function GameScreen() {
       setPasswordInput("");
       setIsEditing(false);
 
-      persistAccountStats(clName, {
-        gamesPlayed: up.gamesPlayed,
-        totalHits: up.totalHits,
-        totalXp: up.totalXp,
-        highScore: up.highScore
-      }).catch(() => {});
+      try {
+        if (typeof syncProfileOnline === "function") syncProfileOnline(up);
+      } catch (_) {}
 
       if (up.highScore > 0) {
         submitScore(clName, up.highScore, getPlayerLevel(up.totalXp || 0)).then((boardData) => {

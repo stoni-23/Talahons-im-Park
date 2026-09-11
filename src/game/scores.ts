@@ -377,7 +377,7 @@ export async function fetchOnlineBoard(
     return loadBoard();
   }
 }
-export async function syncProfileOnline(p) {
+export async function syncProfileOnline(p){
   if (!p?.name?.trim()) return;
   const n = p.name.trim();
   const x = Number(p.totalXp) || 0;
@@ -390,17 +390,14 @@ export async function syncProfileOnline(p) {
     coins: Number(p.coins) || 0,
     inventory: Array.isArray(p.inventory) ? p.inventory : [],
     equipped: p.equipped || {},
-    missions: Array.isArray(p.missions) ? p.missions : (p.missions || []),
+    missions: Array.isArray(p.missions) ? p.missions : [],
     dailyReward: p.dailyReward || null
   };
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/accounts?on_conflict=username`, {
-      method: "POST",
-      headers: headers({
-        "Content-Type": "application/json",
-        Prefer: "resolution=merge-duplicates,return=minimal"
-      }),
-      body: JSON.stringify({ username: n, stats: s })
+    await fetch(`${SUPABASE_URL}/rest/v1/accounts?username=ilike.${encodeURIComponent(n)}`, {
+      method: "PATCH",
+      headers: headers({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+      body: JSON.stringify({ stats: s })
     });
     const r = await fetch(`${SUPABASE_URL}/rest/v1/highscores?name=ilike.${encodeURIComponent(n)}&select=id`, { headers: headers() });
     const d = await r.json().catch(() => []);

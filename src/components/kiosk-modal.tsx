@@ -1,21 +1,3 @@
-function getIconBorderColor(r) {
-  if (r === "legendaer") return "#f59e0b"; // Orange wie Parabellum
-  if (r === "episch") return "#a855f7";    // Lila
-  if (r === "selten") return "#0ea5e9";    // Blau
-  return "#525252";                        // Neutral / Standard
-}
-function getRarityGlow(r) {
-  if (r === "legendaer") return { border: "2px solid #f59e0b", shadow: "0 0 10px rgba(245, 158, 11, 0.75)" };
-  if (r === "episch") return { border: "2px solid #a855f7", shadow: "0 0 8px rgba(168, 85, 247, 0.6)" };
-  if (r === "selten") return { border: "2px solid #0ea5e9", shadow: "0 0 8px rgba(14, 165, 233, 0.6)" };
-  return { border: "2px solid #444444", shadow: "none" };
-}
-function getIconRarity(r) {
-  if (r === "legendaer") return { border: "#f59e0b", shadow: "0 0 10px rgba(245, 158, 11, 0.7)" };
-  if (r === "episch") return { border: "#a855f7", shadow: "0 0 8px rgba(168, 85, 247, 0.6)" };
-  if (r === "selten") return { border: "#0ea5e9", shadow: "0 0 8px rgba(14, 165, 233, 0.6)" };
-  return { border: "#404040", shadow: "none" };
-}
 import { SkinPreviewModal } from "./skin-preview-modal";
 import { getPlayerLevel } from "@/lib/profile";
 import React, { useState, useMemo, useEffect } from "react";
@@ -299,11 +281,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
     e.stopPropagation();
     setPreviewItem({ name: item.name, type: "visier", color: item.crosshairColor || "#ffffff" });
   }
-}} style={{
-  borderColor: item.rarity === "legendaer" ? "#f59e0b" : item.rarity === "episch" ? "#a855f7" : item.rarity === "selten" ? "#0ea5e9" : "#525252",
-  borderWidth: "1.5px",
-  borderStyle: "solid"
-}} className={`relative flex items-center justify-center rounded-lg p-1 select-none ${(item.category === "skin" || item.category === "visier") ? "cursor-pointer hover:bg-neutral-800 active:scale-95 shadow-sm" : ""}`}>
+}} className={(item.category === "skin" || item.category === "visier") ? "cursor-pointer rounded-lg p-1 hover:bg-neutral-800 active:scale-95 border border-amber-500/40 relative shadow-sm" : ""}>
   <span className="text-2xl">{item.icon}</span>
   {(item.category === "skin" || item.category === "visier") && <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[8px] text-black font-black">▶</span>}
 </div>
