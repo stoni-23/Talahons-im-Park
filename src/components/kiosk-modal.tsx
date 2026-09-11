@@ -280,7 +280,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
               return (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between gap-3 rounded-xl border p-2.5 ${isEq ? "border-amber-500 ring-1 ring-amber-500/40 bg-amber-500/10" : `${getRarityStyle(item.rarity).border} ${getRarityStyle(item.rarity).bg}`}`}
+                  className={`flex items-center justify-between gap-3 rounded-xl border p-2.5 ${isEq ? "bg-neutral-800/90 border-neutral-600 ring-1 ring-white/20" : "bg-neutral-900/60 border-neutral-800"}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div onClick={(e) => {
@@ -293,7 +293,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
     setPreviewItem({ name: item.name, type: "visier", color: item.crosshairColor || "#ffffff" });
   }
 }} className={(item.category === "skin" || item.category === "visier") ? "cursor-pointer rounded-lg p-1 hover:bg-neutral-800 active:scale-95 border border-amber-500/40 relative shadow-sm" : ""}>
-  <span className="text-2xl">{item.icon}</span>
+  <div className={`flex items-center justify-center p-1.5 rounded-lg border bg-neutral-950/80 ${getRarityStyle(item.rarity).border}`}><span className="text-2xl leading-none">{item.icon}</span></div>
   {(item.category === "skin" || item.category === "visier") && <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500 text-[8px] text-black font-black">▶</span>}
 </div>
                     <div className="min-w-0">
