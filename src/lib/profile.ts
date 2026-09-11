@@ -8,7 +8,8 @@ export interface PlayerProfile {
   inventory?: string[];
   equipped?: Record<string, string>;
   missions?: any[];
-  dailyReward?: { streak: number; lastClaimDate: string };
+  dailyReward?: { streak: number; lastClaimDate: string }; 
+  tonnenPlays?: { date: string; count: number };
 }
 
 export function getPlayerLevel(xp: number): number {
@@ -83,6 +84,7 @@ export function saveProfile(profile: PlayerProfile): void {
       name: profile.name.trim(),
       missions: profile.missions,
     dailyReward: profile.dailyReward,
+      tonnenPlays: profile.tonnenPlays,
       highScore: bestScore,
       gamesPlayed: Math.max(0, profile.gamesPlayed || 0),
       totalHits: Math.max(0, profile.totalHits || 0),
@@ -107,4 +109,25 @@ export function resetCurrentProfile(): void {
 export function minXpForLevel(level: number): number {
   if (level <= 1) return 0;
   return Math.pow(level - 1, 2) * 2500;
+}
+
+
+export function getTonnenPlayStatus(profile: PlayerProfile) {
+  const today = new Date().toISOString().slice(0, 10);
+  const playData = profile.tonnenPlays?.date === today 
+    ? profile.tonnenPlays 
+    : { date: today, count: 0 };
+
+  const FREE_LIMIT = 3;
+  const freeRemaining = Math.max(0, FREE_LIMIT - playData.count);
+  const isFree = freeRemaining > 0;
+  const canAfford = isFree || (profile.coins || 0) >= 1;
+
+  return {
+    today,
+    currentCount: playData.count,
+    freeRemaining,
+    isFree,
+    canAfford,
+  };
 }

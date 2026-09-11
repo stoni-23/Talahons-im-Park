@@ -130,7 +130,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
       const updated: PlayerProfile = {
         ...profile,
         coins: updatedCoins,
-        totalXp: (Number(profile.totalXp) || 0) + xpToAdd,
+        totalXp: (Number(profile?.totalXp) || 0) + xpToAdd,
         inventory: cleanedInventory,
         equipped: cleanedEquipped,
       };
@@ -319,13 +319,13 @@ export const KioskModal: React.FC<KioskModalProps> = ({
                         >
                           Liegt unterm Strickzeug
                         </button>
-                      ) : (item.minLevel && (getPlayerLevel(profile.totalXp || 0) < item.minLevel)) ? (
+                      ) : (item.minLevel && (getPlayerLevel(profile?.totalXp || 0) < item.minLevel)) ? (
                         <button
                           type="button"
                           disabled
                           className="cursor-not-allowed rounded-lg border border-amber-900/40 bg-amber-950/30 px-2.5 py-1 text-[11px] font-medium text-amber-500/80"
                         >
-                          🔒 Ab Level {item.minLevel} (Lv. {getPlayerLevel(profile.totalXp || 0)})
+                          🔒 Ab Level {item.minLevel} (Lv. {getPlayerLevel(profile?.totalXp || 0)})
                         </button>
                       ) : item.available === false ? (
                         <button

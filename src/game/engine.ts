@@ -723,7 +723,7 @@ export class GameEngine {
       this.trauma = Math.min(1, this.trauma + (this.strickT > 0 ? 0.55 : 0.32));
     }
     const oma = this.omaRect();
-    if (!this.lowPower) this.flashes.push({ x: oma.mx, y: oma.my, t: 0.12, kind: "muzzle" });
+    if (!this.lowPower) this.flashes.push({ x: oma.x + oma.w * 0.85, y: oma.y + oma.h * 0.15, t: 0.15, kind: "muzzle" });
     let hit: Target | null = null;
     let z = -1;
     let dist = Infinity;
@@ -1366,10 +1366,10 @@ export class GameEngine {
           : `impact-${clamp(4 - Math.ceil(f.t * 16), 1, 4)}`;
       const img = this.img(key);
       if (!img) continue;
-      const size = f.kind === "muzzle" ? 90 : 130;
+      const size = f.kind === "muzzle" ? 110 : 130;
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = clamp(f.t * 8, 0, 1);
+      ctx.globalAlpha = f.kind === "muzzle" ? Math.min(1, f.t * 4) : clamp(f.t * 8, 0, 1);
       ctx.drawImage(img, f.x - size / 2, f.y - size / 2, size, size);
       ctx.restore();
     }

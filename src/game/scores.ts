@@ -377,7 +377,7 @@ export async function fetchOnlineBoard(
     return loadBoard();
   }
 }
-export async function syncProfileOnline(p){
+export async function syncProfileOnline(p: any){
   if (!p?.name?.trim()) return;
   const n = p.name.trim();
   const x = Number(p.totalXp) || 0;
@@ -391,7 +391,8 @@ export async function syncProfileOnline(p){
     inventory: Array.isArray(p.inventory) ? p.inventory : [],
     equipped: p.equipped || {},
     missions: Array.isArray(p.missions) ? p.missions : [],
-    dailyReward: p.dailyReward || null
+    dailyReward: p.dailyReward || null,
+    tonnenPlays: p.tonnenPlays || null
   };
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/accounts?username=ilike.${encodeURIComponent(n)}`, {
@@ -410,3 +411,5 @@ export async function syncProfileOnline(p){
     }
   } catch (e) {}
 }
+
+export function syncPlayerLevel(lvl?: number) { return lvl ?? 1; }

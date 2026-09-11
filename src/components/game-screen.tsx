@@ -5,6 +5,7 @@ import { KioskModal, type KioskTab } from "./kiosk-modal";
 import { DailyRewardModal } from "@/components/daily-reward-modal";
 import { getDailyRewardStatus } from "@/lib/daily-reward";
 import { MissionsModal } from "./missions-modal";
+import { TonnenGame } from "./tonnen-game";
 import { INITIAL_MISSIONS, updateMissionProgress, type Mission } from "@/lib/missions";
 function minXpForLevel(level: number): number {
   const lv = Math.max(1, Math.round(level || 1));
@@ -37,6 +38,7 @@ import { emptyHud, GameEngine } from "@/game/engine";
 import { unlockAudio } from "@/game/audio";
 import { qualifies, submitScore, fetchOnlineBoard, syncPlayerLevel, persistAccountStats, fetchAccountStats, type ScoreEntry } from "@/game/scores";
 import { loadProfile, saveProfile, resetCurrentProfile, type PlayerProfile, setActiveUserName, getPlayerLevel, getLevelProgress } from "@/lib/profile";
+import { getTonnenPlayStatus } from "@/lib/profile";
 import type { Hud } from "@/game/types";
 
 const primaryBtn =
@@ -65,6 +67,8 @@ export function GameScreen() {
     const [isKioskOpen, setIsKioskOpen] = React.useState(false);
   const [isMissionsOpen, setIsMissionsOpen] = React.useState(false);
   const [isDailyRewardOpen, setIsDailyRewardOpen] = React.useState(false);
+  const [isTonnenOpen, setIsTonnenOpen] = React.useState(false);
+  const [showTonnenNoCoinsModal, setShowTonnenNoCoinsModal] = React.useState(false);
   
 
   React.useEffect(() => {
@@ -217,7 +221,8 @@ export function GameScreen() {
             inventory: Array.from(new Set([...(current.inventory || []), ...(onlineStats.inventory || [])])),
             equipped: { ...(onlineStats.equipped || {}), ...(current.equipped || {}) },
             // Wenn in Supabase heute schon abgeholt wurde, greift Supabase als Single Source of Truth:
-            dailyReward: onlineStats.dailyReward || current.dailyReward
+            dailyReward: onlineStats.dailyReward || current.dailyReward,
+            tonnenPlays: onlineStats.tonnenPlays || current.tonnenPlays
           };
           try {
             localStorage.setItem("park_profile", JSON.stringify(merged));
@@ -342,7 +347,7 @@ export function GameScreen() {
         setResultsDelay(false);
         const startTime = performance.now();
         const duration = 1200;
-        const tick = (now) => {
+        const tick = (now: number) => {
           const elapsed = now - startTime;
           const progress = Math.min(1, elapsed / duration);
           const current = Math.round(prevTotal + (finalTotal - prevTotal) * progress);
@@ -557,10 +562,11 @@ export function GameScreen() {
         coins: (sStats && sStats.coins !== undefined && sStats.coins !== null) ? Number(sStats.coins) : (Number(ex.coins) || 0),
         inventory: Array.from(new Set([...(Array.isArray(ex.inventory) ? ex.inventory : []), ...(Array.isArray(sStats.inventory) ? sStats.inventory : [])])),
         equipped: { ...(sStats.equipped || {}), ...(ex.equipped || {}) },
-        missions: Array.isArray(sStats.missions) && sStats.missions.length > 0 
-          ? sStats.missions 
+        missions: Array.isArray(sStats.missions) && sStats.missions.length > 0
+          ? sStats.missions
           : (Array.isArray(ex.missions) && ex.missions.length > 0 ? ex.missions : INITIAL_MISSIONS),
-        dailyReward: (sStats && sStats.dailyReward) ? sStats.dailyReward : (ex.dailyReward || null)
+        dailyReward: (sStats && sStats.dailyReward) ? sStats.dailyReward : (ex.dailyReward || null),
+        tonnenPlays: (sStats && sStats.tonnenPlays) ? sStats.tonnenPlays : (ex.tonnenPlays || null)
       };
 
       saveProfile(up);
@@ -639,7 +645,7 @@ export function GameScreen() {
 
   const handleLogout = () => {
     setActiveUserName("");
-    setProfile({ name: "", highScore: 0, gamesPlayed: 0, totalHits: 0 });
+    setProfile({ name: "", highScore: 0, gamesPlayed: 0, totalHits: 0, totalXp: 0 });
     setProfileInput("");
     setPasswordInput("");
     setIsEditing(true);
@@ -650,7 +656,7 @@ export function GameScreen() {
       return;
     }
     const empty = resetCurrentProfile();
-    setProfile(empty);
+    if (empty) setProfile(empty);
     setProfileInput("");
     setIsEditing(true);
   };
@@ -672,7 +678,7 @@ export function GameScreen() {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.1.1 BETA</div>}
+      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.2.1 BETA</div>}
       <div
         className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
         style={{ touchAction: playing ? "none" : "pan-y" }}
@@ -812,30 +818,101 @@ export function GameScreen() {
 
               {/* --- HAUPT-AKTIONEN & SPÄTI KASTEN --- */}
         <div className={profile.name && !isEditing ? "rounded-2xl border border-neutral-800 bg-neutral-900/90 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full"}>
-          {/* 1. JETZT SPIELEN BUTTON GANZ OBEN (KEIN SCROLLEN MEHR) */}
-          <button
-            type="button"
-            disabled={!hud.ready}
-            onClick={() => {
-              unlockAudio();
-              engine?.start();
-            }}
-            onTouchEnd={(e) => {
-              e.stopPropagation();
-              if (hud.ready) {
+          {/* 1. SPIEL-MODI BUTTONS NEBENEINANDER */}
+          <div className="flex gap-2 w-full">
+            <button
+              type="button"
+              disabled={!hud.ready}
+              onClick={() => {
                 unlockAudio();
                 engine?.start();
-              }
-            }}
-            className={profile.name && !isEditing 
-              ? "w-full relative group overflow-hidden rounded-xl bg-gradient-to-r from-red-600 via-rose-500 to-red-600 py-2.5 px-4 font-black tracking-wider text-white shadow-lg shadow-red-950/50 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-2 cursor-pointer border border-rose-400/40"
-              : "w-64 max-w-[280px] relative group overflow-hidden rounded-2xl bg-gradient-to-r from-red-600 via-rose-500 to-red-600 py-3.5 px-6 font-black tracking-wider text-white shadow-xl shadow-red-950/60 active:scale-[0.97] hover:brightness-110 transition-all flex items-center justify-center gap-2.5 cursor-pointer border border-rose-400/50"}
-          >
-            <span className="text-xl">🎮</span>
-            <span className="text-base sm:text-lg font-black tracking-wider uppercase drop-shadow-sm">
-              {hud.ready ? "JETZT SPIELEN" : "Laden…"}
-            </span>
-          </button>
+              }}
+              onTouchEnd={(e) => {
+                e.stopPropagation();
+                if (hud.ready) {
+                  unlockAudio();
+                  engine?.start();
+                }
+              }}
+              className="flex-1 relative group overflow-hidden rounded-xl bg-gradient-to-r from-red-600 via-rose-500 to-red-600 py-2.5 px-2 font-black tracking-wider text-white shadow-lg shadow-red-950/50 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-rose-400/40"
+            >
+              <span className="text-lg">🎮</span>
+              <span className="text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-sm truncate">
+                {hud.ready ? "Standard" : "Laden…"}
+              </span>
+            </button>
+
+            {profile.name && !isEditing ? (() => {
+              const status = getTonnenPlayStatus(profile);
+                  const currentLvl = getPlayerLevel(profile.totalXp || 0);
+                  if (currentLvl < 5) {
+                    return (
+                      <button
+                        type="button"
+                        disabled
+                        className="flex-1 relative rounded-xl bg-neutral-800/90 py-2.5 px-2 font-black tracking-wider text-neutral-400 border border-neutral-700 flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
+                      >
+                        <span className="text-base">🔒</span>
+                        <span className="text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-sm truncate">
+                          Ab Lvl 5 (Du: {currentLvl})
+                        </span>
+                      </button>
+                    );
+                  }
+              const handleStartTonnen = () => {
+                if (!status.canAfford) {
+                  setShowTonnenNoCoinsModal(true);
+                  return;
+                }
+
+                const updated = {
+                  ...profile,
+                  coins: status.isFree ? (profile.coins || 0) : Math.max(0, (profile.coins || 0) - 1),
+                  tonnenPlays: {
+                    date: status.today,
+                    count: status.currentCount + 1,
+                  },
+                };
+
+                setProfile(updated);
+                saveProfile(updated);
+                syncProfileOnline(updated).catch(console.error);
+                setIsTonnenOpen(true);
+              };
+
+              return (
+                <button
+                  type="button"
+                  onClick={handleStartTonnen}
+                  onTouchEnd={(e) => {
+                    e.stopPropagation();
+                    handleStartTonnen();
+                  }}
+                  className="flex-1 relative group overflow-hidden rounded-xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 py-2.5 px-2 font-black tracking-wider text-white shadow-lg shadow-emerald-950/50 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-400/40"
+                >
+                  <span className="text-base">🗑️</span>
+                  <span className="text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-sm truncate">
+                    {status.isFree ? `Jagd (${status.freeRemaining}/3 frei)` : "Jagd (1 🪙)"}
+                  </span>
+                </button>
+              );
+            })() : (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                onTouchEnd={(e) => {
+                  e.stopPropagation();
+                  setIsEditing(true);
+                }}
+                className="flex-1 relative group overflow-hidden rounded-xl bg-neutral-800/90 py-2.5 px-2 font-bold tracking-wider text-neutral-400 shadow-md active:scale-[0.98] hover:text-neutral-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-neutral-700/60"
+              >
+                <span className="text-base">🔒</span>
+                <span className="text-xs sm:text-sm font-bold tracking-wider uppercase truncate">
+                  Anmelden
+                </span>
+              </button>
+            )}
+          </div>
 
           {profile.name && !isEditing && (
             <>
@@ -1300,6 +1377,17 @@ export function GameScreen() {
           );
         })()}
 
+        {isTonnenOpen && (
+          <TonnenGame
+            profile={profile}
+            onClose={() => setIsTonnenOpen(false)}
+            onUpdateProfile={(updated) => {
+              setProfile(updated);
+              saveProfile(updated);
+              syncProfileOnline(updated).catch(console.error);
+            }}
+          />
+        )}
         <KioskModal
           isOpen={isKioskOpen}
           initialTab={kioskTab}
@@ -1491,17 +1579,27 @@ export function GameScreen() {
         )}
 
         {hud.mode === "paused" && (
-          <Modal>
-            <p className="font-display text-5xl tracking-wide">Pause</p>
-            <div className="mt-6 flex flex-col gap-2">
-              <button type="button" className={primaryBtn} onClick={() => engine?.resume()}>
-                Weiter
-              </button>
-              <button type="button" className={ghostBtn} onClick={() => engine?.toTitle()}>
-                Menü
-              </button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in">
+            <div className="w-full max-w-xs rounded-2xl border border-neutral-700 bg-neutral-900/95 p-6 text-center shadow-2xl space-y-4">
+              <h2 className="font-display text-4xl font-black tracking-wider text-white">PAUSE</h2>
+              <div className="flex flex-col gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => engine?.resume()}
+                  className="w-full rounded-xl bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 py-3 font-bold uppercase tracking-wider text-white shadow-lg active:scale-95 transition-all hover:brightness-110"
+                >
+                  Weiter
+                </button>
+                <button
+                  type="button"
+                  onClick={() => engine?.toTitle()}
+                  className="w-full rounded-xl border border-neutral-700 bg-neutral-800 py-3 font-bold uppercase tracking-wider text-neutral-300 shadow-md active:scale-95 transition-all hover:bg-neutral-700 hover:text-white"
+                >
+                  Menü
+                </button>
+              </div>
             </div>
-          </Modal>
+          </div>
         )}
 
         {hud.mode === "results" && resultsDelay && (
