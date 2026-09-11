@@ -1,3 +1,14 @@
+
+const RARITY_CONFIG: Record<string, { label: string; border: string; bg: string; text: string; badgeBg: string }> = {
+  standard: { label: "Standard", border: "border-zinc-700/70", bg: "bg-zinc-900/80", text: "text-zinc-400", badgeBg: "bg-zinc-800 text-zinc-300 border-zinc-700" },
+  selten: { label: "Selten", border: "border-cyan-500/50", bg: "bg-cyan-950/20", text: "text-cyan-300", badgeBg: "bg-cyan-950/80 text-cyan-300 border-cyan-500/50" },
+  episch: { label: "Episch", border: "border-purple-500/50", bg: "bg-purple-950/20", text: "text-purple-300", badgeBg: "bg-purple-950/80 text-purple-300 border-purple-500/50" },
+  legendaer: { label: "Legendär", border: "border-amber-500/60", bg: "bg-amber-950/20", text: "text-amber-300", badgeBg: "bg-amber-950/80 text-amber-300 border-amber-500/50" }
+};
+
+function getRarityStyle(rarity?: string) {
+  return RARITY_CONFIG[rarity || "standard"] || RARITY_CONFIG.standard;
+}
 import { SkinPreviewModal } from "./skin-preview-modal";
 import { getPlayerLevel } from "@/lib/profile";
 import React, { useState, useMemo, useEffect } from "react";
@@ -269,7 +280,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
               return (
                 <div
                   key={item.id}
-                  className={`flex items-center justify-between gap-3 rounded-xl border p-2.5 ${isEq ? "border-amber-500/60 bg-amber-500/10" : "border-neutral-800 bg-neutral-900/90"}`}
+                  className={`flex items-center justify-between gap-3 rounded-xl border p-2.5 ${isEq ? "border-amber-500 ring-1 ring-amber-500/40 bg-amber-500/10" : `${getRarityStyle(item.rarity).border} ${getRarityStyle(item.rarity).bg}`}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div onClick={(e) => {
@@ -288,6 +299,11 @@ export const KioskModal: React.FC<KioskModalProps> = ({
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="truncate text-xs font-bold text-neutral-100">{item.name}</span>
+                        {item.rarity && (
+                          <span className={`rounded border px-1 py-0.2 text-[8px] font-semibold uppercase tracking-wider ${getRarityStyle(item.rarity).badgeBg}`}>
+                            {getRarityStyle(item.rarity).label}
+                          </span>
+                        )}
                         {isEq && <span className="rounded bg-amber-500/30 px-1 text-[9px] font-bold text-amber-300">Aktiv</span>}
                       </div>
                       <p className="line-clamp-1 text-[11px] text-neutral-400">{item.description}</p>

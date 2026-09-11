@@ -37,7 +37,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     price: 0,
     category: "skin",
     icon: "👒",
-    rarity: "gewoehnlich",
+    rarity: "standard",
     available: true
   },
 
