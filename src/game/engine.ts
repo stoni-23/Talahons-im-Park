@@ -369,8 +369,8 @@ export class GameEngine {
     const fit = Math.min(parent.clientWidth / WORLD_W, parent.clientHeight / WORLD_H);
     const w = Math.max(1, WORLD_W * fit);
     const h = Math.max(1, WORLD_H * fit);
-    this.canvas.style.width = `${w}px`;
-    this.canvas.style.height = `${h}px`;
+    this.canvas.style.width = "100%";
+    this.canvas.style.height = "100%";
     const raw = window.devicePixelRatio || 1;
     const cap = this.lowPower ? 1 : raw > 2.5 ? 1.25 : Math.min(1.5, raw);
     const dpr = Math.max(1, cap);
@@ -403,6 +403,7 @@ export class GameEngine {
     startParkAmbience();
     onGameStartAudio();
     this.mode = "playing";
+    this.resize();
     if ("omaKommando" in this) (this as any).omaKommando = false;
     if ("frenzy" in this) (this as any).frenzy = false;
     if ("frenzyTimer" in this) (this as any).frenzyTimer = 0;
@@ -453,6 +454,7 @@ export class GameEngine {
   resume() {
     if (this.mode === "paused") {
       this.mode = "playing";
+    this.resize();
       this.last = performance.now();
       setParkPaused(false);
       this.emit();
@@ -467,6 +469,7 @@ export class GameEngine {
     cancelOmaSpeech();
     stopParkAmbience();
     this.mode = "title";
+    this.resize();
     this.targets = [];
     this.peekBusy.clear();
     this.bushBusy.clear();
@@ -483,6 +486,7 @@ export class GameEngine {
     stopParkAmbience();
     playRoundEnd();
     this.mode = "results";
+    this.resize();
       this.strickT = 0;
       this.trauma = 0;
       this.recoil = 0;
