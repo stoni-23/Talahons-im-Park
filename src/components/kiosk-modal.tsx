@@ -328,13 +328,23 @@ export const KioskModal: React.FC<KioskModalProps> = ({
                           🔒 Ab Level {item.minLevel} (Lv. {getPlayerLevel(profile?.totalXp || 0)})
                         </button>
                       ) : item.available === false ? (
-                        <button
-                          type="button"
-                          disabled
-                          className="cursor-not-allowed rounded-lg border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] font-medium text-neutral-500"
-                        >
-                          🔒 Noch nicht verfügbar
-                        </button>
+                        item.exclusive ? (
+                          <button
+                            type="button"
+                            disabled
+                            className="cursor-not-allowed rounded-lg border border-emerald-900/50 bg-emerald-950/40 px-2.5 py-1 text-[11px] font-medium text-emerald-400"
+                          >
+                            🔒 {item.unlockHint ? `Exklusiv (${item.unlockHint})` : "Exklusiv"}
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            className="cursor-not-allowed rounded-lg border border-neutral-800 bg-neutral-900/60 px-2.5 py-1 text-[11px] font-medium text-neutral-500"
+                          >
+                            🔒 Nicht verfügbar
+                          </button>
+                        )
                       ) : (
                         <button
                           type="button"

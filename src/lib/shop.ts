@@ -13,6 +13,8 @@ export interface ShopItem {
   crosshairColor?: string;
   badgeIcon?: string;
   available?: boolean;
+  exclusive?: boolean;
+  unlockHint?: string;
   minLevel?: number;
 }
 
@@ -72,7 +74,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: "🔋",
     rarity: "selten",
     xpReward: 1500,
-    available: false
+    available: true
   },
   {
     id: "xp_paket_gross",
@@ -83,7 +85,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: "🧪",
     rarity: "episch",
     xpReward: 4000,
-    available: false
+    available: true
   },
   {
     id: "badge_neuling",
@@ -105,18 +107,20 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: "🕊️",
     badgeIcon: "🕊️",
     rarity: "selten",
-    available: false
+    available: false,
+    exclusive: true,
+    unlockHint: "Daily-Login"
   },
   {
     id: "badge_sheriff",
     name: "Park-Sheriff",
     description: "Sorgt für Zucht und Ordnung unter den Parkbänken.",
-    price: 3,
+    price: 100,
     category: "badge",
     icon: "🛡️",
     badgeIcon: "🛡️",
     rarity: "episch",
-    available: false
+    available: true
   },
   {
     id: "badge_boss",
@@ -144,12 +148,12 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: "visier_rot",
     name: "Scharfschützen-Rot",
     description: "Aggressives rotes Zielvisier für maximale Zielerfassung.",
-    price: 5,
+    price: 200,
     category: "visier",
     icon: "🔴",
     crosshairColor: "#ef4444",
     rarity: "selten",
-    available: false
+    available: true
   },
   {
     id: "visier_neon",
@@ -160,7 +164,9 @@ export const SHOP_ITEMS: ShopItem[] = [
     icon: "🟢",
     crosshairColor: "#22c55e",
     rarity: "episch",
-    available: false
+    available: false,
+    exclusive: true,
+    unlockHint: "Missionen"
   },
   {
     id: "visier_gold",
