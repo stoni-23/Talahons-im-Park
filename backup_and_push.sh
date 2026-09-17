@@ -16,7 +16,7 @@ zip -r "$ZIP_FILE" . -x "node_modules/*" ".git/*" "dist/*" ".next/*"
 echo "✅ Backup gespeichert: $ZIP_FILE"
 
 git add .
-git commit -m "Fix Tonnen-Modus Audio und Menue-Musik Neustart" || echo "Keine neuen Aenderungen vorhanden"
+git commit -m "Fix: Verhindere Verdopplung von totalHits und Trefferschnitt bei Profil-Sync" || echo "Keine neuen Änderungen vorhanden"
 git push
 
-echo "🚀 Backup & Push abgeschlossen!"
+echo "🚀 Backup erstellt und Commit erfolgreich gepusht!"

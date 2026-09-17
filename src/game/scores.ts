@@ -115,7 +115,8 @@ export async function persistAccountStats(
       extraHits = additionalStats.totalHits || 0;
     } else if (typeof roundScoreOrStats === 'object' && roundScoreOrStats !== null) {
       roundScore = Number(roundScoreOrStats.roundScore ?? roundScoreOrStats.score) || 0;
-      extraHits = Number(roundScoreOrStats.roundHits ?? roundScoreOrStats.totalHits) || 0;
+      extraHits = Number(roundScoreOrStats.roundHits) || 0;
+      const explicitHits = Number(roundScoreOrStats.totalHits ?? additionalStats.totalHits) || 0;
       explicitXp = Number(roundScoreOrStats.totalXp ?? roundScoreOrStats.total_xp) || 0;
       explicitHigh = Number(roundScoreOrStats.highScore) || 0;
       explicitGames = Number(roundScoreOrStats.gamesPlayed) || 0;
@@ -130,7 +131,7 @@ export async function persistAccountStats(
       ? Math.max(prevXp, explicitXp) 
       : (roundScore > 0 ? prevXp + roundScore : Math.max(prevXp, Number(additionalStats.totalXp) || 0));
 
-    const nextHits = extraHits > 0 ? (prevHits + extraHits) : Math.max(prevHits, Number(additionalStats.totalHits) || 0);
+    const nextHits = extraHits > 0 ? (prevHits + extraHits) : Math.max(prevHits, explicitHits);
     const nextGames = explicitGames > 0 ? Math.max(prevGames, explicitGames) : (roundScore > 0 ? prevGames + 1 : Math.max(prevGames, Number(additionalStats.gamesPlayed) || 0));
     const nextHigh = Math.max(prevHigh, roundScore, explicitHigh, Number(additionalStats.highScore) || 0);
 
