@@ -678,7 +678,7 @@ export function GameScreen() {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.2.2 BETA</div>}
+      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.3.2 BETA</div>}
       <div
         className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
         style={{ touchAction: playing ? "none" : "pan-y" }}
@@ -690,20 +690,18 @@ export function GameScreen() {
         />
 
         {hud.mode === "title" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-ink/80 px-4 py-8">
-            <div className="flex max-h-full w-full max-w-lg flex-col items-center gap-2 overflow-y-auto" style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch" }}>
-              <img
-                src="/assets/logo.png?v=2"
-                alt="Bankgeheimnis im Park"
-                className="h-auto w-[min(55vw,170px)] select-none"
-                draggable={false}
-              />
-              <p className="max-w-sm text-center text-xs italic leading-snug text-paper-dim my-3 px-2">
-                „Meine Parabellum-Halbautomatik, Kaliber 9 mm, mit erweitertem Magazin unter meinem Strickzeug. Die macht euch Beine, noch bevor ihr ‚Ali Baba und die 40 Räuber‘ sagen könnt.“
-              </p>
-
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex h-full w-full max-w-[520px] flex-col items-center gap-2.5 overflow-y-auto px-6 pt-80 pb-12" style={{
+                backgroundImage: "url('/bg_oben.jpg'), url('/bg_unten.jpg')",
+                backgroundRepeat: "no-repeat, repeat-y",
+                backgroundSize: "105% auto, 105% auto",
+                backgroundPosition: "65% top, 65% top",
+                backgroundAttachment: "local, local",
+                touchAction: "pan-y",
+                WebkitOverflowScrolling: "touch"
+              }}>
               {/* Spieler & Rekord Box */}
-              <div className="w-full max-w-sm rounded-lg border border-line bg-ink/90 p-2 shadow-md">
+              <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <div className="mb-2 flex items-center justify-between">
                   <p className="flex items-center gap-1.5 text-xs font-bold tracking-[0.14em] text-paper uppercase">
                     <User className="size-3.5 text-amber-400" /> Profil
@@ -817,7 +815,7 @@ export function GameScreen() {
               </div>
 
               {/* --- HAUPT-AKTIONEN & SPÄTI KASTEN --- */}
-        <div className={profile.name && !isEditing ? "rounded-2xl border border-neutral-800 bg-neutral-900/90 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full"}>
+        <div className={profile.name && !isEditing ? "w-full max-w-[360px] rounded-2xl border border-[#5c3a21]/60 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full"} style={profile.name && !isEditing ? { backgroundColor: "rgba(10, 8, 6, 0.45)" } : undefined}>
           {/* 1. SPIEL-MODI BUTTONS NEBENEINANDER */}
           <div className="flex gap-2 w-full">
             <button
@@ -834,7 +832,7 @@ export function GameScreen() {
                   engine?.start();
                 }
               }}
-              className="flex-1 relative group overflow-hidden rounded-xl bg-gradient-to-r from-red-600 via-rose-500 to-red-600 py-2.5 px-2 font-black tracking-wider text-white shadow-lg shadow-red-950/50 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-rose-400/40"
+              className="flex-1 relative group overflow-hidden rounded-lg bg-gradient-to-b from-red-700 to-red-900 py-3 px-2 font-black tracking-wider text-amber-100 shadow-md shadow-black/70 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-red-500/50"
             >
               <span className="text-lg">🎮</span>
               <span className="text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-sm truncate">
@@ -888,7 +886,7 @@ export function GameScreen() {
                     e.stopPropagation();
                     handleStartTonnen();
                   }}
-                  className="flex-1 relative group overflow-hidden rounded-xl bg-gradient-to-r from-emerald-600 via-teal-500 to-emerald-600 py-2.5 px-2 font-black tracking-wider text-white shadow-lg shadow-emerald-950/50 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-400/40"
+                  className="flex-1 relative group overflow-hidden rounded-lg bg-gradient-to-b from-emerald-700 to-emerald-950 py-3 px-2 font-black tracking-wider text-emerald-100 shadow-md shadow-black/70 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-500/50"
                 >
                   <span className="text-base">🗑️</span>
                   <span className="text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-sm truncate">
@@ -904,7 +902,7 @@ export function GameScreen() {
                   e.stopPropagation();
                   setIsEditing(true);
                 }}
-                className="flex-1 relative group overflow-hidden rounded-xl bg-neutral-800/90 py-2.5 px-2 font-bold tracking-wider text-neutral-400 shadow-md active:scale-[0.98] hover:text-neutral-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-neutral-700/60"
+                className="flex-1 relative group overflow-hidden rounded-lg bg-neutral-900/90 py-3 px-2 font-bold tracking-wider text-neutral-400 shadow-md shadow-black/70 active:scale-[0.98] hover:text-neutral-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-neutral-700/60"
               >
                 <span className="text-base">🔒</span>
                 <span className="text-xs sm:text-sm font-bold tracking-wider uppercase truncate">
@@ -1056,7 +1054,7 @@ export function GameScreen() {
         </div>
 
         {/* Highscore Liste */}
-              <div className="w-full max-w-sm rounded-lg border border-line bg-ink/90 p-2 shadow-md">
+              <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-xs font-bold tracking-[0.14em] text-paper uppercase">
                     🏆 {showAllScores ? "Top 100 Rangliste" : "Top 5 Bestenliste"}
@@ -1139,7 +1137,7 @@ export function GameScreen() {
               
               {/* Chat-Bereich (Nur sichtbar wenn Name gesetzt) */}
               {!isEditing && profile?.name && (
-                <div className="w-full max-w-sm rounded-lg border border-line bg-ink/90 p-2 shadow-md flex flex-col mb-4">
+                <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg flex flex-col mb-4" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                   <p className="mb-2 text-xs font-bold tracking-[0.14em] text-paper uppercase flex items-center gap-1.5">
                     💬 Parkbank-Chat
                   </p>
@@ -1187,7 +1185,7 @@ export function GameScreen() {
               )}
 
               {/* Spielanleitung */}
-              <ul className="w-full max-w-sm space-y-1 rounded-xl border border-line bg-ink/60 p-3 text-xs text-paper-dim">
+              <ul className="w-full max-w-[360px] space-y-1 rounded-xl border border-[#5c3a21]/60 p-3 text-xs text-paper-dim" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <li className="flex items-center justify-between">
                   <div className="flex flex-col text-left">
                     <span>🧶 Stricknadelkommando</span>
@@ -1211,7 +1209,7 @@ export function GameScreen() {
               </p>
 
               {/* Social Media Links */}
-              <div className="w-full max-w-sm rounded-xl border border-line bg-ink/90 p-3 text-center mt-2">
+              <div className="w-full max-w-[360px] rounded-xl border border-[#5c3a21]/60 p-3 text-center mt-2" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <p className="mb-2 text-[11px] font-bold tracking-[0.14em] text-paper-dim uppercase">BANKGEHEIMNIS IM PARK</p>
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
                   <a href="https://www.tiktok.com/@bankgeheimnisimpark" target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
