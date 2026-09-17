@@ -243,3 +243,43 @@ export function setMuted(m: boolean) {
 export function resumeAudio() { getCtx(); }
 export function unlockAudio() { getCtx(); }
 export function startBgm() {}
+
+export function playWheelTick() {
+  if (muted) return;
+  try {
+    const ctx = getCtx();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(450, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.04);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.04);
+  } catch (e) {}
+}
+
+export function playWheelWin() {
+  if (muted) return;
+  try {
+    const ctx = getCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, now + i * 0.09);
+      gain.gain.setValueAtTime(0.2, now + i * 0.09);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.09 + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.09);
+      osc.stop(now + i * 0.09 + 0.25);
+    });
+  } catch (e) {}
+}

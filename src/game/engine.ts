@@ -276,8 +276,9 @@ export class GameEngine {
     const nav = navigator as Navigator & { deviceMemory?: number };
     const mem = nav.deviceMemory ?? 8;
     const cores = navigator.hardwareConcurrency || 8;
-    const weakMem = mem <= 3;
-    const weakCpu = cores <= 4 && mem <= 4;
+    // Nur bei wirklich extrem schwachen Geraeten drosseln
+    const weakMem = mem < 2;
+    const weakCpu = cores < 3;
     return this.reduced || weakMem || weakCpu;
   }
 
@@ -727,7 +728,7 @@ export class GameEngine {
       this.trauma = Math.min(1, this.trauma + (this.strickT > 0 ? 0.55 : 0.32));
     }
     const oma = this.omaRect();
-    if (!this.lowPower) this.flashes.push({ x: oma.x + oma.w * 0.85, y: oma.y + oma.h * 0.15, t: 0.15, kind: "muzzle" });
+    this.flashes.push({ x: oma.x + oma.w * 0.85, y: oma.y + oma.h * 0.15, t: 0.15, kind: "muzzle" });
     let hit: Target | null = null;
     let z = -1;
     let dist = Infinity;
@@ -882,7 +883,7 @@ export class GameEngine {
       playTalahonHitVoice();
     }
 
-    if (!this.reduced && !this.lowPower) {
+    if (!this.reduced) {
       this.trauma = Math.min(1, this.trauma + (t.act === "rocker" ? 0.7 : 0.38));
       this.hitstop = t.act === "rocker" ? 0.09 : 0.045;
     }
@@ -1363,7 +1364,7 @@ export class GameEngine {
       ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
       ctx.restore();
     }
-    if (!this.lowPower) for (const f of this.flashes) {
+    for (const f of this.flashes) {
       const key =
         f.kind === "muzzle"
           ? `muzzle-${clamp(4 - Math.ceil(f.t * 20), 1, 4)}`

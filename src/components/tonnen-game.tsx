@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { PlayerProfile } from "@/lib/profile";
-import {  playShot , isMuted } from "@/game/audio";
+import {playShot, isMuted, resumeAudio, playWheelTick, playWheelWin } from "@/game/audio";
 import { getActiveCrosshairColor } from "@/lib/shop";
 import { Pause, Play } from "lucide-react";
 
@@ -40,6 +40,64 @@ const WORLD_W = 900;
 const WORLD_H = 1600;
 const FIRE_CD = 0.18;
 
+
+let wheelAudioCtx: AudioContext | null = null;
+function getWheelAudioCtx(): AudioContext | null {
+  try {
+    if (!wheelAudioCtx) {
+      const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+      if (Ctx) wheelAudioCtx = new Ctx();
+    }
+    if (wheelAudioCtx && wheelAudioCtx.state === "suspended") {
+      wheelAudioCtx.resume().catch(() => {});
+    }
+    return wheelAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+function playClickTick() {
+  try {
+    const ctx = getWheelAudioCtx();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(620, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(180, ctx.currentTime + 0.03);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.035);
+  } catch {}
+}
+
+function playWinChime(isJackpot: boolean) {
+  try {
+    const ctx = getWheelAudioCtx();
+    if (!ctx) return;
+    const notes = isJackpot 
+      ? [261.63, 329.63, 392.00, 523.25, 659.25, 783.99] 
+      : [329.63, 440.00, 554.37, 659.25];
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = isJackpot ? "triangle" : "sine";
+      const startT = ctx.currentTime + idx * 0.08;
+      osc.frequency.setValueAtTime(freq, startT);
+      gain.gain.setValueAtTime(0.25, startT);
+      gain.gain.exponentialRampToValueAtTime(0.001, startT + 0.28);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startT);
+      osc.stop(startT + 0.3);
+    });
+  } catch {}
+}
+
 const WHEEL_SECTORS = [
   { label: "1 COIN", icon: "🪙", color: "#f59e0b", textColor: "#000", coins: 1, xp: 0, extra: false, weight: 15 },
   { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 30 },
@@ -73,6 +131,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
   const [wheelAngle, setWheelAngle] = useState(0);
   const [isSpinning, setIsSpinning] = useState(false);
   const [wheelResultText, setWheelResultText] = useState("Dreh das Rad!");
+  const [wheelBet, setWheelBet] = useState(1);
   const [totalWonCoins, setTotalWonCoins] = useState(0);
   const [totalWonXp, setTotalWonXp] = useState(0);
   // Audio-Lebenszyklus als echtes Singleton
@@ -625,13 +684,23 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
     }
   };
   // GLÜCKSRAD DREHEN
-    const spinWheel = () => {
-    if (herbsLeft <= 0 || isSpinning) return;
+  const spinWheel = () => {
+    const bet = Math.min(wheelBet, herbsLeft);
+    if (bet <= 0 || isSpinning) return;
+
+    try { resumeAudio(); } catch {}
+    getWheelAudioCtx();
+
+    let ticks = 0;
+    const ticker = setInterval(() => {
+      ticks++;
+      playClickTick();
+      if (ticks >= 28) clearInterval(ticker);
+    }, 95);
 
     setIsSpinning(true);
-    setHerbsLeft((h) => h - 1);
+    setHerbsLeft((h) => Math.max(0, h - bet));
 
-    // Gewichtete Auslosung
     const totalWeight = WHEEL_SECTORS.reduce((acc, s) => acc + (s.weight || 10), 0);
     let rnd = Math.random() * totalWeight;
     let targetIdx = 0;
@@ -643,42 +712,49 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       }
     }
 
-    const sectorAngle = 360 / WHEEL_SECTORS.length; // 45 Grad
-    const centerOffset = sectorAngle / 2; // 22.5 Grad
-    // Ausrichtung des Zentrums von targetIdx genau nach oben auf 0 Grad (unter den Pfeil)
+    const sectorAngle = 360 / WHEEL_SECTORS.length;
+    const centerOffset = sectorAngle / 2;
     const desiredStop = (360 - (targetIdx * sectorAngle + centerOffset)) % 360;
     const currentRot = wheelAngle % 360;
     const diff = (desiredStop - currentRot + 360) % 360;
-    // Mindestens 5 volle Drehungen + exakter Differenzwinkel
     const newAngle = wheelAngle + 5 * 360 + diff;
     setWheelAngle(newAngle);
 
     setTimeout(() => {
+      clearInterval(ticker);
       setIsSpinning(false);
+      playWheelWin();
       const won = WHEEL_SECTORS[targetIdx];
+      const winCoins = won.coins * bet;
+      const winXp = won.xp * bet;
 
       if (won.extra) {
-        setHerbsLeft((h) => h + 1);
-        setWheelResultText("🔄 Extra-Dreh geschenkt!");
+        const extraAdd = 1 * bet;
+        setHerbsLeft((h) => h + extraAdd);
+        setWheelResultText(`🔄 +${extraAdd} Extra-Dreh geschenkt!`);
+        playWinChime(false);
       } else {
-        setTotalWonCoins((c) => c + won.coins);
-        setTotalWonXp((x) => x + won.xp);
+        setTotalWonCoins((c) => c + winCoins);
+        setTotalWonXp((x) => x + winXp);
 
         if (won.coins > 0 && won.xp > 0) {
-          setWheelResultText(`🎉 JACKPOT! +${won.coins} Coins & +${won.xp} XP!`);
-        } else if (won.coins > 0) {
-          setWheelResultText(`🪙 +${won.coins} Coin gewonnen!`);
-        } else if (won.xp > 0) {
-          setWheelResultText(`⚡ +${won.xp} XP gesammelt!`);
+          playWinChime(true);
+          setWheelResultText(`🎉 JACKPOT! +${winCoins} Coins & +${winXp} XP!`);
+        } else if (winCoins > 0) {
+          playWinChime(false);
+          setWheelResultText(`🪙 +${winCoins} Coin${winCoins > 1 ? "s" : ""} gewonnen!`);
+        } else if (winXp > 0) {
+          playWinChime(false);
+          setWheelResultText(`⚡ +${winXp} XP gesammelt!`);
         } else {
           setWheelResultText("🍂 Niete! Versuchs nochmal.");
         }
 
-        if (won.coins > 0 || won.xp > 0) {
+        if (winCoins > 0 || winXp > 0) {
           const updated: Profile = {
             ...profile,
-            coins: (profile.coins || 0) + won.coins,
-            totalXp: (profile.totalXp || 0) + won.xp,
+            coins: (profile.coins || 0) + winCoins,
+            totalXp: (profile.totalXp || 0) + winXp,
           };
           onUpdateProfile(updated);
         }
@@ -802,45 +878,91 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       {/* 4. PARK-GLÜCKSRAD */}
       {gameState === "spielo" && (
         <div className="w-full h-full max-w-[480px] p-5 flex flex-col justify-between items-center text-center bg-neutral-950 select-none">
-          <div className="space-y-1">
-            <span className="text-xs uppercase tracking-widest text-amber-500 font-black">
-              Park-Spielo Glücksrad
-            </span>
-            <h3 className="text-xl font-black text-white">Dreh das Kräuterrad!</h3>
-            <p className="text-xs text-neutral-400">
-              Einsatz: 1g Kräuter pro Dreh.
-            </p>
+          <div className="space-y-2 text-center">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-yellow-400/30 to-amber-500/20 border border-amber-400/50 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+              <span className="text-amber-300 animate-pulse text-xs">✨</span>
+              <span className="text-[11px] uppercase tracking-widest text-amber-300 font-black">
+                PARK-CASINO GLÜCKSRAD
+              </span>
+              <span className="text-amber-300 animate-pulse text-xs">✨</span>
+            </div>
+
+            {/* Einsatz Chips */}
+            <div className="flex items-center justify-center gap-2 pt-1">
+              <span className="text-xs text-neutral-400 font-black uppercase tracking-wider">Einsatz:</span>
+              {[1, 2, 5].map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  disabled={isSpinning || herbsLeft < val}
+                  onClick={() => setWheelBet(val)}
+                  className={`relative px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    wheelBet === val
+                      ? "bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-600 text-neutral-950 scale-110 shadow-[0_0_15px_rgba(251,191,36,0.6)] ring-2 ring-yellow-200"
+                      : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700 disabled:opacity-25"
+                  }`}
+                >
+                  {val}g
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={isSpinning || herbsLeft <= 0}
+                onClick={() => setWheelBet(Math.max(1, herbsLeft))}
+                className={`relative px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                  wheelBet >= herbsLeft && herbsLeft > 0
+                    ? "bg-gradient-to-b from-emerald-300 via-teal-400 to-emerald-600 text-neutral-950 scale-110 shadow-[0_0_15px_rgba(52,211,153,0.6)] ring-2 ring-emerald-200"
+                    : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700 disabled:opacity-25"
+                }`}
+              >
+                MAX
+              </button>
+            </div>
           </div>
 
           <div className="relative flex items-center justify-center my-3">
-            <div className="absolute -top-4 z-30 w-0 h-0 border-l-[14px] border-l-transparent border-r-[14px] border-r-transparent border-t-[24px] border-t-amber-400 drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]" />
+            {/* 3D Casino Zeiger mit Rubin */}
+            <div className="absolute -top-5 z-40 flex flex-col items-center drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)]">
+              <div className="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-t-[28px] border-t-amber-300 filter drop-shadow-[0_2px_4px_rgba(217,119,6,0.8)]" />
+              <div className="-mt-6 w-3 h-3 rounded-full bg-red-600 ring-2 ring-yellow-200 shadow-[0_0_8px_#ef4444]" />
+            </div>
 
-            <div
-              className="w-72 h-72 rounded-full border-4 border-amber-500/70 shadow-[0_0_30px_rgba(245,158,11,0.25)] relative overflow-hidden transition-transform duration-[3000ms] cubic-bezier(0.15, 0.85, 0.35, 1)"
-              style={{
-                transform: `rotate(${wheelAngle}deg)`,
-                background: "conic-gradient(#f59e0b 0% 12.5%, #262626 12.5% 25%, #3b82f6 25% 37.5%, #1c1917 37.5% 50%, #10b981 50% 62.5%, #ef4444 62.5% 75%, #262626 75% 87.5%, #059669 87.5% 100%)",
-              }}
-            >
-              {WHEEL_SECTORS.map((sec, i) => {
-                const angle = i * 45 + 22.5;
-                return (
-                  <div
-                    key={i}
-                    className="absolute top-0 left-1/2 -ml-6 w-12 h-36 origin-bottom flex flex-col items-center pt-2 text-[11px] font-black tracking-tight"
-                    style={{
-                      transform: `rotate(${angle}deg)`,
-                      color: sec.textColor,
-                    }}
-                  >
-                    <span className="text-base leading-none drop-shadow">{sec.icon}</span>
-                    <span className="text-[10px] leading-tight mt-0.5 drop-shadow">{sec.label}</span>
-                  </div>
-                );
-              })}
+            {/* Äußerer goldener Leuchtkranz */}
+            <div className="p-3 rounded-full bg-gradient-to-b from-yellow-300 via-amber-600 to-yellow-950 shadow-[0_0_40px_rgba(245,158,11,0.4)] border-2 border-amber-300/60 relative">
+              {/* LED Lichterkette auf dem Rahmen */}
+              <div className="absolute inset-1 rounded-full border border-dashed border-amber-200/40 pointer-events-none" />
 
-              <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-neutral-950 border-2 border-amber-400 flex items-center justify-center text-xl z-20 shadow-inner">
-                🎡
+              {/* Das Rad */}
+              <div
+                className="w-72 h-72 rounded-full border-4 border-neutral-950 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] relative overflow-hidden transition-transform duration-[3200ms] cubic-bezier(0.12, 0.88, 0.32, 1)"
+                style={{
+                  transform: `rotate(${wheelAngle}deg)`,
+                  background: "conic-gradient(#f59e0b 0% 12.5%, #262626 12.5% 25%, #3b82f6 25% 37.5%, #1c1917 37.5% 50%, #10b981 50% 62.5%, #ef4444 62.5% 75%, #262626 75% 87.5%, #059669 87.5% 100%)",
+                }}
+              >
+                {WHEEL_SECTORS.map((sec, i) => {
+                  const angle = i * 45 + 22.5;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute top-0 left-1/2 -ml-6 w-12 h-36 origin-bottom flex flex-col items-center pt-2 text-[11px] font-black tracking-tight select-none"
+                      style={{
+                        transform: `rotate(${angle}deg)`,
+                        color: sec.textColor,
+                      }}
+                    >
+                      <span className="text-xl leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{sec.icon}</span>
+                      <span className="text-[10px] uppercase font-black leading-tight mt-0.5 drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tracking-tighter">
+                        {sec.label}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {/* Zentraler Casino Hub */}
+                <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-gradient-to-b from-neutral-900 via-neutral-950 to-black border-2 border-amber-400 flex items-center justify-center text-xl z-20 shadow-[0_0_15px_rgba(0,0,0,0.9)] ring-2 ring-amber-500/40">
+                  <span className="drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]">🎰</span>
+                </div>
               </div>
             </div>
           </div>
@@ -867,7 +989,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
               onClick={spinWheel}
               className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 font-black text-neutral-950 uppercase tracking-wider shadow-lg shadow-amber-950/60 active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
             >
-              {isSpinning ? "Rad dreht sich…" : herbsLeft > 0 ? "Rad drehen (1g)" : "Keine Kräuter mehr"}
+              {isSpinning ? "Rad dreht sich…" : herbsLeft > 0 ? `Rad drehen (${Math.min(wheelBet, herbsLeft)}g)` : "Keine Kräuter mehr"}
             </button>
 
             <button
