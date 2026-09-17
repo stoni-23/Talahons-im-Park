@@ -35,7 +35,7 @@ function getOmaRank(score: number) {
 import React, { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Pause, Play, Volume2, VolumeX, User, Trash2, Edit2, Share2, Maximize, Minimize, Smartphone, LogOut } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
-import { unlockAudio } from "@/game/audio";
+import { unlockAudio, setMuted, isMuted, startMenuMusic, stopMenuMusic } from "@/game/audio";
 import { qualifies, submitScore, fetchOnlineBoard, syncPlayerLevel, persistAccountStats, fetchAccountStats, type ScoreEntry } from "@/game/scores";
 import { loadProfile, saveProfile, resetCurrentProfile, type PlayerProfile, setActiveUserName, getPlayerLevel, getLevelProgress } from "@/lib/profile";
 import { getTonnenPlayStatus } from "@/lib/profile";
@@ -132,6 +132,41 @@ export function GameScreen() {
   const [isSecured, setIsSecured] = useState(true);
   const [claimPassword, setClaimPassword] = useState("");
   const [claimError, setClaimError] = useState<string | null>(null);
+  const [soundMutedState, setSoundMutedState] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("menu_music_active") !== "true";
+    }
+    return true;
+  });
+
+  const toggleSound = () => {
+    const nextMuted = !soundMutedState;
+    setSoundMutedState(nextMuted);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("menu_music_active", nextMuted ? "false" : "true");
+    }
+    if (!nextMuted) {
+      startMenuMusic();
+    } else {
+      stopMenuMusic();
+    }
+  };
+
+  // Wenn man im Menü ist und Sound aktiv ist -> Musik an; im Spiel -> Musik aus
+  useEffect(() => {
+    if (hud.mode === "title" && !isTonnenOpen) {
+      const isMusicActive = localStorage.getItem("menu_music_active") === "true";
+      if (isMusicActive) {
+        setSoundMutedState(false);
+        startMenuMusic(true);
+      }
+    } else {
+      stopMenuMusic();
+    }
+  }, [hud.mode, isTonnenOpen]);
+
+
+
   const [profileError, setProfileError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -691,7 +726,7 @@ export function GameScreen() {
 
         {hud.mode === "title" && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="flex h-full w-full max-w-[520px] flex-col items-center gap-2.5 overflow-y-auto px-6 pt-80 pb-12" style={{
+            <div className="relative flex h-full w-full max-w-[520px] flex-col items-center gap-2.5 overflow-y-auto px-6 pt-80 pb-12" style={{
                 backgroundImage: "url('/bg_oben.jpg'), url('/bg_unten.jpg')",
                 backgroundRepeat: "no-repeat, repeat-y",
                 backgroundSize: "105% auto, 105% auto",
@@ -700,6 +735,15 @@ export function GameScreen() {
                 touchAction: "pan-y",
                 WebkitOverflowScrolling: "touch"
               }}>
+              {/* Lautsprecher fest auf dem Holzbrett */}
+              <button
+                type="button"
+                onClick={toggleSound}
+                aria-label="Ton an/aus"
+                className="absolute top-24 left-6 z-30 flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-900/40 bg-black/30 text-xl shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/40"
+              >
+                {soundMutedState ? "🔇" : "🔊"}
+              </button>
               {/* Spieler & Rekord Box */}
               <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <div className="mb-2 flex items-center justify-between">

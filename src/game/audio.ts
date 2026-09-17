@@ -237,11 +237,21 @@ export function setMuted(m: boolean) {
     if (m) bgmAudio.pause();
     else bgmAudio.play().catch(() => {});
   }
+  if (menuAudio) {
+    if (m) menuAudio.pause();
+    else menuAudio.play().catch(() => {});
+  }
   if (m) stopAllVoices();
 }
 
 export function resumeAudio() { getCtx(); }
-export function unlockAudio() { getCtx(); }
+export function unlockAudio() {
+  muted = false;
+  const ctx = getCtx();
+  if (ctx && ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
+  }
+}
 export function startBgm() {}
 
 export function playWheelTick() {
@@ -281,5 +291,34 @@ export function playWheelWin() {
       osc.start(now + i * 0.09);
       osc.stop(now + i * 0.09 + 0.25);
     });
+  } catch (e) {}
+}
+
+let menuAudio: HTMLAudioElement | null = null;
+
+export function startMenuMusic(fromBeginning = true) {
+  try {
+    if (!menuAudio) {
+      menuAudio = new Audio("/bgm-menu-musik.mp3");
+      menuAudio.loop = true;
+      menuAudio.volume = 0.6;
+    }
+    menuAudio.muted = false;
+    if (fromBeginning) {
+      menuAudio.currentTime = 0;
+    }
+    const playPromise = menuAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {});
+    }
+  } catch (e) {}
+}
+
+export function stopMenuMusic() {
+  try {
+    if (menuAudio) {
+      menuAudio.pause();
+      menuAudio.currentTime = 0;
+    }
   } catch (e) {}
 }
