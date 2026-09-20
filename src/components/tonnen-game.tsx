@@ -99,15 +99,19 @@ function playWinChime(isJackpot: boolean) {
 }
 
 const WHEEL_SECTORS = [
-  { label: "1 GROSCHEN", icon: "🪙", color: "#f59e0b", textColor: "#000", coins: 1, xp: 25, extra: false, weight: 22 },
-  { label: "50 XP", icon: "⚡", color: "#10b981", textColor: "#000", coins: 0, xp: 50, extra: false, weight: 10 },
+  { label: "1 GROSCHEN", icon: "🪙", color: "#f59e0b", textColor: "#000", coins: 1, xp: 0, extra: false, weight: 22 },
+  { label: "50 XP", icon: "⚡", color: "#10b981", textColor: "#000", coins: 0, xp: 50, extra: false, weight: 12 },
   { label: "+1 DREH", icon: "🔄", color: "#3b82f6", textColor: "#fff", coins: 0, xp: 0, extra: true, weight: 15 },
-  { label: "3 GROSCHEN", icon: "💰", color: "#d97706", textColor: "#fff", coins: 3, xp: 50, extra: false, weight: 18 },
-  { label: "100 XP", icon: "⚡", color: "#059669", textColor: "#fff", coins: 0, xp: 100, extra: false, weight: 10 },
+  { label: "3 GROSCHEN", icon: "💰", color: "#d97706", textColor: "#fff", coins: 3, xp: 0, extra: false, weight: 18 },
+  { label: "100 XP", icon: "⚡", color: "#059669", textColor: "#fff", coins: 0, xp: 100, extra: false, weight: 12 },
   { label: "JACKPOT", icon: "👑", color: "#ef4444", textColor: "#fff", coins: 10, xp: 250, extra: false, weight: 8 },
-  { label: "5 GROSCHEN", icon: "💎", color: "#8b5cf6", textColor: "#fff", coins: 5, xp: 100, extra: false, weight: 12 },
+  { label: "5 GROSCHEN", icon: "💎", color: "#8b5cf6", textColor: "#fff", coins: 5, xp: 0, extra: false, weight: 10 },
   { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 5 },
 ];
+
+const WHEEL_CONIC_GRADIENT = "conic-gradient(" +
+  WHEEL_SECTORS.map((s, i) => `${s.color} ${i * 12.5}% ${(i + 1) * 12.5}%`).join(", ") +
+  ")";
 
 let tonnenBgm: HTMLAudioElement | null = null;
 
@@ -716,7 +720,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
     const centerOffset = sectorAngle / 2;
     const desiredStop = (360 - (targetIdx * sectorAngle + centerOffset)) % 360;
     const currentRot = wheelAngle % 360;
-    const diff = (desiredStop - currentRot + 360) % 360;
+    const diff = ((desiredStop - currentRot) % 360 + 360) % 360;
     const newAngle = wheelAngle + 5 * 360 + diff;
     setWheelAngle(newAngle);
 
@@ -737,12 +741,11 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
         setTotalWonGroschen((c) => c + winGroschen);
         setTotalWonXp((x) => x + winXp);
 
-        if (won.coins > 0 && won.xp > 0) {
-          playWinChime(true);
-          setWheelResultText(`🎉 JACKPOT! +${winGroschen} Groschen & +${winXp} XP!`);
+        if (won.label === "JACKPOT") {
+          setWheelResultText(`👑 ECHTER JACKPOT! +${winGroschen} Groschen & +${winXp} XP!`);
         } else if (winGroschen > 0) {
           playWinChime(false);
-          setWheelResultText(`🪙 +${winGroschen} Groschen${winGroschen > 1 ? "s" : ""} gewonnen!`);
+          setWheelResultText(`💰 +${winGroschen} Groschen gewonnen!`);
         } else if (winXp > 0) {
           playWinChime(false);
           setWheelResultText(`⚡ +${winXp} XP gesammelt!`);
@@ -937,7 +940,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
                 className="w-72 h-72 rounded-full border-4 border-neutral-950 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] relative overflow-hidden transition-transform duration-[3200ms] cubic-bezier(0.12, 0.88, 0.32, 1)"
                 style={{
                   transform: `rotate(${wheelAngle}deg)`,
-                  background: "conic-gradient(#f59e0b 0% 12.5%, #262626 12.5% 25%, #3b82f6 25% 37.5%, #1c1917 37.5% 50%, #10b981 50% 62.5%, #ef4444 62.5% 75%, #262626 75% 87.5%, #059669 87.5% 100%)",
+                  background: WHEEL_CONIC_GRADIENT,
                 }}
               >
                 {WHEEL_SECTORS.map((sec, i) => {
