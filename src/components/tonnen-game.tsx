@@ -99,14 +99,14 @@ function playWinChime(isJackpot: boolean) {
 }
 
 const WHEEL_SECTORS = [
-  { label: "1 COIN", icon: "🪙", color: "#f59e0b", textColor: "#000", coins: 1, xp: 0, extra: false, weight: 15 },
-  { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 30 },
+  { label: "1 GROSCHEN", icon: "🪙", color: "#f59e0b", textColor: "#000", coins: 1, xp: 25, extra: false, weight: 22 },
+  { label: "50 XP", icon: "⚡", color: "#10b981", textColor: "#000", coins: 0, xp: 50, extra: false, weight: 10 },
   { label: "+1 DREH", icon: "🔄", color: "#3b82f6", textColor: "#fff", coins: 0, xp: 0, extra: true, weight: 15 },
-  { label: "NIETE", icon: "🍂", color: "#1c1917", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 20 },
-  { label: "25 XP", icon: "⚡", color: "#10b981", textColor: "#000", coins: 0, xp: 25, extra: false, weight: 15 },
-  { label: "JACKPOT", icon: "👑", color: "#ef4444", textColor: "#fff", coins: 2, xp: 75, extra: false, weight: 5 },
-  { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 25 },
-  { label: "10 XP", icon: "⚡", color: "#059669", textColor: "#fff", coins: 0, xp: 10, extra: false, weight: 20 },
+  { label: "3 GROSCHEN", icon: "💰", color: "#d97706", textColor: "#fff", coins: 3, xp: 50, extra: false, weight: 18 },
+  { label: "100 XP", icon: "⚡", color: "#059669", textColor: "#fff", coins: 0, xp: 100, extra: false, weight: 10 },
+  { label: "JACKPOT", icon: "👑", color: "#ef4444", textColor: "#fff", coins: 10, xp: 250, extra: false, weight: 8 },
+  { label: "5 GROSCHEN", icon: "💎", color: "#8b5cf6", textColor: "#fff", coins: 5, xp: 100, extra: false, weight: 12 },
+  { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 5 },
 ];
 
 let tonnenBgm: HTMLAudioElement | null = null;
@@ -132,7 +132,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
   const [isSpinning, setIsSpinning] = useState(false);
   const [wheelResultText, setWheelResultText] = useState("Dreh das Rad!");
   const [wheelBet, setWheelBet] = useState(1);
-  const [totalWonCoins, setTotalWonCoins] = useState(0);
+  const [totalWonGroschen, setTotalWonGroschen] = useState(0);
   const [totalWonXp, setTotalWonXp] = useState(0);
   // Audio-Lebenszyklus als echtes Singleton
   useEffect(() => {
@@ -725,7 +725,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       setIsSpinning(false);
       playWheelWin();
       const won = WHEEL_SECTORS[targetIdx];
-      const winCoins = won.coins * bet;
+      const winGroschen = won.coins * bet;
       const winXp = won.xp * bet;
 
       if (won.extra) {
@@ -734,15 +734,15 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
         setWheelResultText(`🔄 +${extraAdd} Extra-Dreh geschenkt!`);
         playWinChime(false);
       } else {
-        setTotalWonCoins((c) => c + winCoins);
+        setTotalWonGroschen((c) => c + winGroschen);
         setTotalWonXp((x) => x + winXp);
 
         if (won.coins > 0 && won.xp > 0) {
           playWinChime(true);
-          setWheelResultText(`🎉 JACKPOT! +${winCoins} Coins & +${winXp} XP!`);
-        } else if (winCoins > 0) {
+          setWheelResultText(`🎉 JACKPOT! +${winGroschen} Groschen & +${winXp} XP!`);
+        } else if (winGroschen > 0) {
           playWinChime(false);
-          setWheelResultText(`🪙 +${winCoins} Coin${winCoins > 1 ? "s" : ""} gewonnen!`);
+          setWheelResultText(`🪙 +${winGroschen} Groschen${winGroschen > 1 ? "s" : ""} gewonnen!`);
         } else if (winXp > 0) {
           playWinChime(false);
           setWheelResultText(`⚡ +${winXp} XP gesammelt!`);
@@ -750,10 +750,10 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
           setWheelResultText("🍂 Niete! Versuchs nochmal.");
         }
 
-        if (winCoins > 0 || winXp > 0) {
+        if (winGroschen > 0 || winXp > 0) {
           const updated: Profile = {
             ...profile,
-            coins: (profile.coins || 0) + winCoins,
+            coins: (profile.coins || 0) + winGroschen,
             totalXp: (profile.totalXp || 0) + winXp,
           };
           onUpdateProfile(updated);
@@ -972,7 +972,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
               Verbleibend: {herbsLeft}g Kräuter
             </div>
             <div className="flex gap-4 justify-center text-xs font-semibold text-neutral-300">
-              <span>Gewonnen: 🪙 {totalWonCoins} Coins</span>
+              <span>Gewonnen: 🪙 {totalWonGroschen} Groschen</span>
               <span>⚡ {totalWonXp} XP</span>
             </div>
             <div className="h-8 flex items-center justify-center">

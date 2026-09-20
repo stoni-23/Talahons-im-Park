@@ -1,0 +1,62 @@
+=== WHEEL_SECTORS ===
+
+const WHEEL_SECTORS = [
+  { label: "1 COIN", icon: "🪙", color: "#f59e0b", textColor: "#000", coins: 1, xp: 0, extra: false, weight: 15 },
+  { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 30 },
+  { label: "+1 DREH", icon: "🔄", color: "#3b82f6", textColor: "#fff", coins: 0, xp: 0, extra: true, weight: 15 },
+  { label: "NIETE", icon: "🍂", color: "#1c1917", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 20 },
+  { label: "25 XP", icon: "⚡", color: "#10b981", textColor: "#000", coins: 0, xp: 25, extra: false, weight: 15 },
+  { label: "JACKPOT", icon: "👑", color: "#ef4444", textColor: "#fff", coins: 2, xp: 75, extra: false, weight: 5 },
+  { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 25 },
+  { label: "10 XP", icon: "⚡", color: "#059669", textColor: "#fff", coins: 0, xp: 10, extra: false, weight: 20 },
+];
+
+let tonnenBgm: HTMLAudioElement | null = null;
+
+export const TonnenGame: React.FC<TonnenGameProps> = ({
+  profile,
+  onClose,
+  onUpdateProfile,
+}) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  
+
+  
+  
+
+  const [gameState, setGameState] = useState<"playing" | "paused" | "results_delay" | "results" | "spielo">("playing");
+=== TITEL-MENÜ BUTTONS ===
+        {hud.mode === "title" && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative flex h-full w-full max-w-[520px] flex-col items-center gap-2.5 overflow-y-auto px-6 pt-80 pb-12" style={{
+                backgroundImage: "url('/bg_oben.jpg'), url('/bg_unten.jpg')",
+                backgroundRepeat: "no-repeat, repeat-y",
+                backgroundSize: "105% auto, 105% auto",
+                backgroundPosition: "65% top, 65% top",
+                backgroundAttachment: "local, local",
+                touchAction: "pan-y",
+                WebkitOverflowScrolling: "touch"
+              }}>
+              {/* Lautsprecher fest auf dem Holzbrett */}
+              <button
+                type="button"
+                onClick={toggleSound}
+                aria-label="Ton an/aus"
+                className="absolute top-24 left-6 z-30 flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-900/40 bg-black/30 text-xl shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/40"
+              >
+                {soundMutedState ? "🔇" : "🔊"}
+              </button>
+              {/* Spieler & Rekord Box */}
+              <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="flex items-center gap-1.5 text-xs font-bold tracking-[0.14em] text-paper uppercase">
+                    <User className="size-3.5 text-amber-400" /> Profil
+                  </p>
+                  <span className="font-mono text-xs font-bold text-amber-400">
+                    Rekord: {profile.highScore} Pkt
+                  </span>
+                </div>
+
+                {!isEditing && profile.name ? (
+                  <div className="flex flex-col gap-2 rounded-md border border-line bg-ink-3 px-3 py-2">
+                    <div className="flex items-center justify-between gap-1.5">

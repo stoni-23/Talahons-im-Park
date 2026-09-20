@@ -33,6 +33,7 @@ function getOmaRank(score: number) {
 }
 
 import React, { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { NewsModal, CURRENT_NEWS_VERSION } from "./news-modal";
 import { Pause, Play, Volume2, VolumeX, User, Trash2, Edit2, Share2, Maximize, Minimize, Smartphone, LogOut } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
 import { unlockAudio, setMuted, isMuted, startMenuMusic, stopMenuMusic } from "@/game/audio";
@@ -68,6 +69,7 @@ export function GameScreen() {
   const [isMissionsOpen, setIsMissionsOpen] = React.useState(false);
   const [isDailyRewardOpen, setIsDailyRewardOpen] = React.useState(false);
   const [isTonnenOpen, setIsTonnenOpen] = React.useState(false);
+  const [isNewsOpen, setIsNewsOpen] = React.useState(false);
   const [showTonnenNoCoinsModal, setShowTonnenNoCoinsModal] = React.useState(false);
   
 
@@ -164,6 +166,17 @@ export function GameScreen() {
       stopMenuMusic();
     }
   }, [hud.mode, isTonnenOpen]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const seen = localStorage.getItem("last_seen_news_version");
+      if (seen !== CURRENT_NEWS_VERSION && hud?.mode === "title") {
+        setIsNewsOpen(true);
+        localStorage.setItem("last_seen_news_version", CURRENT_NEWS_VERSION);
+      }
+    } catch (e) {}
+  }, [hud?.mode]);
 
 
 
@@ -736,13 +749,26 @@ export function GameScreen() {
                 WebkitOverflowScrolling: "touch"
               }}>
               {/* Lautsprecher fest auf dem Holzbrett */}
+              {/* Lautsprecher links */}
               <button
                 type="button"
                 onClick={toggleSound}
                 aria-label="Ton an/aus"
-                className="absolute top-24 left-6 z-30 flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-900/40 bg-black/30 text-xl shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/40"
+                className="absolute top-24 left-6 z-40 flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-900/40 bg-black/40 text-xl shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/60 cursor-pointer"
               >
                 {soundMutedState ? "🔇" : "🔊"}
+              </button>
+              {/* News rechts */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsNewsOpen(true);
+                }}
+                aria-label="Neuigkeiten"
+                className="absolute top-24 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-900/40 bg-black/40 text-xl shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/60 cursor-pointer"
+              >
+                📢
               </button>
               {/* Spieler & Rekord Box */}
               <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
@@ -1423,6 +1449,8 @@ export function GameScreen() {
           <TonnenGame
             profile={profile}
             onClose={() => setIsTonnenOpen(false)}
+
+        
             onUpdateProfile={(updated) => {
               setProfile(updated);
               saveProfile(updated);
@@ -1441,6 +1469,7 @@ export function GameScreen() {
             syncProfileOnline(updated).catch(console.error);
           }}
         />
+        <NewsModal isOpen={isNewsOpen} onClose={() => setIsNewsOpen(false)} />
         <DailyRewardModal
         isOpen={isDailyRewardOpen}
         onClose={() => setIsDailyRewardOpen(false)}
@@ -1849,8 +1878,7 @@ function Modal({ children }: { children: ReactNode }) {
       <div className="flex w-full max-w-md flex-col items-center rounded-2xl border border-line bg-ink p-6 text-center shadow-2xl">
         {children}
       </div>
-    
-      </div>
+</div>
   );
 }
 

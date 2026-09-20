@@ -1,7 +1,6 @@
-const fs = require("fs");
-
-// 1. News-Modal Datei schreiben
-const newsModalCode = `import React from "react";
+cd ~/spiel && bash -c "$(cat << 'EOF'
+cat << 'INNER' > src/components/news-modal.tsx
+import React from "react";
 
 export interface NewsModalProps {
   isOpen: boolean;
@@ -14,7 +13,7 @@ export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div 
         className="relative w-full max-w-sm rounded-2xl border-2 border-amber-800/80 p-5 text-amber-100 shadow-2xl"
         style={{
@@ -80,12 +79,13 @@ export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
     </div>
   );
 };
-`;
-fs.writeFileSync("src/components/news-modal.tsx", newsModalCode, "utf8");
-console.log("1. NewsModal-Datei erstellt.");
+INNER
 
-// 2. Tonnen-Game WHEEL_SECTORS patchen
-let tonnenCode = fs.readFileSync("src/components/tonnen-game.tsx", "utf8");
+node -e '
+const fs = require("fs");
+const file = "src/components/tonnen-game.tsx";
+let content = fs.readFileSync(file, "utf8");
+const oldSectorsRegex = /const WHEEL_SECTORS = \[[\s\S]*?\];/;
 const newSectors = `const WHEEL_SECTORS = [
   { label: "1 COIN", icon: "🪙", color: "#f59e0b", textColor: "#000", coins: 1, xp: 25, extra: false, weight: 22 },
   { label: "50 XP", icon: "⚡", color: "#10b981", textColor: "#000", coins: 0, xp: 50, extra: false, weight: 10 },
@@ -96,44 +96,48 @@ const newSectors = `const WHEEL_SECTORS = [
   { label: "5 COINS", icon: "💎", color: "#8b5cf6", textColor: "#fff", coins: 5, xp: 100, extra: false, weight: 12 },
   { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 5 },
 ];`;
+if (oldSectorsRegex.test(content)) {
+  content = content.replace(oldSectorsRegex, newSectors);
+  fs.writeFileSync(file, content, "utf8");
+  console.log("✅ Glücksrad geupdatet!");
+}
+'
 
-tonnenCode = tonnenCode.replace(/const WHEEL_SECTORS = \[[\s\S]*?\];/, newSectors);
-fs.writeFileSync("src/components/tonnen-game.tsx", tonnenCode, "utf8");
-console.log("2. Glücksrad-Sektoren erfolgreich neu ausbalanciert.");
+node -e '
+const fs = require("fs");
+const file = "src/components/game-screen.tsx";
+let content = fs.readFileSync(file, "utf8");
 
-// 3. game-screen.tsx patchen
-let gameScreen = fs.readFileSync("src/components/game-screen.tsx", "utf8");
-
-// Import
-if (!gameScreen.includes("NewsModal")) {
-  gameScreen = gameScreen.replace(
+if (!content.includes("from \"./news-modal\"") && !content.includes("from '\''./news-modal'\''")) {
+  content = content.replace(
     /import React.*?from "react";/,
-    (m) => `${m}\nimport { NewsModal, CURRENT_NEWS_VERSION } from "./news-modal";`
+    (match) => `${match}\nimport { NewsModal, CURRENT_NEWS_VERSION } from "./news-modal";`
   );
 }
 
-// State & Auto-Popup
-if (!gameScreen.includes("isNewsOpen")) {
-  gameScreen = gameScreen.replace(
+if (!content.includes("isNewsOpen")) {
+  content = content.replace(
     /const \[isTonnenOpen, setIsTonnenOpen\] = React\.useState\(false\);/,
     `const [isTonnenOpen, setIsTonnenOpen] = React.useState(false);\n  const [isNewsOpen, setIsNewsOpen] = React.useState(false);\n\n  React.useEffect(() => {\n    const seen = localStorage.getItem("last_seen_news_version");\n    if (seen !== CURRENT_NEWS_VERSION && hud.mode === "title") {\n      setIsNewsOpen(true);\n      localStorage.setItem("last_seen_news_version", CURRENT_NEWS_VERSION);\n    }\n  }, [hud.mode]);`
   );
 }
 
-// Button im Menü oben rechts (symmetrisch zum Ton-Button links)
-if (!gameScreen.includes("aria-label=\"Neuigkeiten\"")) {
+if (!content.includes("setIsNewsOpen(true)")) {
   const soundBtnPattern = /(<button[\s\S]*?aria-label="Ton an\/aus"[\s\S]*?<\/button>)/;
-  const newsButton = `$1\n              {/* News Button oben rechts */}\n              <button\n                type="button"\n                onClick={() => setIsNewsOpen(true)}\n                aria-label="Neuigkeiten"\n                className="absolute top-24 right-6 z-30 flex h-11 px-3 items-center justify-center gap-1.5 rounded-2xl border border-amber-900/40 bg-black/30 text-amber-300 font-bold text-xs shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/40"\n              >\n                <span className="text-base">📢</span>\n                <span>News</span>\n              </button>`;
-  gameScreen = gameScreen.replace(soundBtnPattern, newsButton);
+  const newsButtonSnippet = `$1\n              {/* News / Update Button */}\n              <button\n                type="button"\n                onClick={() => setIsNewsOpen(true)}\n                aria-label="Neuigkeiten"\n                className="absolute top-24 right-6 z-30 flex h-11 px-3 items-center justify-center gap-1.5 rounded-2xl border border-amber-900/40 bg-black/30 text-amber-300 font-bold text-xs shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/40"\n              >\n                <span className="text-base">📢</span>\n                <span>News</span>\n              </button>`;
+  content = content.replace(soundBtnPattern, newsButtonSnippet);
 }
 
-// NewsModal einhängen
-if (!gameScreen.includes("<NewsModal")) {
-  gameScreen = gameScreen.replace(
-    /(<TonnenGame[\s\S]*?\/>\s*\}\s*\))/,
+if (!content.includes("<NewsModal")) {
+  const tonnenPattern = /(<TonnenGame[\s\S]*?\/>\s*\}\s*\))/;
+  content = content.replace(
+    tonnenPattern,
     `$1\n        <NewsModal isOpen={isNewsOpen} onClose={() => setIsNewsOpen(false)} />`
   );
 }
 
-fs.writeFileSync("src/components/game-screen.tsx", gameScreen, "utf8");
-console.log("3. Menü & NewsModal in game-screen.tsx integriert.");
+fs.writeFileSync(file, content, "utf8");
+console.log("✅ game-screen.tsx geupdatet!");
+'
+
+npm run build

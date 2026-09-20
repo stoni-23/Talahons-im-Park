@@ -631,7 +631,7 @@ export class GameEngine {
       id: this.id++,
       act: "carpet",
       x: fromRight ? 980 : -120,
-      y: 340,
+      y: 520,
       vx: (fromRight ? -1 : 1) * speed,
       vy: 0,
       z: 1.20,
@@ -1071,7 +1071,7 @@ export class GameEngine {
       if (t.act === "carpet") {
         t.x += t.vx * dt;
         t.phaseT += dt * 3.2;
-        t.y = 340 + Math.sin(t.phaseT) * 45;
+        t.y = 520 + Math.sin(t.phaseT) * 45;
         t.rot = Math.cos(t.phaseT) * 0.12 * (t.vx > 0 ? 1 : -1);
         t.frameT += dt;
         if (t.frameT > 0.14) {
@@ -1459,8 +1459,13 @@ export class GameEngine {
       else ctx.rect(0, 0, tree.x + 2, WORLD_H);
       ctx.clip();
     }
-    ctx.translate(t.x, t.y);
-    ctx.rotate(t.rot);
+    // Leichtes Geh-Wackeln (Hinken & Schritt-Bobbing) beim Hereinlaufen vor dem Treffer
+    const isOpaWalking = t.act === "opa" && t.state !== "falling";
+    const opaTilt = isOpaWalking ? Math.sin(t.x * 0.08) * 0.07 : 0;
+    const opaBob = isOpaWalking ? Math.abs(Math.sin(t.x * 0.08)) * 5 : 0;
+
+    ctx.translate(t.x, t.y - opaBob);
+    ctx.rotate(t.rot + opaTilt);
     const opaLookAtCamera = t.act === "opa" && t.state === "falling" && t.phase !== "leave";
     if (!opaLookAtCamera && t.facing < 0) ctx.scale(-1, 1);
     if (t.act === "bush" && t.state === "alive" && t.reveal < 0.98) {

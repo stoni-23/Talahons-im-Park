@@ -1,0 +1,41 @@
+=== DATEIEN ===
+src/components/daily-reward-modal.tsx
+src/components/tonnen-game.tsx
+src/lib/daily-reward.ts
+=== WHEEL / REWARDS IM CODE ===
+src/game/audio.ts:257:export function playWheelTick() {
+src/game/audio.ts:276:export function playWheelWin() {
+src/components/tonnen-game.tsx:3:import {playShot, isMuted, resumeAudio, playWheelTick, playWheelWin } from "@/game/audio";
+src/components/tonnen-game.tsx:44:let wheelAudioCtx: AudioContext | null = null;
+src/components/tonnen-game.tsx:45:function getWheelAudioCtx(): AudioContext | null {
+src/components/tonnen-game.tsx:47:    if (!wheelAudioCtx) {
+src/components/tonnen-game.tsx:49:      if (Ctx) wheelAudioCtx = new Ctx();
+src/components/tonnen-game.tsx:51:    if (wheelAudioCtx && wheelAudioCtx.state === "suspended") {
+src/components/tonnen-game.tsx:52:      wheelAudioCtx.resume().catch(() => {});
+src/components/tonnen-game.tsx:54:    return wheelAudioCtx;
+src/components/tonnen-game.tsx:62:    const ctx = getWheelAudioCtx();
+src/components/tonnen-game.tsx:80:    const ctx = getWheelAudioCtx();
+src/components/tonnen-game.tsx:101:const WHEEL_SECTORS = [
+src/components/tonnen-game.tsx:103:  { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 30 },
+src/components/tonnen-game.tsx:105:  { label: "NIETE", icon: "🍂", color: "#1c1917", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 20 },
+src/components/tonnen-game.tsx:108:  { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 25 },
+src/components/tonnen-game.tsx:129:  // Glücksrad State
+src/components/tonnen-game.tsx:131:  const [wheelAngle, setWheelAngle] = useState(0);
+src/components/tonnen-game.tsx:132:  const [isSpinning, setIsSpinning] = useState(false);
+src/components/tonnen-game.tsx:133:  const [wheelResultText, setWheelResultText] = useState("Dreh das Rad!");
+src/components/tonnen-game.tsx:134:  const [wheelBet, setWheelBet] = useState(1);
+src/components/tonnen-game.tsx:686:  // GLÜCKSRAD DREHEN
+src/components/tonnen-game.tsx:687:  const spinWheel = () => {
+src/components/tonnen-game.tsx:688:    const bet = Math.min(wheelBet, herbsLeft);
+src/components/tonnen-game.tsx:689:    if (bet <= 0 || isSpinning) return;
+src/components/tonnen-game.tsx:692:    getWheelAudioCtx();
+src/components/tonnen-game.tsx:701:    setIsSpinning(true);
+src/components/tonnen-game.tsx:704:    const totalWeight = WHEEL_SECTORS.reduce((acc, s) => acc + (s.weight || 10), 0);
+src/components/tonnen-game.tsx:707:    for (let i = 0; i < WHEEL_SECTORS.length; i++) {
+src/components/tonnen-game.tsx:708:      rnd -= (WHEEL_SECTORS[i].weight || 10);
+=== MENÜ BUTTONS IN GAME-SCREEN ===
+70:  const [isTonnenOpen, setIsTonnenOpen] = React.useState(false);
+157:    if (hud.mode === "title" && !isTonnenOpen) {
+166:  }, [hud.mode, isTonnenOpen]);
+727:        {hud.mode === "title" && (
+1422:        {isTonnenOpen && (
