@@ -35,7 +35,7 @@ jobs:
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Talahons im Park</title>
           </head>
-          <body style="margin:0; background:#000;"></body>
+          <body style="margin:0; background:#000000;"></body>
           </html>
           HTMLEOF
 
@@ -57,7 +57,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Systemleisten & Fenster-Padding konfigurieren
+      - name: MainActivity konfigurieren (Schwarze Balken & schwarze WebView)
         run: |
           cat << 'JAVAEOF' > android/app/src/main/java/com/talahon/game/MainActivity.java
           package com.talahon.game;
@@ -86,10 +86,18 @@ jobs:
                       return WindowInsetsCompat.CONSUMED;
                   });
               }
+
+              @Override
+              public void onStart() {
+                  super.onStart();
+                  if (getBridge() != null && getBridge().getWebView() != null) {
+                      getBridge().getWebView().setBackgroundColor(Color.BLACK);
+                  }
+              }
           }
           JAVAEOF
 
-      - name: Splash-Screen Hintergrundfarbe auf Schwarz setzen (Android 12+)
+      - name: Splashscreen & Styles auf Schwarz setzen (Android 12+)
         run: |
           mkdir -p android/app/src/main/res/values-v31
           cat << 'STYLESEOF' > android/app/src/main/res/values-v31/styles.xml
@@ -97,7 +105,8 @@ jobs:
           <resources>
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme">
                   <item name="android:windowSplashScreenBackground">#000000</item>
-                  <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+                  <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+                  <item name="android:windowSplashScreenIconBackgroundColor">#000000</item>
               </style>
           </resources>
           STYLESEOF
@@ -109,24 +118,27 @@ jobs:
                   <item name="colorPrimary">#000000</item>
                   <item name="colorPrimaryDark">#000000</item>
                   <item name="colorAccent">#000000</item>
+                  <item name="android:windowBackground">#000000</item>
+                  <item name="android:colorBackground">#000000</item>
                   <item name="android:statusBarColor">#000000</item>
                   <item name="android:navigationBarColor">#000000</item>
                   <item name="android:windowDrawsSystemBarBackgrounds">true</item>
               </style>
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme">
                   <item name="android:background">#000000</item>
+                  <item name="android:windowBackground">#000000</item>
               </style>
           </resources>
           STYLESEOF
 
-      - name: Adaptive Icons mit schwarzem Hintergrund erzeugen
+      - name: Adaptive Icons mit schwarzem Layer & Safe-Zone erzeugen
         run: |
           sudo apt-get update && sudo apt-get install -y imagemagick
           SRC="public/logo.png"
           [ ! -f "$SRC" ] && SRC="public/assets/logo.png"
           [ ! -f "$SRC" ] && SRC="assets/logo.png"
 
-          # Farben definieren
+          # 1. Schwarze Hintergrundfarbe definieren
           mkdir -p android/app/src/main/res/values
           cat << 'COLOREOF' > android/app/src/main/res/values/ic_launcher_background.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -135,25 +147,34 @@ jobs:
           </resources>
           COLOREOF
 
-          # Standard-Icons (für ältere Systeme)
-          convert "$SRC" -background black -alpha remove -alpha off -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          convert "$SRC" -background black -alpha remove -alpha off -resize 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+          # 2. Foreground mit 70% Skalierung (Safe Zone verhindert Abschneiden)
+          mkdir -p android/app/src/main/res/mipmap-mdpi android/app/src/main/res/mipmap-hdpi android/app/src/main/res/mipmap-xhdpi android/app/src/main/res/mipmap-xxhdpi android/app/src/main/res/mipmap-xxxhdpi
 
-          # Adaptive Icon Definition (Android 8 bis Android 15+)
+          convert "$SRC" -resize 75x75   -background none -gravity center -extent 108x108 android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 114x114 -background none -gravity center -extent 162x162 android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 151x151 -background none -gravity center -extent 216x216 android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 226x226 -background none -gravity center -extent 324x324 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
+          convert "$SRC" -resize 302x302 -background none -gravity center -extent 432x432 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+
+          # 3. Flache Icons fuer aeltere Android-Geraete (schwarzer Rand)
+          convert "$SRC" -resize 48x48   -background black -gravity center -extent 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+          convert "$SRC" -resize 48x48   -background black -gravity center -extent 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+          convert "$SRC" -resize 72x72   -background black -gravity center -extent 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+          convert "$SRC" -resize 72x72   -background black -gravity center -extent 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+          convert "$SRC" -resize 96x96   -background black -gravity center -extent 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+          convert "$SRC" -resize 96x96   -background black -gravity center -extent 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+          convert "$SRC" -resize 144x144 -background black -gravity center -extent 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+          convert "$SRC" -resize 144x144 -background black -gravity center -extent 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+          convert "$SRC" -resize 192x192 -background black -gravity center -extent 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          convert "$SRC" -resize 192x192 -background black -gravity center -extent 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+
+          # 4. Adaptive Icon Definition (Android 8 bis Android 15+)
           mkdir -p android/app/src/main/res/mipmap-anydpi-v26
           cat << 'ICONEOF' > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           <?xml version="1.0" encoding="utf-8"?>
           <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
               <background android:drawable="@color/ic_launcher_background"/>
-              <foreground android:drawable="@mipmap/ic_launcher"/>
+              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
           </adaptive-icon>
           ICONEOF
 
