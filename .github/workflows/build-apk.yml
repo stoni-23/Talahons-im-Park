@@ -24,16 +24,36 @@ jobs:
         with:
           node-version: 22
 
-      - name: Abhängigkeiten installieren & Frontend bauen
+      - name: Capacitor App-Shell konfigurieren
         run: |
-          npm install --legacy-peer-deps
-          # Nur das Frontend bauen ohne db:migrate
-          npx vite build
+          mkdir -p app-shell
+          cat << 'HTMLEOF' > app-shell/index.html
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Talahons im Park</title>
+          </head>
+          <body style="margin:0; background:#000;"></body>
+          </html>
+          HTMLEOF
 
-      - name: Android-Container einrichten
+          cat << 'CFGEOF' > capacitor.config.json
+          {
+            "appId": "com.talahon.game",
+            "appName": "Talahons im Park",
+            "webDir": "app-shell",
+            "server": {
+              "url": "https://talahons-im-park.vercel.app",
+              "cleartext": true
+            }
+          }
+          CFGEOF
+
+      - name: Android-Projekt mit Capacitor generieren
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "Talahons im Park" "com.talahon.game" --web-dir dist
           npx cap add android
           npx cap sync android
 
