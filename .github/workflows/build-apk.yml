@@ -57,11 +57,29 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: TWA-Display-Verhalten erzwingen (Schwarze Leisten oben/unten)
+      - name: Schwarze Systembalken wie in TWA erzwingen
         run: |
-          # styles.xml so anpassen, dass die Systemleisten wie bei TWA/Chrome fest schwarz sind
-          STYLES_FILE="android/app/src/main/res/values/styles.xml"
-          cat << 'STYLESEOF' > "$STYLES_FILE"
+          # 1. MainActivity: Edge-to-Edge deaktivieren & Leisten schwarz schalten
+          cat << 'JAVAEOF' > android/app/src/main/java/com/talahon/game/MainActivity.java
+          package com.talahon.game;
+
+          import android.os.Bundle;
+          import androidx.core.view.WindowCompat;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+                  getWindow().setStatusBarColor(0xFF000000);
+                  getWindow().setNavigationBarColor(0xFF000000);
+              }
+          }
+          JAVAEOF
+
+          # 2. Styles: Status- und NavigationBar pechschwarz setzen
+          cat << 'STYLESEOF' > android/app/src/main/res/values/styles.xml
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
               <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
@@ -71,7 +89,6 @@ jobs:
                   <item name="android:statusBarColor">#000000</item>
                   <item name="android:navigationBarColor">#000000</item>
                   <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-                  <item name="android:fitsSystemWindows">true</item>
               </style>
               <style name="AppTheme.NoActionBarLaunch" parent="AppTheme">
                   <item name="android:background">#000000</item>
@@ -79,10 +96,9 @@ jobs:
           </resources>
           STYLESEOF
 
-      - name: Logo als echtes App-Icon einbinden
+      - name: Logo als App-Icon einbinden
         run: |
           sudo apt-get update && sudo apt-get install -y imagemagick
-
           SRC="public/assets/logo.png"
           [ ! -f "$SRC" ] && SRC="assets/logo.png"
           [ ! -f "$SRC" ] && SRC="public/logo.png"
