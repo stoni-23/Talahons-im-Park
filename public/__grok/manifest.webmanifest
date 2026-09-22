@@ -1,6 +1,6 @@
 {
   "name": "Talahons im Park",
-  "short_name": "Talahons",
+  "short_name": "Talahons im Park",
   "description": "Talahons im Park - Parabellum Edition",
   "start_url": "/",
   "display": "standalone",
@@ -15,7 +15,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icon.png",
+      "src": "/logo.png",
       "sizes": "192x192 512x512",
       "type": "image/png",
       "purpose": "maskable"
