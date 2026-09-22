@@ -24,19 +24,11 @@ jobs:
         with:
           node-version: 22
 
-      - name: Abhängigkeiten installieren & Spiel kompilieren
+      - name: Abhängigkeiten installieren & Frontend bauen
         run: |
           npm install --legacy-peer-deps
-          npm run build || npx vite build || true
-
-          # Garantieren, dass dist existiert und eine index.html enthält
-          mkdir -p dist
-          if [ ! -f "dist/index.html" ]; then
-            echo "Kopiere Fallback-Dateien nach dist..."
-            cp -r public/* dist/ 2>/dev/null || true
-            cp -r assets dist/ 2>/dev/null || true
-            cp index.html dist/ 2>/dev/null || true
-          fi
+          # Nur das Frontend bauen ohne db:migrate
+          npx vite build
 
       - name: Android-Container einrichten
         run: |
