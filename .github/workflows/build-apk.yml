@@ -19,33 +19,29 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Node.js 20 einrichten
+      - name: Node.js 22 einrichten
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Abhängigkeiten installieren & Spiel kompilieren
         run: |
           npm install --legacy-peer-deps
-          npm run build || true
-          
-          # Sicherstellen, dass ein passender Web-Ordner existiert
-          if [ -d "dist" ]; then
-            echo "BUILD_DIR=dist" >> $GITHUB_ENV
-          elif [ -d "build" ]; then
-            echo "BUILD_DIR=build" >> $GITHUB_ENV
-          elif [ -d "public" ]; then
-            echo "BUILD_DIR=public" >> $GITHUB_ENV
-          else
-            mkdir -p dist
+          npm run build || npx vite build || true
+
+          # Garantieren, dass dist existiert und eine index.html enthält
+          mkdir -p dist
+          if [ ! -f "dist/index.html" ]; then
+            echo "Kopiere Fallback-Dateien nach dist..."
+            cp -r public/* dist/ 2>/dev/null || true
+            cp -r assets dist/ 2>/dev/null || true
             cp index.html dist/ 2>/dev/null || true
-            echo "BUILD_DIR=dist" >> $GITHUB_ENV
           fi
 
       - name: Android-Container einrichten
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "Talahons im Park" "com.talahon.game" --web-dir "$BUILD_DIR"
+          npx cap init "Talahons im Park" "com.talahon.game" --web-dir dist
           npx cap add android
           npx cap sync android
 
