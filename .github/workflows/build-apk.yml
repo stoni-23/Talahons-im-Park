@@ -13,11 +13,11 @@ jobs:
       - name: Quellcode laden
         uses: actions/checkout@v4
 
-      - name: Java JDK 17 einrichten
+      - name: Java JDK 21 einrichten
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '21'
 
       - name: Node.js 22 einrichten
         uses: actions/setup-node@v4
