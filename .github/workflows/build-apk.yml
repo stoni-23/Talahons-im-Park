@@ -57,22 +57,38 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: TWA-Display-Verhalten erzwingen (Schwarze Leisten oben/unten)
+        run: |
+          # styles.xml so anpassen, dass die Systemleisten wie bei TWA/Chrome fest schwarz sind
+          STYLES_FILE="android/app/src/main/res/values/styles.xml"
+          cat << 'STYLESEOF' > "$STYLES_FILE"
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
+                  <item name="colorPrimary">#000000</item>
+                  <item name="colorPrimaryDark">#000000</item>
+                  <item name="colorAccent">#000000</item>
+                  <item name="android:statusBarColor">#000000</item>
+                  <item name="android:navigationBarColor">#000000</item>
+                  <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+                  <item name="android:fitsSystemWindows">true</item>
+              </style>
+              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme">
+                  <item name="android:background">#000000</item>
+              </style>
+          </resources>
+          STYLESEOF
+
       - name: Logo als echtes App-Icon einbinden
         run: |
-          # Installiere Bildbearbeitungs-Tool ImageMagick auf dem GitHub-Server
           sudo apt-get update && sudo apt-get install -y imagemagick
 
-          # Nimm dein 1.2MB Original-Logo
           SRC="public/assets/logo.png"
           [ ! -f "$SRC" ] && SRC="assets/logo.png"
           [ ! -f "$SRC" ] && SRC="public/logo.png"
 
-          echo "Nutze Logo: $SRC"
-
-          # Loesche das adaptive XML-Template von Capacitor, das das Logo blockiert
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
 
-          # Erstelle alle benoetigten Android-Aufloesungen direkt aus deinem Logo
           convert "$SRC" -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
           convert "$SRC" -resize 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
           convert "$SRC" -resize 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
