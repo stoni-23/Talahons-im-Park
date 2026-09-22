@@ -1,0 +1,49 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Quellcode laden
+        uses: actions/checkout@v4
+
+      - name: Java JDK 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Node.js 20 einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Spiel kompilieren (Vite Build)
+        run: |
+          npm install
+          npm run build
+
+      - name: Android-Container einrichten
+        run: |
+          npm install @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init "Talahons im Park" "com.talahon.game" --web-dir dist
+          npx cap add android
+          npx cap copy
+
+      - name: APK erzeugen (Gradle)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: APK bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: Talahons-im-Park-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
