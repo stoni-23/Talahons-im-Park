@@ -224,14 +224,14 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
   const targetSlotIdRef = useRef<number | null>(null);
 
   const slotsRef = useRef<TonneSlot[]>([
-    { id: 1, x: 210, y: 990, scale: 0.58, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 2, x: 450, y: 980, scale: 0.58, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 3, x: 690, y: 990, scale: 0.58, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 4, x: 190, y: 1040, scale: 0.70, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 5, x: 520, y: 1100, scale: 0.76, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 6, x: 740, y: 1090, scale: 0.76, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 7, x: 380, y: 1110, scale: 0.82, z: 3, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 8, x: 620, y: 1180, scale: 0.95, z: 3, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 1, x: 275, y: 1118, scale: 0.44, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 2, x: 470, y: 1120, scale: 0.44, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 3, x: 685, y: 1118, scale: 0.44, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 4, x: 360, y: 1222, scale: 0.62, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 5, x: 550, y: 1226, scale: 0.64, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 6, x: 745, y: 1222, scale: 0.62, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 7, x: 450, y: 1335, scale: 0.84, z: 3, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 8, x: 690, y: 1340, scale: 0.86, z: 3, state: "zu", openT: 0, openDur: 0, wobble: 0 },
   ]);
 
   const imagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
@@ -240,8 +240,10 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
   useEffect(() => {
     const assets = [
       { key: "bg", src: "/assets/park-bg.jpg" },
+      { key: "parkmauer", src: "/assets/parkmauer.png" },
       { key: "tree", src: "/assets/tree.png" },
       { key: "foliage", src: "/assets/foliage.png" },
+      { key: "laterne", src: "/assets/laterne.png" },
       { key: "oma", src: "/assets/oma.png" },
       { key: "oma-recoil", src: "/assets/oma-recoil.png" },
       { key: "oma-goldenpara", src: "/assets/oma-goldenpara.png" },
@@ -394,27 +396,21 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
     }
 
-    // 1. Hintergrund
+    // 1. Hintergrund (9:16 Standard-BG + Mauer + Baum, gleiche Groesse)
     const bg = imagesRef.current["bg"];
     if (bg) {
-      const targetRatio = WORLD_W / WORLD_H;
-      if (!bg.naturalHeight || !bg.naturalWidth) return;
-      const srcW = bg.naturalHeight * targetRatio;
-      const srcX = (bg.width - srcW) / 2;
-      ctx.drawImage(bg, srcX, 0, srcW, bg.height, 0, 0, WORLD_W, WORLD_H);
+      ctx.drawImage(bg, 0, 0, WORLD_W, WORLD_H);
     } else {
       ctx.fillStyle = "#1e293b";
       ctx.fillRect(0, 0, WORLD_W, WORLD_H);
     }
 
+    const wall = imagesRef.current["parkmauer"];
+    if (wall) ctx.drawImage(wall, 0, 0, WORLD_W, WORLD_H);
+
     // 2. Großer Baum
     const tree = imagesRef.current["tree"];
-    if (tree) {
-      const targetRatio = WORLD_W / WORLD_H;
-      const srcW = tree.height * targetRatio;
-      const srcX = (tree.width - srcW) / 2;
-      ctx.drawImage(tree, srcX, 0, srcW, tree.height, 0, 0, WORLD_W, WORLD_H);
-    }
+    if (tree) ctx.drawImage(tree, 0, 0, WORLD_W, WORLD_H);
 
     // 3. Dunkelheit / Nacht-Overlay
     ctx.save();
@@ -453,10 +449,14 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       }
     });
 
-    // 6. Foliage Vordergrund
+    // 6. Foliage Vordergrund & Laterne
     const foliage = imagesRef.current["foliage"];
     if (foliage) {
       ctx.drawImage(foliage, 0, WORLD_H - 260, WORLD_W, 260);
+    }
+    const laterne = imagesRef.current["laterne"];
+    if (laterne) {
+      ctx.drawImage(laterne, 0, 80, WORLD_W, WORLD_H);
     }
 
     // 5. Oma
@@ -754,7 +754,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
         }
 
         if (winGroschen > 0 || winXp > 0) {
-          const updated: Profile = {
+          const updated: PlayerProfile = {
             ...profile,
             coins: (profile.coins || 0) + winGroschen,
             totalXp: (profile.totalXp || 0) + winXp,

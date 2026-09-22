@@ -32,25 +32,43 @@ const MAX_ALIVE = 9;
 const OMA_KEEP_X = -300;
 const OPA_HIT_HOLD = 1.05;
 
+const DEPTH = {
+  wall:  { y: 884, scale: 0.32, z: 0.14 },
+  gate:  { y: 1058, scale: 0.32, z: 0.14 },
+  tree:  { y: 1108, scale: 0.52, z: 0.24 },
+  bush:  { y: 1008, scale: 0.38, z: 0.34 },
+  grass: { y: 1118, scale: 0.56, z: 0.55 },
+  path:  { y: 1240, scale: 0.80, z: 0.70 },
+  front: { y: 1328, scale: 1.08, z: 0.95 },
+};
+
 const LANES = [
-  { y: 960, scale: 0.54, z: 0.20, pts: 35, speed: 45 },
-  { y: 1060, scale: 0.72, z: 0.50, pts: 22, speed: 65 },
-  { y: 1160, scale: 0.92, z: 0.70, pts: 14, speed: 90 },
-  { y: 1290, scale: 1.15, z: 0.95, pts: 8, speed: 118 },
+  { y: DEPTH.wall.y,  scale: DEPTH.wall.scale,  z: DEPTH.wall.z,  pts: 35, speed: 40 },
+  { y: DEPTH.grass.y, scale: DEPTH.grass.scale, z: DEPTH.grass.z, pts: 22, speed: 58 },
+  { y: DEPTH.path.y,  scale: DEPTH.path.scale,  z: DEPTH.path.z,  pts: 14, speed: 84 },
+  { y: DEPTH.front.y, scale: DEPTH.front.scale, z: DEPTH.front.z, pts: 8,  speed: 108 },
 ];
 
+const WALL_DRAW_Z = 0.20;
+const TREE_DRAW_Z = 0.32;
+const GATE_X = 490;
+const CARPET_Y = 520;
+const ARCH = { cx: 455, peak: 870, r: 92, left: 372, right: 552, bottom: 1070 };
+const BEHIND_GATE_Y = DEPTH.gate.y;
+const BEHIND_GATE_SCALE = DEPTH.gate.scale;
+
 const TREES = [
-  { x: 440, y: 980, z: 0.14, trunkW: 45, scale: 0.48, facing: -1 },
-  { x: 460, y: 980, z: 0.14, trunkW: 45, scale: 0.48, facing: 1 }
+  { x: 286, y: DEPTH.tree.y, z: DEPTH.tree.z, trunkW: 78, scale: DEPTH.tree.scale, facing: -1 },
 ];
 
 const BUSHES = [
-  { x: 90, y: 920, z: 0.12, scale: 0.46, w: 60, h: 38, facing: 1 },
-  { x: 810, y: 920, z: 0.12, scale: 0.46, w: 60, h: 38, facing: -1 }
+  { x: 128, y: DEPTH.bush.y, z: DEPTH.bush.z, scale: DEPTH.bush.scale, w: 78, h: 52, facing: 1 },
+  { x: 688, y: DEPTH.bush.y + 4, z: DEPTH.bush.z, scale: DEPTH.bush.scale, w: 78, h: 52, facing: -1 },
 ];
 
 const ASSET_KEYS = [
   "park-bg",
+  "parkmauer",
   "tree",
   "foliage",
   "oma",
@@ -314,6 +332,12 @@ export class GameEngine {
     return this.images.get(key) ?? null;
   }
 
+  drawSceneLayer(key: string) {
+    const layer = this.img(key);
+    if (!layer || !layer.width || !layer.height) return;
+    this.ctx.drawImage(layer, 0, 0, WORLD_W, WORLD_H);
+  }
+
   private onResize = () => this.resize();
   private onPointerMove = (e: PointerEvent) => {
     const p = this.toLocal(e);
@@ -438,8 +462,9 @@ export class GameEngine {
     this.opaT = rand(6, 10);
     this.spawnBush();
     this.spawnBush();
-    this.spawnBush();
     this.spawnPeeker();
+    this.spawnWalker(0, false);
+    this.spawnBehindGate();
     this.spawnWalker(2, false);
     this.emit();
   }
@@ -526,10 +551,10 @@ export class GameEngine {
     if (this.aliveCount() >= this.maxAlive()) return;
     const laneI =
       lane ??
-      (Math.random() < 0.34 ? 0 : Math.random() < 0.5 ? 1 : Math.random() < 0.58 ? 2 : 3);
+      (Math.random() < 0.42 ? 1 : Math.random() < 0.55 ? 2 : 3);
     const L = LANES[laneI]!;
     const run = running ?? Math.random() < 0.38;
-    const fromRight = Math.random() < 0.5;
+    const fromRight = laneI === 0 ? x != null ? x > WORLD_W / 2 : Math.random() < 0.72 : Math.random() < 0.5;
     const speed = L.speed * (run ? 2.2 : 1) * rand(0.88, 1.18);
     const start = x ?? (fromRight ? 1150 : -150);
     this.targets.push({
@@ -549,6 +574,7 @@ export class GameEngine {
 
   spawnPeeker() {
     if (this.aliveCount() >= this.maxAlive()) return;
+    if (this.peekBusy.size >= 1) return;
     const free = TREES.map((_, i) => i).filter(
       (i) => !this.peekBusy.has(i) && TREES[i]!.x >= OMA_KEEP_X,
     );
@@ -556,6 +582,7 @@ export class GameEngine {
     const idx = pick(free);
     const tree = TREES[idx]!;
     this.peekBusy.add(idx);
+    const facing = Math.random() < 0.5 ? -1 : 1;
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
@@ -564,8 +591,8 @@ export class GameEngine {
       y: tree.y,
       vx: 0,
       z: tree.z + 0.04,
-      facing: tree.facing,
-      points: tree.scale < 0.42 ? 32 : 26,
+      facing,
+      points: 26,
       scale: tree.scale,
       phase: "in",
       phaseT: 0,
@@ -601,22 +628,43 @@ export class GameEngine {
     });
   }
 
+  spawnBehindGate() {
+    if (this.aliveCount() >= this.maxAlive()) return;
+    const fromRight = Math.random() < 0.5;
+    const run = Math.random() < 0.35;
+    const speed = 48 * (run ? 2.1 : 1) * rand(0.9, 1.12);
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: run ? "run" : "walk",
+      x: fromRight ? 1150 : -150,
+      y: BEHIND_GATE_Y,
+      vx: (fromRight ? -1 : 1) * speed,
+      z: 0.14,
+      facing: fromRight ? -1 : 1,
+      points: 28,
+      scale: BEHIND_GATE_SCALE,
+      phase: "move",
+    });
+  }
+
   spawnOpa() {
     playOpaSpawn();
     if (this.targets.some((t) => t.act === "opa")) return;
     const fromRight = Math.random() < 0.5;
     const speed = 65;
+    const lane = LANES[2]!;
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
       act: "opa",
       x: fromRight ? 960 : -80,
-      y: 1180,
+      y: lane.y,
       vx: (fromRight ? -1 : 1) * speed,
-      z: 0.76,
+      z: lane.z + 0.04,
       facing: fromRight ? -1 : 1,
       points: -50,
-      scale: 0.92,
+      scale: DEPTH.path.scale * 1.18,
       phase: "move",
     });
   }
@@ -631,29 +679,32 @@ export class GameEngine {
       id: this.id++,
       act: "carpet",
       x: fromRight ? 980 : -120,
-      y: 520,
+      y: CARPET_Y,
       vx: (fromRight ? -1 : 1) * speed,
       vy: 0,
       z: 1.20,
       facing: fromRight ? -1 : 1,
       points: 150,
-      scale: 0.82,
+      scale: 0.80,
       phase: "move",
       phaseT: Math.random() * Math.PI * 2,
     });
   }
 
-    spawnHippie() {
+  spawnHippie() {
     if (this.targets.some((t) => t.act === "hippie" && t.state === "alive")) return;
+    const lane = LANES[2]!;
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
       act: "hippie",
-      x: rand(200, WORLD_W - 200),
+      x: rand(420, 820),
       y: -120,
+      vx: 0,
       vy: 1800,
-      z: 0.40,
-      scale: 0.9,
+      z: lane.z,
+      facing: 1,
+      scale: DEPTH.path.scale * 1.08,
       openStart: rand(1.2, 4.0),
       openDur: rand(2.2, 3.2),
       standMax: rand(7.5, 9.5),
@@ -667,17 +718,18 @@ export class GameEngine {
     import("./audio").then((a) => a.playRocker());
     const fromRight = Math.random() < 0.5;
     const speed = 260;
+    const lane = LANES[2]!;
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
       act: "rocker",
       x: fromRight ? 960 : -80,
-      y: 1190,
+      y: lane.y,
       vx: (fromRight ? -1 : 1) * speed,
-      z: 0.78,
+      z: lane.z + 0.06,
       facing: fromRight ? -1 : 1,
       points: 200,
-      scale: 0.92,
+      scale: DEPTH.path.scale * 1.25,
       phase: "move",
     });
   }
@@ -689,6 +741,8 @@ export class GameEngine {
   }
 
   dashOut(t: Target, run = true) {
+    const fromPeek = t.act === "peek";
+    const fromBush = t.act === "bush";
     let dir = t.facing;
     this.freeHide(t);
     t.act = run ? "run" : "walk";
@@ -698,14 +752,20 @@ export class GameEngine {
     t.facing = dir;
     t.vx = dir * ((run ? 210 : 92) * (0.55 + t.scale));
     t.points = run ? t.points + 4 : Math.max(8, t.points - 6);
+    const lane = fromPeek || fromBush ? LANES[1]! : null;
+    if (lane) {
+      t.y = lane.y;
+      t.z = lane.z;
+      t.scale = lane.scale;
+    }
   }
 
   placeBush(t: Target) {
     if (t.hide < 0) return;
     const bush = BUSHES[t.hide]!;
-    const dh = t.dh || 335 * t.scale;
-    const shown = clamp(t.reveal, 0.12, 0.72);
-    t.y = bush.y - bush.h + 18 + dh * (1 - shown);
+    const dh = t.dh || 320 * t.scale;
+    const shown = t.phase === "out" ? clamp(t.reveal, 0, 0.5) : clamp(t.reveal, 0.28, 0.52);
+    t.y = bush.y + dh * (1 - shown);
   }
 
   hitTest(t: Target, x: number, y: number): boolean {
@@ -822,8 +882,9 @@ export class GameEngine {
     t.rot = 0;
     t.frame = 0;
     t.frameT = 0;
-    t.vy = -180;
-    t.vx = (this.aimX > t.x ? -1 : 1) * 90;
+    t.fallFrom = t.y;
+    t.vy = t.z < WALL_DRAW_Z ? -18 : -40;
+    t.vx = (this.aimX > t.x ? -1 : 1) * (t.z < WALL_DRAW_Z ? 18 : 36);
     this.freeHide(t);
     this.hits++;
 
@@ -995,10 +1056,11 @@ export class GameEngine {
       const n = progress > 0.5 && Math.random() < 0.55 ? 2 : 1;
       for (let i = 0; i < n; i++) {
         const r = Math.random();
-        if (r < 0.5) this.spawnBush();
-        else if (r < 0.72) this.spawnPeeker();
-        else if (r < 0.9) this.spawnWalker(undefined, false);
-        else this.spawnWalker(undefined, true);
+        if (r < 0.38) this.spawnBush();
+        else if (r < 0.54) this.spawnPeeker();
+        else if (r < 0.68) this.spawnWalker(0, Math.random() < 0.4);
+        else if (r < 0.80) this.spawnBehindGate();
+        else this.spawnWalker(undefined, r > 0.94);
       }
     }
     this.hippieT -= dt;
@@ -1057,21 +1119,24 @@ export class GameEngine {
           } else {
             t.phaseT += dt;
             t.x += t.vx * dt + Math.sin(t.phaseT * 22) * 210 * dt;
-            t.y = 1180 + Math.abs(Math.sin(t.phaseT * 20)) * 10;
+            t.y = LANES[2]!.y + Math.abs(Math.sin(t.phaseT * 20)) * 10;
             t.rot = Math.sin(t.phaseT * 22) * 0.16;
           }
           continue;
         }
-        t.vy += 980 * dt;
-        t.x += t.vx * (this.strickT > 0 ? dt * 1.8 : dt);
+        t.vy += (t.z < WALL_DRAW_Z ? 1600 : 1900) * dt;
+        t.x += t.vx * (this.strickT > 0 ? dt * 1.2 : dt);
         t.y += t.vy * dt;
-        t.rot += (t.vx >= 0 ? 1 : -1) * 5.5 * dt;
+        const spin = t.z < WALL_DRAW_Z ? 0.7 : 1.0;
+        t.rot += (t.vx >= 0 ? 1 : -1) * spin * dt;
+        if (t.rot > 0.35) t.rot = 0.35;
+        if (t.rot < -0.35) t.rot = -0.35;
         continue;
       }
       if (t.act === "carpet") {
         t.x += t.vx * dt;
         t.phaseT += dt * 3.2;
-        t.y = 520 + Math.sin(t.phaseT) * 45;
+        t.y = CARPET_Y + Math.sin(t.phaseT) * 32;
         t.rot = Math.cos(t.phaseT) * 0.12 * (t.vx > 0 ? 1 : -1);
         t.frameT += dt;
         if (t.frameT > 0.14) {
@@ -1083,12 +1148,12 @@ export class GameEngine {
       if (t.act === "hippie") {
         if (t.phase === "in") {
           t.y += t.vy * dt;
-          if (t.y >= 1040) {
-            t.y = 1040;
+          if (t.y >= LANES[2]!.y) {
+            t.y = LANES[2]!.y;
             t.vy = 0;
             t.phase = "hold";
             t.phaseT = 0;
-            this.burst(t.x, 1040, 16, "#cbd5e1", 130);
+            this.burst(t.x, t.y, 16, "#cbd5e1", 130);
           }
         } else if (t.phase === "hold") {
           t.phaseT += dt;
@@ -1105,7 +1170,7 @@ export class GameEngine {
           if (t.phaseT > standMax) {
             t.phase = "out";
             t.phaseT = 0;
-            this.burst(t.x, 1000, 24, "#cbd5e1", 140);
+            this.burst(t.x, t.y - 40, 24, "#cbd5e1", 140);
           }
         } else if (t.phase === "out") {
           t.x = -999;
@@ -1161,8 +1226,8 @@ export class GameEngine {
             }
           }
         } else if (t.phase === "out") {
-          t.reveal = 0.5 * (1 - clamp(t.phaseT / 0.48, 0, 1));
-          if (t.phaseT > 0.52) t.x = -999;
+          t.reveal = 0.5 * (1 - clamp(t.phaseT / 0.7, 0, 1));
+          if (t.phaseT > 0.74) t.x = -999;
         }
         if (t.x !== -999) this.placeBush(t);
       }
@@ -1174,7 +1239,9 @@ export class GameEngine {
       }
       if (t.state === "falling") {
         if (t.act === "opa") return t.vx > 0 ? t.x < 1760 : t.x > -160;
-        return t.y < 1060;
+        const from = t.fallFrom ?? t.y;
+        if (t.z < WALL_DRAW_Z) return t.y < from + 70 && t.y < 1040;
+        return t.y < from + 120 && t.y < 1420;
       }
       if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
         if (t.y >= 620 && t.x < OMA_KEEP_X) {
@@ -1231,13 +1298,8 @@ export class GameEngine {
     const ox = shake ? (Math.random() * 2 - 1) * 14 * shake : 0;
     const oy = shake ? (Math.random() * 2 - 1) * 10 * shake : 0;
     ctx.translate(ox, oy);
-    const bg = this.img("park-bg");
-    if (bg) {
-      const targetRatio = WORLD_W / WORLD_H;
-      const srcW = bg.height * targetRatio;
-      const srcX = (bg.width - srcW) / 2;
-      ctx.drawImage(bg, srcX, 0, srcW, bg.height, 0, 0, WORLD_W, WORLD_H);
-    } else {
+    this.drawSceneLayer("park-bg");
+    if (!this.img("park-bg")) {
       ctx.fillStyle = "#6ea0c8";
       ctx.fillRect(0, 0, WORLD_W, WORLD_H);
       ctx.fillStyle = "#3d6b3a";
@@ -1253,7 +1315,10 @@ export class GameEngine {
 
     // Wollbalken HUD (Nur im aktiven Spiel anzeigen)
     const isPlaying = this.mode === "playing";
-    if (!isPlaying) return;
+    if (!isPlaying) {
+      ctx.restore();
+      return;
+    }
     const barX = 605;
     const barY = 205;
     const barW = 210;
@@ -1297,29 +1362,21 @@ export class GameEngine {
     ctx.font = `${woolRadius * 1.3}px sans-serif`;
     ctx.fillText(isStrickActive ? "🔥" : "🧶", barX + barW, barY + barH / 2);
 
+    let wallDrawn = false;
     let treeDrawn = false;
     for (const t of sorted) {
-      if (!treeDrawn && t.z >= 0.30) {
-        const tree = this.img("tree");
-        if (tree) {
-          const targetRatio = WORLD_W / WORLD_H;
-          const srcW = tree.height * targetRatio;
-          const srcX = (tree.width - srcW) / 2;
-          ctx.drawImage(tree, srcX, 0, srcW, tree.height, 0, 0, WORLD_W, WORLD_H);
-        }
+      if (!wallDrawn && t.z >= WALL_DRAW_Z) {
+        this.drawSceneLayer("parkmauer");
+        wallDrawn = true;
+      }
+      if (!treeDrawn && t.z >= TREE_DRAW_Z) {
+        this.drawSceneLayer("tree");
         treeDrawn = true;
       }
       this.drawTarget(t);
     }
-    if (!treeDrawn) {
-      const tree = this.img("tree");
-      if (tree) {
-        const targetRatio = WORLD_W / WORLD_H;
-        const srcW = tree.height * targetRatio;
-        const srcX = (tree.width - srcW) / 2;
-        ctx.drawImage(tree, srcX, 0, srcW, tree.height, 0, 0, WORLD_W, WORLD_H);
-      }
-    }
+    if (!wallDrawn) this.drawSceneLayer("parkmauer");
+    if (!treeDrawn) this.drawSceneLayer("tree");
 
     if (this.strickT > 0) {
       ctx.save();
@@ -1425,8 +1482,18 @@ export class GameEngine {
     if (this.mode === "playing" || this.mode === "paused") this.drawCrosshair();
   }
 
-  clipOccluders(_ctx: CanvasRenderingContext2D, _t: Target) {
-    return;
+  clipOccluders(ctx: CanvasRenderingContext2D, t: Target) {
+    if (!(t.z < WALL_DRAW_Z && t.y < 980)) return;
+    const { cx, peak, r, left, right, bottom } = ARCH;
+    const cy = peak + r;
+    ctx.beginPath();
+    ctx.rect(0, 0, WORLD_W, WORLD_H);
+    ctx.moveTo(left, cy);
+    ctx.arc(cx, cy, r, Math.PI, 0);
+    ctx.lineTo(right, bottom);
+    ctx.lineTo(left, bottom);
+    ctx.closePath();
+    ctx.clip("evenodd");
   }
 
   drawTarget(t: Target) {
@@ -1436,13 +1503,7 @@ export class GameEngine {
     let h = 180 * t.scale;
     if (sprite) {
       const ratio = sprite.width / sprite.height;
-      h =
-        (t.act === "hippie" ? 260 : t.act === "rocker" ? 430 : t.act === "opa" ? 380
-          : t.act === "peek"
-            ? 340
-            : t.act === "bush"
-              ? 335
-              : 320) * t.scale;
+      h = (t.act === "carpet" ? 280 : 320) * t.scale;
       w = h * ratio;
     }
     t.dw = w;
@@ -1468,8 +1529,8 @@ export class GameEngine {
     ctx.rotate(t.rot + opaTilt);
     const opaLookAtCamera = t.act === "opa" && t.state === "falling" && t.phase !== "leave";
     if (!opaLookAtCamera && t.facing < 0) ctx.scale(-1, 1);
-    if (t.act === "bush" && t.state === "alive" && t.reveal < 0.98) {
-      const r = clamp(t.reveal, 0.12, 1);
+    if (t.act === "bush" && t.state === "alive") {
+      const r = t.phase === "out" ? clamp(t.reveal, 0, 0.5) : clamp(t.reveal, 0.28, 0.52);
       ctx.beginPath();
       ctx.rect(-w / 2, -h, w, h * r);
       ctx.clip();

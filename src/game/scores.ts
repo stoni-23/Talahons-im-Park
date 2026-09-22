@@ -109,6 +109,7 @@ export async function persistAccountStats(
     let explicitXp = 0;
     let explicitHigh = 0;
     let explicitGames = 0;
+    let explicitHits = 0;
 
     if (typeof roundScoreOrStats === 'number') {
       roundScore = roundScoreOrStats;
@@ -116,7 +117,7 @@ export async function persistAccountStats(
     } else if (typeof roundScoreOrStats === 'object' && roundScoreOrStats !== null) {
       roundScore = Number(roundScoreOrStats.roundScore ?? roundScoreOrStats.score) || 0;
       extraHits = Number(roundScoreOrStats.roundHits) || 0;
-      const explicitHits = Number(roundScoreOrStats.totalHits ?? additionalStats.totalHits) || 0;
+      explicitHits = Number(roundScoreOrStats.totalHits ?? additionalStats.totalHits) || 0;
       explicitXp = Number(roundScoreOrStats.totalXp ?? roundScoreOrStats.total_xp) || 0;
       explicitHigh = Number(roundScoreOrStats.highScore) || 0;
       explicitGames = Number(roundScoreOrStats.gamesPlayed) || 0;

@@ -5,7 +5,7 @@ export interface NewsModalProps {
   onClose: () => void;
 }
 
-export const CURRENT_NEWS_VERSION = "2026.09.v3";
+export const CURRENT_NEWS_VERSION = "2026.09.v4";
 
 export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -42,7 +42,27 @@ export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
         {/* Scrollable Content */}
         <div className="space-y-3.5 overflow-y-auto pr-1 text-xs text-stone-300 leading-relaxed custom-scrollbar flex-1">
           
-          {/* 1. Willkommen & Community-Dank */}
+                    {/* NEUES MAP- & TONNEN-UPDATE */}
+          <div className="relative overflow-hidden rounded-xl border-2 border-emerald-500/70 bg-gradient-to-r from-emerald-950/80 via-stone-900 to-amber-950/70 shadow-xl p-3.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5 font-black text-emerald-400 text-sm">
+                <span>🌳</span>
+                <span className="uppercase tracking-wide">NEUER HINTERGRUND: DER KLASSISCHE PARK & TONNEN-UPDATE</span>
+              </div>
+              <span className="bg-emerald-500 text-stone-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase shadow tracking-wider">
+                NEU
+              </span>
+            </div>
+            <p className="text-[11px] sm:text-xs text-stone-200 leading-relaxed mb-2">
+              Der Park erstrahlt in neuem Glanz! Der gesamte Hintergrund wurde komplett remastered – inklusive der gewaltigen Eiche, dem neuen Torbogen und knackscharfen Details.
+            </p>
+            <div className="border-t border-emerald-800/40 pt-2 text-[10px] sm:text-[11px] text-amber-200/90 space-y-1">
+              <div>🎯 <strong>Tonnen-Modus remastered:</strong> Sauberes Arcade-Fächerlayout mit freier Schusslinie für Oma!</div>
+              <div>🏮 <strong>Atmosphäre:</strong> Neue nostalgische Parklaterne für den perfekten Nacht-Vibe integriert.</div>
+            </div>
+          </div>
+
+{/* 1. Willkommen & Community-Dank */}
           <div className="bg-gradient-to-r from-amber-950/70 to-stone-900/90 p-3.5 rounded-xl border border-amber-800/50 shadow-md">
             <div className="flex items-center gap-1.5 font-bold text-amber-300 text-sm mb-1.5">
               <span>❤️</span>

@@ -17,13 +17,6 @@ export const Route = createRootRoute({
         name: "description",
         content: "Hilf Omma bei der Parkreinigung und knack den Highscore! 🧶💥",
       },
-      { property: "og:title", content: "Talahons im Park - Parabellum Edition" },
-      { property: "og:description", content: "Hilf Omma bei der Parkreinigung und knack den Highscore! 🧶💥" },
-      { property: "og:image", content: "https://talahons-im-park.vercel.app/logo.png" },
-      { property: "og:url", content: "https://talahons-im-park.vercel.app" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:image", content: "https://talahons-im-park.vercel.app/logo.png" },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/logo.png" },

@@ -39,6 +39,10 @@ export type Target = {
   dw: number;
   dh: number;
   hide: number;
+  openStart?: number;
+  openDur?: number;
+  standMax?: number;
+  fallFrom?: number;
 };
 
 export type Particle = {
