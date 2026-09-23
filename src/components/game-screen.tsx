@@ -733,7 +733,7 @@ function isBadWord(name: string): boolean {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.4.4 BETA</div>}
+      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.4.5 BETA</div>}
       <div
         className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
         style={{ touchAction: playing ? "none" : "pan-y" }}
@@ -995,6 +995,7 @@ function isBadWord(name: string): boolean {
               {(() => {
                 const currentLvl = getPlayerLevel(profile.totalXp || 0);
                 const isUnlocked = currentLvl >= 10;
+                const isClaimed = Array.isArray(profile.inventory) && profile.inventory.includes("skin_golden_parabellum");
                 const progressPercent = Math.min(100, Math.max(0, Math.round((currentLvl / 10) * 100)));
                 return (
                   <button
@@ -1017,7 +1018,11 @@ function isBadWord(name: string): boolean {
                           </div>
                         </div>
                       </div>
-                      {isUnlocked ? (
+                      {isClaimed ? (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-bold">
+                          Erfüllt ✓
+                        </span>
+                      ) : isUnlocked ? (
                         <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-bold animate-pulse">
                           ✨ Bereit!
                         </span>
@@ -1050,7 +1055,7 @@ function isBadWord(name: string): boolean {
                   <div className="flex items-center justify-between w-full mb-1">
                     <span className="text-xl">🎯</span>
                     <span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-300 border border-emerald-500/30">
-                      {missions.filter(m => m.claimed).length}/{missions.length}
+                      {missions.length > 0 && missions.every(m => m.claimed) ? "5/5 ✓ Erfüllt" : `${missions.filter(m => m.claimed).length}/${missions.length}`}
                     </span>
                   </div>
                   <div>
@@ -1095,16 +1100,10 @@ function isBadWord(name: string): boolean {
                   type="button"
                   onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
                   onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
-                  className="flex flex-col justify-between rounded-xl border border-neutral-700 bg-neutral-900/60 p-2.5 text-left transition-all active:scale-95 hover:bg-neutral-800/80 cursor-pointer shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-center transition-all active:scale-95 hover:bg-amber-950/30 cursor-pointer shadow-sm"
                 >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-xl">🏪</span>
-                    <span className="text-[9px] text-amber-400/90 font-mono font-bold">Späti</span>
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-amber-100">Kiosk</div>
-                    <div className="text-[10px] text-neutral-400">Skins & Visiere</div>
-                  </div>
+                  <span className="text-2xl">🏪</span>
+                  <div className="text-xs font-bold text-amber-100">Kiosk</div>
                 </button>
 
                 {/* Handtasche */}
@@ -1112,18 +1111,10 @@ function isBadWord(name: string): boolean {
                   type="button"
                   onClick={() => { setKioskTab("inventory"); setIsKioskOpen(true); }}
                   onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("inventory"); setIsKioskOpen(true); }}
-                  className="flex flex-col justify-between rounded-xl border border-neutral-700 bg-neutral-900/60 p-2.5 text-left transition-all active:scale-95 hover:bg-neutral-800/80 cursor-pointer shadow-sm"
+                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-neutral-700 bg-neutral-900/60 p-3 text-center transition-all active:scale-95 hover:bg-neutral-800/80 cursor-pointer shadow-sm"
                 >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-xl">👜</span>
-                    <span className="rounded-md bg-neutral-800 px-1.5 py-0.5 text-[9px] font-mono text-neutral-300 border border-neutral-700 font-bold">
-                      {profile.inventory?.length || 0}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-neutral-200">Handtasche</div>
-                    <div className="text-[10px] text-neutral-400">Inventar</div>
-                  </div>
+                  <span className="text-2xl">👜</span>
+                  <div className="text-xs font-bold text-neutral-200">Handtasche</div>
                 </button>
               </div>
             </>

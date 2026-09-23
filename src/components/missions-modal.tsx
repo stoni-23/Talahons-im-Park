@@ -57,7 +57,7 @@ export function MissionsModal({
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-neutral-400 mt-0.5">30 Groschen 🪙 Belohnung & Giftgrün-Laser</p>
+              <p className="text-[11px] text-neutral-400 mt-0.5">20 Groschen 🪙 Belohnung & Giftgrün-Laser</p>
             </div>
           </div>
 
@@ -75,7 +75,7 @@ export function MissionsModal({
             ) : (
               <div className="flex items-center gap-1 rounded-xl border border-neutral-800 bg-neutral-950 px-2 py-1 text-xs font-bold text-neutral-400">
                 <span>🪙</span>
-                <span>30 Max</span>
+                <span>20 Max</span>
               </div>
             )}
             <button
