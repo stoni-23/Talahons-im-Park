@@ -42,26 +42,23 @@ export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
         {/* Scrollable Content */}
         <div className="space-y-3.5 overflow-y-auto pr-1 text-xs text-stone-300 leading-relaxed custom-scrollbar flex-1">
           
-                    {/* NEUES MAP- & TONNEN-UPDATE */}
-          <div className="relative overflow-hidden rounded-xl border-2 border-emerald-500/70 bg-gradient-to-r from-emerald-950/80 via-stone-900 to-amber-950/70 shadow-xl p-3.5">
-            <div className="flex items-center justify-between mb-1.5">
-                        {/* Tägliche Missionen News */}
-          <div className="rounded-2xl border border-amber-500/50 bg-gradient-to-br from-amber-950/40 via-neutral-900 to-neutral-950 p-3.5 space-y-2 shadow-lg">
-            <div className="flex items-start justify-between gap-2">
+                              {/* TÄGLICHE MISSIONEN NEWS */}
+          <div className="relative overflow-hidden rounded-xl border-2 border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-stone-900 to-amber-950/70 shadow-xl p-3.5 space-y-2">
+            <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="text-xl">📅</span>
-                <h3 className="text-xs font-black uppercase tracking-wider text-amber-300">
-                  NEU: Tägliche Missionen & Groschen-Jagd
-                </h3>
+                <span className="font-black text-amber-300 text-sm uppercase tracking-wide">
+                  Tägliche Missionen & Groschen-Jagd
+                </span>
               </div>
-              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/50 px-2 py-0.5 text-[9px] font-extrabold text-emerald-300">
+              <span className="bg-amber-500 text-stone-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase shadow tracking-wider">
                 NEU
               </span>
             </div>
-            <p className="text-[11px] text-neutral-300 leading-relaxed">
-              Jeden Tag um Mitternacht (00:00 Uhr) erwarten dich 4 frische Aufgaben im Park! Schließe Missionen ab, sammle Groschen und hol dir exklusive Belohnungen im Kiosk.
+            <p className="text-xs text-stone-300 leading-relaxed">
+              Jeden Tag um Mitternacht (00:00 Uhr) erwarten dich 4 frische Aufgaben im Park! Schließe Missionen ab, sammle Groschen und hole dir exklusive Belohnungen im Kiosk.
             </p>
-            <div className="space-y-1 text-[10.5px]">
+            <div className="space-y-1 text-[11px] pt-1 border-t border-amber-500/20">
               <div className="text-amber-200/90 font-medium">
                 🪙 <span className="font-bold text-white">Groschen verdienen:</span> Hol dir täglich Extra-Münzen für deinen Highscore und deine Treffer.
               </div>
@@ -71,7 +68,10 @@ export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-<div className="flex items-center gap-1.5 font-black text-emerald-400 text-sm">
+          {/* NEUES MAP- & TONNEN-UPDATE */}
+          <div className="relative overflow-hidden rounded-xl border-2 border-emerald-500/70 bg-gradient-to-r from-emerald-950/80 via-stone-900 to-amber-950/70 shadow-xl p-3.5">
+            <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-1.5 font-black text-emerald-400 text-sm">
                 <span>🌳</span>
                 <span className="uppercase tracking-wide">NEUER HINTERGRUND: DER KLASSISCHE PARK & TONNEN-UPDATE</span>
               </div>

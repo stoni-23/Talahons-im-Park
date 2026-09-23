@@ -1071,6 +1071,60 @@ function isBadWord(name: string): boolean {
                 );
               })()}
 
+              {/* 3. PARK-ERFOLGE GIFTGRÜN-LASER BANNER */}
+              {(() => {
+                const claimedLaser = Array.isArray(profile.inventory) && (profile.inventory.includes("sight_laser_green") || profile.inventory.includes("laser_green"));
+                const mainCompletedCount = missions.filter((m) => m.completed || m.claimed).length;
+                const totalMain = missions.length || 5;
+                const laserProgressPct = Math.min(100, Math.max(0, Math.round((mainCompletedCount / totalMain) * 100)));
+
+                return (
+                  <button
+                    type="button"
+                    onClick={() => setIsMissionsOpen(true)}
+                    onTouchEnd={(e) => { e.stopPropagation(); setIsMissionsOpen(true); }}
+                    className="w-full relative overflow-hidden rounded-xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-neutral-900 to-black p-2.5 text-left shadow-md transition-all active:scale-[0.98] hover:border-emerald-400/70 cursor-pointer mt-2"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-950 border border-emerald-400/60 text-lg shadow-inner">
+                          🟢
+                        </div>
+                        <div>
+                          <div className="text-xs font-black tracking-wide text-emerald-300 flex items-center gap-1.5">
+                            GIFTGRÜN-LASER VISIER
+                          </div>
+                          <div className="text-[10px] text-neutral-400 font-medium">
+                            Exklusive Park-Missions-Belohnung
+                          </div>
+                        </div>
+                      </div>
+                      {claimedLaser ? (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-bold">
+                          Erfüllt ✓
+                        </span>
+                      ) : allMissionsCompleted ? (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-black text-[10px] font-black animate-bounce shadow">
+                          Abholen! 🎁
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-300 text-[10px] font-mono">
+                          {mainCompletedCount}/{totalMain}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Fortschrittsbalken */}
+                    <div className="relative w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-300 rounded-full"
+                        style={{ width: `${claimedLaser ? 100 : laserProgressPct}%` }}
+                      />
+                    </div>
+                  </button>
+                );
+              })()}
+
               {/* 3. 2x2 GRID */}
               <div className="grid grid-cols-2 gap-2">
                 {/* Missionen */}
