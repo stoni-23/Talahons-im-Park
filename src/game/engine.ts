@@ -28,7 +28,7 @@ export const WORLD_W = 900;
 export const WORLD_H = 1600;
 const FIRE_CD = 0.26;
 const COMBO_WINDOW = 1.05;
-const MAX_ALIVE = 9;
+const MAX_ALIVE = 11;
 const OMA_KEEP_X = -300;
 const OPA_HIT_HOLD = 1.05;
 
@@ -1049,11 +1049,11 @@ export class GameEngine {
       this.emit();
     }
     const progress = 1 - this.timeLeft / 90;
-    const spawnWait = 1.05 - progress * 0.62;
+    const spawnWait = 0.90 - progress * 0.48;
     this.spawnAcc -= (this.strickT > 0 ? dt * 2.2 : dt);
     if (this.spawnAcc <= 0) {
       this.spawnAcc = spawnWait * rand(0.7, 1.15);
-      const n = progress > 0.5 && Math.random() < 0.55 ? 2 : 1;
+      const n = progress > 0.5 && Math.random() < 0.5 ? 2 : 1;
       for (let i = 0; i < n; i++) {
         const r = Math.random();
         if (r < 0.38) this.spawnBush();

@@ -180,6 +180,17 @@ export function GameScreen() {
 
 
 
+  
+const BAD_WORDS = [
+  "hitler", "adolf", "nazi", "ss", "hakenkreuz", "juden", "jude",
+  "hurensohn", "hure", "fotze", "spast", "bastard", "nigger", "nigga",
+  "arschloch", "wichser", "kanacke", "scheiss", "scheisse"
+];
+function isBadWord(name: string): boolean {
+  const s = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return BAD_WORDS.some(w => s.includes(w));
+}
+
   const [profileError, setProfileError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -528,6 +539,7 @@ export function GameScreen() {
     const clName = profileInput.trim();
     const clPw = passwordInput.trim();
     if (!clName || clName.length < 2) return setProfileError("Name min. 2 Zeichen!");
+    if (isBadWord(clName)) return setProfileError("Unzulaessiger Name!");
     if (!clPw || clPw.length < 4) return setProfileError("Passwort min. 4 Zeichen!");
 
     setAuthLoading(true);
@@ -1740,6 +1752,7 @@ export function GameScreen() {
                   const cl = name.trim();
                   if (!cl || cl.length < 2) return setNameError("Mindestens 2 Zeichen!");
                   if (!/^[a-zA-Z0-9_-]+$/.test(cl)) return setNameError("Nur Buchstaben, Zahlen, - und _ erlaubt (keine Leerzeichen/Emojis)!");
+                  if (isBadWord(cl)) return setNameError("Unzulaessiger Name!");
                   const b = await fetchOnlineBoard();
                   if (b.some(x => x.name.toLowerCase() === cl.toLowerCase() && cl.toLowerCase() !== (profile.name || "").toLowerCase())) {
                     return setNameError("Name bereits vergeben!");
