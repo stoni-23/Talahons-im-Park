@@ -394,8 +394,7 @@ export async function syncProfileOnline(p: any){
     equipped: p.equipped || {},
     missions: Array.isArray(p.missions) ? p.missions : [],
     dailyReward: p.dailyReward || null,
-    tonnenPlays: p.tonnenPlays || null,
-    dailyMissions: p.dailyMissions || null
+    tonnenPlays: p.tonnenPlays || null
   };
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/accounts?username=ilike.${encodeURIComponent(n)}`, {
