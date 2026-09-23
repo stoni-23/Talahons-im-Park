@@ -1082,13 +1082,36 @@ function isBadWord(name: string): boolean {
                 >
                   <div className="flex items-center justify-between w-full mb-1">
                     <span className="text-xl">🎯</span>
-                    <span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-300 border border-emerald-500/30">
-                      {missions.length > 0 && missions.every(m => m.claimed) ? "5/5 ✓ Erfüllt" : `${missions.filter(m => m.claimed).length}/${missions.length}`}
-                    </span>
+                    {(() => {
+                      const dMissions = dailyMissionState?.missions || [];
+                      const dailyClaimable = dMissions.filter(m => m.completed && !m.claimed).length;
+                      const dailyDone = dMissions.filter(m => m.claimed).length;
+                      const mainAllClaimed = missions.length > 0 && missions.every(m => m.claimed);
+
+                      if (dailyClaimable > 0) {
+                        return (
+                          <span className="rounded-md bg-amber-500/30 px-1.5 py-0.5 text-[9px] font-mono font-black text-amber-300 border border-amber-500/50 animate-pulse">
+                            +{dailyClaimable} 🪙 Holen!
+                          </span>
+                        );
+                      }
+                      if (dMissions.length > 0 && dailyDone < dMissions.length) {
+                        return (
+                          <span className="rounded-md bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-amber-300 border border-amber-500/40 animate-pulse">
+                            📅 Täglich {dailyDone}/{dMissions.length}
+                          </span>
+                        );
+                      }
+                      return (
+                        <span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-300 border border-emerald-500/30">
+                          {mainAllClaimed && dailyDone === dMissions.length ? "Alle ✓" : `Park ${missions.filter(m => m.claimed).length}/${missions.length}`}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div>
                     <div className="text-xs font-bold text-emerald-200">Missionen</div>
-                    <div className="text-[10px] text-emerald-400/70">Park-Aufgaben</div>
+                    <div className="text-[10px] text-emerald-400/70">Täglich & Park</div>
                   </div>
                 </button>
 
