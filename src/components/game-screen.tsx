@@ -318,12 +318,7 @@ function isBadWord(name: string): boolean {
       saveProfile(fixed);
       setProfile(fixed);
       setProfileInput(fixed.name);
-      persistAccountStats(fixed.name, {
-        gamesPlayed: fixed.gamesPlayed,
-        totalHits: fixed.totalHits,
-        totalXp: fixed.totalXp,
-        highScore: fixed.highScore
-      }).then(() => fetchOnlineBoard().then((fresh) => { if (fresh && fresh.length > 0) setBoard(fresh); })).catch(() => {});
+      fetchOnlineBoard().then((fresh) => { if (fresh && fresh.length > 0) setBoard(fresh); }).catch(() => {});
     }).catch(() => {
       setProfile(p);
       setProfileInput(p.name);
@@ -1765,9 +1760,9 @@ function isBadWord(name: string): boolean {
                     ...base,
                     name: cl,
                     highScore: Math.max(base.highScore || 0, hud.score),
-                    gamesPlayed: (base.gamesPlayed || 0) + 1,
-                    totalHits: (base.totalHits || 0) + (hud.hits || 0),
-                    totalXp: (base.totalXp || 0) + (hud.score > 0 ? hud.score : 0)
+                    gamesPlayed: Math.max(base.gamesPlayed || 0, p.gamesPlayed || 0),
+                    totalHits: Math.max(base.totalHits || 0, p.totalHits || 0),
+                    totalXp: Math.max(base.totalXp || 0, p.totalXp || 0)
                   };
                   saveProfile(nextP);
                   setProfile(nextP);
