@@ -749,7 +749,7 @@ function isBadWord(name: string): boolean {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.4.5 BETA</div>}
+      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.5.0 BETA</div>}
       <div
         className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
         style={{ touchAction: playing ? "none" : "pan-y" }}
@@ -1019,111 +1019,116 @@ function isBadWord(name: string): boolean {
 
           {profile.name && !isEditing && (
             <>
-              {/* 2. LEVEL 10 GOLDEN PARABELLUM CARD MIT KONTRAST */}
-              {(() => {
-                const currentLvl = getPlayerLevel(profile.totalXp || 0);
-                const isUnlocked = currentLvl >= 10;
-                const isClaimed = Array.isArray(profile.inventory) && profile.inventory.includes("skin_golden_parabellum");
-                const progressPercent = Math.min(100, Math.max(0, Math.round((currentLvl / 10) * 100)));
-                return (
-                  <button
-                    type="button"
-                    onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
-                    onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
-                    className="w-full relative overflow-hidden rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-950/40 via-neutral-900 to-black p-2.5 text-left shadow-md transition-all active:scale-[0.98] hover:border-amber-400/70 cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-950 border border-amber-400/60 text-lg shadow-inner">
-                          🔫
-                        </div>
-                        <div>
-                          <div className="text-xs font-black tracking-wide text-amber-300 flex items-center gap-1.5">
-                            GOLDEN PARABELLUM
-                          </div>
-                          <div className="text-[10px] text-neutral-400 font-medium">
-                            Exklusive Level-10-Belohnung
-                          </div>
-                        </div>
-                      </div>
-                      {isClaimed ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-bold">
-                          Erfüllt ✓
-                        </span>
-                      ) : isUnlocked ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-bold animate-pulse">
-                          ✨ Bereit!
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/80 border border-amber-500/50 text-amber-300 text-[10px] font-mono font-bold">
-                          {"🔒 Lv. " + currentLvl + "/10"}
-                        </span>
-                      )}
-                    </div>
+                            {/* KOMPAKTE MEILENSTEIN-BOX: PARABELLUM & LASER */}
+              <div className="w-full rounded-xl border border-neutral-800/90 bg-neutral-950/80 p-2 shadow-md space-y-1.5">
+                {/* 1. Golden Parabellum */}
+                {(() => {
+                  const currentLvl = getPlayerLevel(profile.totalXp || 0);
+                  const isUnlocked = currentLvl >= 10;
+                  const isClaimed = Array.isArray(profile.inventory) && profile.inventory.includes("skin_golden_parabellum");
+                  const progressPercent = Math.min(100, Math.max(0, Math.round((currentLvl / 10) * 100)));
 
-                    <div className="w-full h-1.5 rounded-full bg-neutral-800 overflow-hidden border border-neutral-700/50">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 rounded-full transition-all duration-500"
-                        style={{ width: progressPercent + "%" }}
-                      />
-                    </div>
-                  </button>
-                );
-              })()}
-
-              {/* 3. PARK-ERFOLGE GIFTGRÜN-LASER BANNER */}
-              {(() => {
-                const claimedLaser = Array.isArray(profile.inventory) && (profile.inventory.includes("sight_laser_green") || profile.inventory.includes("laser_green"));
-                const mainCompletedCount = missions.filter((m) => m.completed || m.claimed).length;
-                const totalMain = missions.length || 5;
-                const laserProgressPct = Math.min(100, Math.max(0, Math.round((mainCompletedCount / totalMain) * 100)));
-
-                return (
-                  <button
-                    type="button"
-                    onClick={() => setIsMissionsOpen(true)}
-                    onTouchEnd={(e) => { e.stopPropagation(); setIsMissionsOpen(true); }}
-                    className="w-full relative overflow-hidden rounded-xl border border-emerald-500/40 bg-gradient-to-r from-emerald-950/40 via-neutral-900 to-black p-2.5 text-left shadow-md transition-all active:scale-[0.98] hover:border-emerald-400/70 cursor-pointer mt-2"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-neutral-950 border border-emerald-400/60 text-lg shadow-inner">
-                          🟢
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
+                      onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
+                      className="w-full rounded-lg bg-neutral-900/70 hover:bg-neutral-900 border border-amber-500/20 px-2 py-1.5 text-left transition-all active:scale-[0.99] cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-base shrink-0">🔫</span>
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-black tracking-wide text-amber-300 truncate leading-none">
+                              GOLDEN PARABELLUM
+                            </div>
+                            <div className="text-[9px] text-neutral-400 font-medium leading-tight">
+                              Level 10 Waffenskin
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-xs font-black tracking-wide text-emerald-300 flex items-center gap-1.5">
-                            GIFTGRÜN-LASER VISIER
-                          </div>
-                          <div className="text-[10px] text-neutral-400 font-medium">
-                            Exklusive Park-Missions-Belohnung
-                          </div>
+
+                        <div className="shrink-0">
+                          {isClaimed ? (
+                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[9px] font-bold">
+                              Erfüllt ✓
+                            </span>
+                          ) : isUnlocked ? (
+                            <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-black animate-pulse shadow">
+                              Bereit! 🎁
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded-full bg-black/70 border border-neutral-700 text-amber-300 text-[9px] font-mono font-bold">
+                              Lv. {currentLvl}/10
+                            </span>
+                          )}
                         </div>
                       </div>
-                      {claimedLaser ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 text-[10px] font-bold">
-                          Erfüllt ✓
-                        </span>
-                      ) : allMissionsCompleted ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-black text-[10px] font-black animate-bounce shadow">
-                          Abholen! 🎁
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 border border-neutral-700 text-neutral-300 text-[10px] font-mono">
-                          {mainCompletedCount}/{totalMain}
-                        </span>
-                      )}
-                    </div>
 
-                    {/* Fortschrittsbalken */}
-                    <div className="relative w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-300 rounded-full"
-                        style={{ width: `${claimedLaser ? 100 : laserProgressPct}%` }}
-                      />
-                    </div>
-                  </button>
-                );
-              })()}
+                      <div className="w-full h-1 rounded-full bg-neutral-800 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-500"
+                          style={{ width: progressPercent + "%" }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })()}
+
+                {/* 2. Giftgrün-Laser Visier */}
+                {(() => {
+                  const claimedLaser = Array.isArray(profile.inventory) && profile.inventory.includes("visier_neon");
+                  const mainCompletedCount = missions.filter((m) => m.completed || m.claimed).length;
+                  const totalMain = missions.length || 5;
+                  const laserProgressPct = Math.min(100, Math.max(0, Math.round((mainCompletedCount / totalMain) * 100)));
+
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setIsMissionsOpen(true)}
+                      onTouchEnd={(e) => { e.stopPropagation(); setIsMissionsOpen(true); }}
+                      className="w-full rounded-lg bg-neutral-900/70 hover:bg-neutral-900 border border-emerald-500/20 px-2 py-1.5 text-left transition-all active:scale-[0.99] cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-base shrink-0">🟢</span>
+                          <div className="min-w-0">
+                            <div className="text-[11px] font-black tracking-wide text-emerald-300 truncate leading-none">
+                              GIFTGRÜN-LASER
+                            </div>
+                            <div className="text-[9px] text-neutral-400 font-medium leading-tight">
+                              Alle 5 Park-Missionen
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0">
+                          {claimedLaser ? (
+                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[9px] font-bold">
+                              Erfüllt ✓
+                            </span>
+                          ) : (mainCompletedCount >= totalMain) ? (
+                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-black text-[9px] font-black animate-bounce shadow">
+                              Abholen! 🎁
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded-full bg-black/70 border border-neutral-700 text-neutral-300 text-[9px] font-mono">
+                              {mainCompletedCount}/{totalMain}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="w-full h-1 rounded-full bg-neutral-800 overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-300"
+                          style={{ width: (claimedLaser ? 100 : laserProgressPct) + "%" }}
+                        />
+                      </div>
+                    </button>
+                  );
+                })()}
+              </div>
 
               {/* 3. 2x2 GRID */}
               <div className="grid grid-cols-2 gap-2">
