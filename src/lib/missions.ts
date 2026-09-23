@@ -2,7 +2,7 @@ export interface Mission {
   id: string;
   title: string;
   description: string;
-  category: "bahndidos" | "talahin" | "hippie" | "rounds" | "score";
+  category: "bahndidos" | "talahin" | "hippie" | "rounds" | "score" | "strick" | "tonnen";
   target: number;
   progress: number;
   rewardCoins: number;
@@ -85,6 +85,12 @@ export function updateMissionProgress(
         newProg += 1;
         changed = true;
       } else if (m.category === "hippie" && event.act === "hippie") {
+        newProg += 1;
+        changed = true;
+      } else if (m.category === "strick" && event.act === "strick_kommando") {
+        newProg += 1;
+        changed = true;
+      } else if (m.category === "tonnen" && event.act === "tonnen_played") {
         newProg += 1;
         changed = true;
       }

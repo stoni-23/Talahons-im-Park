@@ -8,6 +8,7 @@ export interface PlayerProfile {
   inventory?: string[];
   equipped?: Record<string, string>;
   missions?: any[];
+  dailyMissions?: { date: string; missions: any[] };
   dailyReward?: { streak: number; lastClaimDate: string }; 
   tonnenPlays?: { date: string; count: number };
 }
@@ -66,6 +67,7 @@ export function loadProfile(name?: string): PlayerProfile {
     inventory: Array.isArray(parsed.inventory) ? parsed.inventory : [],
     equipped: (parsed.equipped && typeof parsed.equipped === "object") ? parsed.equipped : {},
       missions: Array.isArray(parsed.missions) ? parsed.missions : undefined,
+      dailyMissions: parsed.dailyMissions && typeof parsed.dailyMissions === "object" ? parsed.dailyMissions : undefined,
       dailyReward: parsed.dailyReward && typeof parsed.dailyReward === "object" ? parsed.dailyReward : undefined,
       tonnenPlays: parsed.tonnenPlays && typeof parsed.tonnenPlays === "object" ? parsed.tonnenPlays : undefined,
     };
@@ -84,6 +86,7 @@ export function saveProfile(profile: PlayerProfile): void {
     JSON.stringify({
       name: profile.name.trim(),
       missions: profile.missions,
+      dailyMissions: profile.dailyMissions,
     dailyReward: profile.dailyReward,
       tonnenPlays: profile.tonnenPlays,
       highScore: bestScore,

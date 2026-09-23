@@ -5,6 +5,7 @@ import { KioskModal, type KioskTab } from "./kiosk-modal";
 import { DailyRewardModal } from "@/components/daily-reward-modal";
 import { getDailyRewardStatus } from "@/lib/daily-reward";
 import { MissionsModal } from "./missions-modal";
+import { checkAndResetDailyMissions, DailyMissionState } from "@/lib/daily-missions";
 import { TonnenGame } from "./tonnen-game";
 import { INITIAL_MISSIONS, updateMissionProgress, type Mission } from "@/lib/missions";
 function minXpForLevel(level: number): number {
@@ -114,16 +115,19 @@ export function GameScreen() {
   
   const [profile, setProfile] = useState<PlayerProfile>({ name: "", highScore: 0, gamesPlayed: 0, totalHits: 0, totalXp: 0 });
 
+  const [dailyMissionState, setDailyMissionState] = React.useState<DailyMissionState>(() => checkAndResetDailyMissions());
   const [missions, setMissions] = React.useState<Mission[]>(INITIAL_MISSIONS);
 
   // Synchronisiere Missionen immer mit dem eingeloggten Profil (NACH Deklaration von profile)
   React.useEffect(() => {
     if (!profile?.name?.trim()) {
       setMissions(INITIAL_MISSIONS);
+      setDailyMissionState(checkAndResetDailyMissions());
       return;
     }
     if (Array.isArray(profile.missions) && profile.missions.length > 0) {
       setMissions(profile.missions);
+      if (profile.dailyMissions) setDailyMissionState(checkAndResetDailyMissions(profile.dailyMissions));
     } else {
       setMissions(INITIAL_MISSIONS);
     }
@@ -281,7 +285,8 @@ function isBadWord(name: string): boolean {
             equipped: { ...(onlineStats.equipped || {}), ...(current.equipped || {}) },
             // Wenn in Supabase heute schon abgeholt wurde, greift Supabase als Single Source of Truth:
             dailyReward: onlineStats.dailyReward || current.dailyReward,
-            tonnenPlays: onlineStats.tonnenPlays || current.tonnenPlays
+            tonnenPlays: onlineStats.tonnenPlays || current.tonnenPlays,
+            dailyMissions: onlineStats.dailyMissions || current.dailyMissions
           };
           try {
             localStorage.setItem("park_profile", JSON.stringify(merged));
@@ -428,6 +433,16 @@ function isBadWord(name: string): boolean {
           currentMissions = rHit.updated;
         }
 
+        let curDaily = checkAndResetDailyMissions(p.dailyMissions || dailyMissionState).missions;
+        for (const act of finalActs) {
+          const dHit = updateMissionProgress(curDaily, { type: "hit", act });
+          curDaily = dHit.updated;
+        }
+        const dEnd = updateMissionProgress(curDaily, { type: "round_end", score: hud.score || 0 });
+        curDaily = dEnd.updated;
+        const nextDailyState = { date: checkAndResetDailyMissions(p.dailyMissions).date, missions: curDaily };
+        p.dailyMissions = nextDailyState;
+        setDailyMissionState(nextDailyState);
         const rEnd = updateMissionProgress(currentMissions, { type: "round_end", score: hud.score || 0 });
         currentMissions = rEnd.updated;
 
@@ -621,7 +636,8 @@ function isBadWord(name: string): boolean {
           ? sStats.missions
           : (Array.isArray(ex.missions) && ex.missions.length > 0 ? ex.missions : INITIAL_MISSIONS),
         dailyReward: (sStats && sStats.dailyReward) ? sStats.dailyReward : (ex.dailyReward || null),
-        tonnenPlays: (sStats && sStats.tonnenPlays) ? sStats.tonnenPlays : (ex.tonnenPlays || null)
+        tonnenPlays: (sStats && sStats.tonnenPlays) ? sStats.tonnenPlays : (ex.tonnenPlays || null),
+        dailyMissions: (sStats && sStats.dailyMissions) ? sStats.dailyMissions : (ex.dailyMissions || null)
       };
 
       saveProfile(up);
@@ -947,6 +963,18 @@ function isBadWord(name: string): boolean {
                     date: status.today,
                     count: status.currentCount + 1,
                   },
+                  dailyMissions: (() => {
+                    try {
+                      const dCheck = checkAndResetDailyMissions(profile.dailyMissions || dailyMissionState);
+                      const dRes = updateMissionProgress(dCheck.missions, { type: "hit", act: "tonnen_played" });
+                      if (dRes.changed) {
+                        const nextD = { date: dCheck.date, missions: dRes.updated };
+                        setDailyMissionState(nextD);
+                        return nextD;
+                      }
+                      return dCheck;
+                    } catch { return profile.dailyMissions; }
+                  })(),
                 };
 
                 setProfile(updated);
@@ -1535,6 +1563,10 @@ function isBadWord(name: string): boolean {
         }}
       />
       <MissionsModal
+          isOpen={isMissionsOpen}
+          onClose={() => setIsMissionsOpen(false)}
+          missions={missions}
+          dailyMissions={dailyMissionState?.missions || []}
           onClaimLaser={() => {
             setProfile((prev: any) => {
               const inv = Array.isArray(prev.inventory) ? prev.inventory : [];
@@ -1550,41 +1582,79 @@ function isBadWord(name: string): boolean {
               return updated;
             });
           }}
-          isOpen={isMissionsOpen}
-          onClaimAll={() => {
-            const claimables = missions.filter(m => m.completed && !m.claimed);
-            if (claimables.length === 0) return;
-            const totalAdd = claimables.reduce((acc, m) => acc + m.rewardCoins, 0);
-            const next = missions.map(m => m.completed ? { ...m, claimed: true } : m);
-            setMissions(next);
-            setProfile((p: any) => {
-              const updatedCoins = (p.coins || 0) + totalAdd;
-              const updated = { ...p, coins: updatedCoins, missions: next };
-              try {
-                localStorage.setItem("park_profile", JSON.stringify(updated));
-                if (typeof saveProfile === "function") saveProfile(updated);
-                if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
-              } catch {}
-              return updated;
-            });
+          onClaim={(id, isDaily) => {
+            if (isDaily) {
+              const curD = checkAndResetDailyMissions(profile.dailyMissions || dailyMissionState);
+              const target = curD.missions.find((m) => m.id === id);
+              if (!target || !target.completed || target.claimed) return;
+              const nextM = curD.missions.map((m) => m.id === id ? { ...m, claimed: true } : m);
+              const nextD = { ...curD, missions: nextM };
+              setDailyMissionState(nextD);
+              setProfile((p: any) => {
+                const updatedCoins = (p.coins || 0) + (target.rewardCoins || 2);
+                const updated = { ...p, coins: updatedCoins, dailyMissions: nextD };
+                try {
+                  if (typeof saveProfile === "function") saveProfile(updated);
+                  syncProfileOnline(updated);
+                } catch {}
+                return updated;
+              });
+              playSfx("hit");
+            } else {
+              setMissions(prev => {
+                const next = prev.map(m => m.id === id ? { ...m, claimed: true } : m);
+                try { localStorage.setItem("park_missions", JSON.stringify(next)); } catch {}
+                return next;
+              });
+              setProfile((p: any) => {
+                const rewardItem = missions.find(m => m.id === id);
+                const addCoins = rewardItem ? rewardItem.rewardCoins : 2;
+                const updatedCoins = (p.coins || 0) + addCoins;
+                const updated = { ...p, coins: updatedCoins };
+                try {
+                  if (typeof saveProfile === "function") saveProfile(updated);
+                  syncProfileOnline(updated);
+                } catch {}
+                return updated;
+              });
+            }
           }}
-          onClose={() => setIsMissionsOpen(false)}
-          missions={missions}
-          onClaim={(id) => {
-            const next = missions.map(m => m.id === id ? { ...m, claimed: true } : m);
-            setMissions(next);
-            setProfile((p: any) => {
-              const rewardItem = missions.find(m => m.id === id);
-              const addCoins = rewardItem ? rewardItem.rewardCoins : 2;
-              const updatedCoins = (p.coins || 0) + addCoins;
-              const updated = { ...p, coins: updatedCoins, missions: next };
-              try {
-                localStorage.setItem("park_profile", JSON.stringify(updated));
-                if (typeof saveProfile === "function") saveProfile(updated);
-                if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
-              } catch {}
-              return updated;
-            });
+          onClaimAll={(isDaily) => {
+            if (isDaily) {
+              const curD = checkAndResetDailyMissions(profile.dailyMissions || dailyMissionState);
+              const claimable = curD.missions.filter((m) => m.completed && !m.claimed);
+              if (claimable.length === 0) return;
+              const totalReward = claimable.reduce((acc, m) => acc + m.rewardCoins, 0);
+              const nextM = curD.missions.map((m) => m.completed ? { ...m, claimed: true } : m);
+              const nextD = { ...curD, missions: nextM };
+              setDailyMissionState(nextD);
+              setProfile((p: any) => {
+                const updatedCoins = (p.coins || 0) + totalReward;
+                const updated = { ...p, coins: updatedCoins, dailyMissions: nextD };
+                try {
+                  if (typeof saveProfile === "function") saveProfile(updated);
+                  syncProfileOnline(updated);
+                } catch {}
+                return updated;
+              });
+              playSfx("hit");
+            } else {
+              const claimables = missions.filter(m => m.completed && !m.claimed);
+              if (claimables.length === 0) return;
+              const totalAdd = claimables.reduce((acc, m) => acc + m.rewardCoins, 0);
+              const next = missions.map(m => m.completed ? { ...m, claimed: true } : m);
+              setMissions(next);
+              try { localStorage.setItem("park_missions", JSON.stringify(next)); } catch {}
+              setProfile((p: any) => {
+                const updatedCoins = (p.coins || 0) + totalAdd;
+                const updated = { ...p, coins: updatedCoins };
+                try {
+                  localStorage.setItem("park_profile", JSON.stringify(updated));
+                  if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
+                } catch {}
+                return updated;
+              });
+            }
           }}
           allCompleted={missions.every(m => m.claimed || m.completed)}
           laserClaimed={Array.isArray(profile.inventory) && profile.inventory.includes("visier_neon")}

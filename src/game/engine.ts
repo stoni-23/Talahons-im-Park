@@ -893,6 +893,7 @@ export class GameEngine {
     if (mult >= 5 && this.strickT <= 0) {
       this.strickT = 5.0;
       playOmaKommando();
+      if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("park_hit", { detail: { act: "strick_kommando" } }));
     }
     this.comboT = COMBO_WINDOW;
     if (this.combo > this.bestCombo) this.bestCombo = this.combo;
