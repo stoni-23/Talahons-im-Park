@@ -792,7 +792,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
           const t = e.touches[0];
           handleShoot(t.clientX, t.clientY);
         }}
-        className={`w-full h-full max-w-[520px] object-cover sm:object-contain cursor-crosshair ${gameState !== "playing" ? "hidden" : "block"}`}
+        className={`block shrink-0 origin-center cursor-crosshair ${gameState !== "playing" ? "hidden" : "block"}`} style={{ height: "100dvh", width: "calc(100dvh * 9 / 16)", maxWidth: "none", aspectRatio: "9 / 16" }}
       />
 
       

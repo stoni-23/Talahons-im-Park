@@ -394,8 +394,10 @@ export class GameEngine {
     const fit = Math.min(parent.clientWidth / WORLD_W, parent.clientHeight / WORLD_H);
     const w = Math.max(1, WORLD_W * fit);
     const h = Math.max(1, WORLD_H * fit);
-    this.canvas.style.width = "100%";
-    this.canvas.style.height = "100%";
+    this.canvas.style.height = "100dvh";
+    this.canvas.style.width = "calc(100dvh * 9 / 16)";
+    this.canvas.style.maxWidth = "none";
+    this.canvas.style.aspectRatio = "9 / 16";
     const raw = window.devicePixelRatio || 1;
     const cap = this.lowPower ? 1 : raw > 2.5 ? 1.25 : Math.min(1.5, raw);
     const dpr = Math.max(1, cap);

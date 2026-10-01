@@ -749,28 +749,40 @@ function isBadWord(name: string): boolean {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/50 font-bold tracking-widest z-50 pointer-events-none">v1.5.0 BETA</div>}
+      
       <div
-        className="relative flex h-full w-full max-h-[100dvh] max-w-[100vw] items-center justify-center"
-        style={{ touchAction: playing ? "none" : "pan-y" }}
+        className="relative flex h-full items-center justify-center overflow-hidden shrink-0"
+        style={{
+          height: "100dvh",
+          width: "calc(100dvh * 9 / 16)",
+          maxWidth: "100vw",
+          touchAction: playing ? "none" : "pan-y"
+        }}
       >
-        <canvas
-          ref={canvasRef}
-          className="block w-full h-full max-w-[520px] object-cover sm:object-contain origin-center"
-          style={{ cursor: playing ? "none" : "default", touchAction: "none" }}
+        {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/60 font-bold tracking-widest z-50 pointer-events-none">v1.5.0 BETA</div>}
+        <canvas ref={canvasRef}
+          className="block shrink-0 origin-center"
+          style={{
+            cursor: playing ? "none" : "default",
+            touchAction: "none",
+            height: "100dvh",
+            width: "calc(100dvh * 9 / 16)",
+            maxWidth: "none",
+            aspectRatio: "9 / 16"
+          }}
         />
 
         {hud.mode === "title" && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative flex h-full w-full max-w-[520px] flex-col items-center gap-2.5 overflow-y-auto px-6 pt-80 pb-12" style={{
-                backgroundImage: "url('/bg_oben.jpg'), url('/bg_unten.jpg')",
-                backgroundRepeat: "no-repeat, repeat-y",
-                backgroundSize: "105% auto, 105% auto",
-                backgroundPosition: "65% top, 65% top",
-                backgroundAttachment: "local, local",
-                touchAction: "pan-y",
-                WebkitOverflowScrolling: "touch"
-              }}>
+            <div className="relative flex h-full w-full flex-col items-center gap-2.5 overflow-y-auto px-4 sm:px-6 pt-[max(360px,38dvh)] pb-12" style={{
+        backgroundImage: "url('/bg_oben.jpg'), url('/bg_unten.jpg')",
+        backgroundRepeat: "no-repeat, repeat-y",
+        backgroundSize: "105% auto, 105% auto",
+        backgroundPosition: "65% top, 65% top",
+        backgroundAttachment: "local, local",
+        touchAction: "pan-y",
+        WebkitOverflowScrolling: "touch"
+      }}>
               {/* Lautsprecher fest auf dem Holzbrett */}
               {/* Lautsprecher links */}
               <button
@@ -908,7 +920,7 @@ function isBadWord(name: string): boolean {
               </div>
 
               {/* --- HAUPT-AKTIONEN & SPÄTI KASTEN --- */}
-        <div className={profile.name && !isEditing ? "w-full max-w-[360px] rounded-2xl border border-[#5c3a21]/60 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full"} style={profile.name && !isEditing ? { backgroundColor: "rgba(10, 8, 6, 0.45)" } : undefined}>
+        <div className={profile.name && !isEditing ? "w-full max-w-[360px] rounded-2xl border border-[#5c3a21]/60 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full max-w-[360px]"} style={profile.name && !isEditing ? { backgroundColor: "rgba(10, 8, 6, 0.45)" } : undefined}>
           {/* 1. SPIEL-MODI BUTTONS NEBENEINANDER */}
           <div className="flex gap-2 w-full">
             <button
