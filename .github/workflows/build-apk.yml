@@ -66,7 +66,6 @@ jobs:
           import android.graphics.drawable.ColorDrawable;
           import android.os.Build;
           import android.os.Bundle;
-          import android.view.View;
           import android.view.Window;
           import android.view.WindowManager;
           import androidx.core.view.WindowCompat;
@@ -107,42 +106,6 @@ jobs:
                   if (hasFocus) {
                       hideSystemBars();
                   }
-              }
-
-              @Override
-              public void onStart() {
-                  super.onStart();
-                  if (getBridge() != null && getBridge().getWebView() != null) {
-                      getBridge().getWebView().setBackgroundColor(Color.BLACK);
-                  }
-              }
-          }
-          JAVAEOF' > android/app/src/main/java/com/talahon/game/MainActivity.java
-          package com.talahon.game;
-
-          import android.graphics.Color;
-          import android.graphics.drawable.ColorDrawable;
-          import android.os.Bundle;
-          import android.view.View;
-          import androidx.core.graphics.Insets;
-          import androidx.core.view.ViewCompat;
-          import androidx.core.view.WindowInsetsCompat;
-          import com.getcapacitor.BridgeActivity;
-
-          public class MainActivity extends BridgeActivity {
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  getWindow().setBackgroundDrawable(new ColorDrawable(Color.BLACK));
-                  getWindow().setStatusBarColor(Color.BLACK);
-                  getWindow().setNavigationBarColor(Color.BLACK);
-
-                  View content = findViewById(android.R.id.content);
-                  ViewCompat.setOnApplyWindowInsetsListener(content, (view, windowInsets) -> {
-                      Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-                      view.setPadding(insets.left, insets.top, insets.right, insets.bottom);
-                      return WindowInsetsCompat.CONSUMED;
-                  });
               }
 
               @Override
@@ -196,7 +159,6 @@ jobs:
           [ ! -f "$SRC" ] && SRC="public/assets/logo.png"
           [ ! -f "$SRC" ] && SRC="assets/logo.png"
 
-          # 1. Schwarze Hintergrundfarbe definieren
           mkdir -p android/app/src/main/res/values
           cat << 'COLOREOF' > android/app/src/main/res/values/ic_launcher_background.xml
           <?xml version="1.0" encoding="utf-8"?>
@@ -205,16 +167,13 @@ jobs:
           </resources>
           COLOREOF
 
-          # 2. Foreground mit 70% Skalierung (Safe Zone verhindert Abschneiden)
           mkdir -p android/app/src/main/res/mipmap-mdpi android/app/src/main/res/mipmap-hdpi android/app/src/main/res/mipmap-xhdpi android/app/src/main/res/mipmap-xxhdpi android/app/src/main/res/mipmap-xxxhdpi
-
           convert "$SRC" -resize 75x75   -background none -gravity center -extent 108x108 android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
           convert "$SRC" -resize 114x114 -background none -gravity center -extent 162x162 android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
           convert "$SRC" -resize 151x151 -background none -gravity center -extent 216x216 android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
           convert "$SRC" -resize 226x226 -background none -gravity center -extent 324x324 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
           convert "$SRC" -resize 302x302 -background none -gravity center -extent 432x432 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
 
-          # 3. Flache Icons fuer aeltere Android-Geraete (schwarzer Rand)
           convert "$SRC" -resize 48x48   -background black -gravity center -extent 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
           convert "$SRC" -resize 48x48   -background black -gravity center -extent 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
           convert "$SRC" -resize 72x72   -background black -gravity center -extent 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
@@ -226,7 +185,6 @@ jobs:
           convert "$SRC" -resize 192x192 -background black -gravity center -extent 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
           convert "$SRC" -resize 192x192 -background black -gravity center -extent 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
 
-          # 4. Adaptive Icon Definition (Android 8 bis Android 15+)
           mkdir -p android/app/src/main/res/mipmap-anydpi-v26
           cat << 'ICONEOF' > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
           <?xml version="1.0" encoding="utf-8"?>
