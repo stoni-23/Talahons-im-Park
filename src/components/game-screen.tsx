@@ -754,7 +754,7 @@ function isBadWord(name: string): boolean {
         className="relative flex h-full items-center justify-center overflow-hidden shrink-0"
         style={{
           height: "100dvh",
-          width: "min(100vw, calc(100lvh * 9 / 16))",
+          width: playing ? "min(100vw, calc(100lvh * 9 / 16))" : "100vw",
           maxWidth: "100vw",
           touchAction: playing ? "none" : "pan-y"
         }}
