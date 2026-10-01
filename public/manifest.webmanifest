@@ -3,7 +3,7 @@
   "short_name": "Talahons im Park",
   "description": "Talahons im Park - Parabellum Edition",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#000000",
   "theme_color": "#000000",
   "orientation": "portrait",

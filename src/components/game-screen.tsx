@@ -754,7 +754,7 @@ function isBadWord(name: string): boolean {
         className="relative flex h-full items-center justify-center overflow-hidden shrink-0"
         style={{
           height: "100dvh",
-          width: "calc(100dvh * 9 / 16)",
+          width: "min(100vw, calc(100dvh * 9 / 16))",
           maxWidth: "100vw",
           touchAction: playing ? "none" : "pan-y"
         }}
@@ -766,7 +766,7 @@ function isBadWord(name: string): boolean {
             cursor: playing ? "none" : "default",
             touchAction: "none",
             height: "100dvh",
-            width: "calc(100dvh * 9 / 16)",
+            width: "min(100vw, calc(100dvh * 9 / 16))",
             maxWidth: "none",
             aspectRatio: "9 / 16"
           }}
@@ -806,7 +806,7 @@ function isBadWord(name: string): boolean {
                 📢
               </button>
               {/* Spieler & Rekord Box */}
-              <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
+              <div className="w-full w-[95%] max-w-[480px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <div className="mb-2 flex items-center justify-between">
                   <p className="flex items-center gap-1.5 text-xs font-bold tracking-[0.14em] text-paper uppercase">
                     <User className="size-3.5 text-amber-400" /> Profil
@@ -920,7 +920,7 @@ function isBadWord(name: string): boolean {
               </div>
 
               {/* --- HAUPT-AKTIONEN & SPÄTI KASTEN --- */}
-        <div className={profile.name && !isEditing ? "w-full max-w-[360px] rounded-2xl border border-[#5c3a21]/60 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full max-w-[360px]"} style={profile.name && !isEditing ? { backgroundColor: "rgba(10, 8, 6, 0.45)" } : undefined}>
+        <div className={profile.name && !isEditing ? "w-full w-[95%] max-w-[480px] rounded-2xl border border-[#5c3a21]/60 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full w-[95%] max-w-[480px]"} style={profile.name && !isEditing ? { backgroundColor: "rgba(10, 8, 6, 0.45)" } : undefined}>
           {/* 1. SPIEL-MODI BUTTONS NEBENEINANDER */}
           <div className="flex gap-2 w-full">
             <button
@@ -1244,7 +1244,7 @@ function isBadWord(name: string): boolean {
         </div>
 
         {/* Highscore Liste */}
-              <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
+              <div className="w-full w-[95%] max-w-[480px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-xs font-bold tracking-[0.14em] text-paper uppercase">
                     🏆 {showAllScores ? "Top 100 Rangliste" : "Top 5 Bestenliste"}
@@ -1327,7 +1327,7 @@ function isBadWord(name: string): boolean {
               
               {/* Chat-Bereich (Nur sichtbar wenn Name gesetzt) */}
               {!isEditing && profile?.name && (
-                <div className="w-full max-w-[360px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg flex flex-col mb-4" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
+                <div className="w-full w-[95%] max-w-[480px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg flex flex-col mb-4" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                   <p className="mb-2 text-xs font-bold tracking-[0.14em] text-paper uppercase flex items-center gap-1.5">
                     💬 Parkbank-Chat
                   </p>
@@ -1375,7 +1375,7 @@ function isBadWord(name: string): boolean {
               )}
 
               {/* Spielanleitung */}
-              <ul className="w-full max-w-[360px] space-y-1 rounded-xl border border-[#5c3a21]/60 p-3 text-xs text-paper-dim" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
+              <ul className="w-full w-[95%] max-w-[480px] space-y-1 rounded-xl border border-[#5c3a21]/60 p-3 text-xs text-paper-dim" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <li className="flex items-center justify-between">
                   <div className="flex flex-col text-left">
                     <span>🧶 Stricknadelkommando</span>
@@ -1399,7 +1399,7 @@ function isBadWord(name: string): boolean {
               </p>
 
               {/* Social Media Links */}
-              <div className="w-full max-w-[360px] rounded-xl border border-[#5c3a21]/60 p-3 text-center mt-2" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
+              <div className="w-full w-[95%] max-w-[480px] rounded-xl border border-[#5c3a21]/60 p-3 text-center mt-2" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
                 <p className="mb-2 text-[11px] font-bold tracking-[0.14em] text-paper-dim uppercase">BANKGEHEIMNIS IM PARK</p>
                 <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
                   <a href="https://www.tiktok.com/@bankgeheimnisimpark" target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
