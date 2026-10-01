@@ -754,7 +754,7 @@ function isBadWord(name: string): boolean {
         className="relative flex h-full items-center justify-center overflow-hidden shrink-0"
         style={{
           height: "100dvh",
-          width: "min(100vw, calc(100dvh * 9 / 16))",
+          width: "min(100vw, calc(100lvh * 9 / 16))",
           maxWidth: "100vw",
           touchAction: playing ? "none" : "pan-y"
         }}
@@ -766,7 +766,7 @@ function isBadWord(name: string): boolean {
             cursor: playing ? "none" : "default",
             touchAction: "none",
             height: "100dvh",
-            width: "min(100vw, calc(100dvh * 9 / 16))",
+            width: "min(100vw, calc(100lvh * 9 / 16))",
             maxWidth: "none",
             aspectRatio: "9 / 16"
           }}
