@@ -1753,7 +1753,7 @@ function isBadWord(name: string): boolean {
                 const rewardItem = missions.find(m => m.id === id);
                 const addCoins = rewardItem ? rewardItem.rewardCoins : 2;
                 const updatedCoins = (p.coins || 0) + addCoins;
-                const updated = { ...p, coins: updatedCoins };
+                const updated = { ...p, coins: updatedCoins, missions: next };
                 try {
                   if (typeof saveProfile === "function") saveProfile(updated);
                   syncProfileOnline(updated);
@@ -1790,7 +1790,7 @@ function isBadWord(name: string): boolean {
               try { localStorage.setItem("park_missions", JSON.stringify(next)); } catch {}
               setProfile((p: any) => {
                 const updatedCoins = (p.coins || 0) + totalAdd;
-                const updated = { ...p, coins: updatedCoins };
+                const updated = { ...p, coins: updatedCoins, missions: next };
                 try {
                   localStorage.setItem("park_profile", JSON.stringify(updated));
                   if (typeof syncProfileOnline === "function") syncProfileOnline(updated);
