@@ -138,6 +138,14 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
   const [wheelBet, setWheelBet] = useState(1);
   const [totalWonGroschen, setTotalWonGroschen] = useState(0);
   const [totalWonXp, setTotalWonXp] = useState(0);
+  const [wheelSplash, setWheelSplash] = useState<{ icon: string; text: string; id: number } | null>(null);
+  const triggerWheelSplash = (icon: string, text: string) => {
+    const id = Date.now();
+    setWheelSplash({ icon, text, id });
+    setTimeout(() => {
+      setWheelSplash(curr => curr?.id === id ? null : curr);
+    }, 2200);
+  };
   // Audio-Lebenszyklus als echtes Singleton
   useEffect(() => {
     if (!tonnenBgm) {
@@ -239,7 +247,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
 
   useEffect(() => {
     const assets = [
-      { key: "bg", src: "/assets/park-bg.jpg" },
+      { key: "bg", src: "/assets/park-bg.webp" },
       { key: "parkmauer", src: "/assets/parkmauer.png" },
       { key: "tree", src: "/assets/tree.png" },
       { key: "foliage", src: "/assets/foliage.png" },
@@ -397,6 +405,33 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
     }
 
     // 1. Hintergrund (9:16 Standard-BG + Mauer + Baum, gleiche Groesse)
+        // Nacht-Himmel (Mond & Sterne)
+    const nGrad = ctx.createLinearGradient(0, 0, 0, WORLD_H * 0.75);
+    nGrad.addColorStop(0, "#020617");
+    nGrad.addColorStop(0.5, "#0b152d");
+    nGrad.addColorStop(1, "#1e293b");
+    ctx.fillStyle = nGrad;
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+
+    const mX = WORLD_W * 0.78, mY = 240;
+    const mGlow = ctx.createRadialGradient(mX, mY, 12, mX, mY, 90);
+    mGlow.addColorStop(0, "rgba(255, 255, 235, 0.98)");
+    mGlow.addColorStop(0.3, "rgba(210, 230, 255, 0.4)");
+    mGlow.addColorStop(1, "rgba(100, 150, 255, 0)");
+    ctx.fillStyle = mGlow;
+    ctx.beginPath();
+    ctx.arc(mX, mY, 90, 0, Math.PI * 2);
+    ctx.fill();
+
+    const stars = [[70,80,2.2],[140,160,1.8],[220,70,2.5],[310,210,1.6],[400,110,2.3],[490,260,1.9],[580,95,2.4],[670,180,2.6],[760,85,2.0],[830,160,2.2],[180,290,1.9],[360,320,1.7],[540,350,2.1],[710,310,2.4]];
+    const t = Date.now() * 0.003;
+    stars.forEach(([sx, sy, sz], i) => {
+      ctx.fillStyle = "rgba(240, 248, 255, " + (0.55 + Math.sin(t + i * 1.7) * 0.42) + ")";
+      ctx.beginPath();
+      ctx.arc(sx, sy, sz, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
     const bg = imagesRef.current["bg"];
     if (bg) {
       ctx.drawImage(bg, 0, 0, WORLD_W, WORLD_H);
@@ -406,11 +441,11 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
     }
 
     const wall = imagesRef.current["parkmauer"];
-    if (wall) ctx.drawImage(wall, 0, 0, WORLD_W, WORLD_H);
+//     if (wall) ctx.drawImage(wall, 0, 0, WORLD_W, WORLD_H);
 
     // 2. Großer Baum
     const tree = imagesRef.current["tree"];
-    if (tree) ctx.drawImage(tree, 0, 0, WORLD_W, WORLD_H);
+//     if (tree) ctx.drawImage(tree, 0, 0, WORLD_W, WORLD_H);
 
     // 3. Dunkelheit / Nacht-Overlay
     ctx.save();
@@ -735,6 +770,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       if (won.extra) {
         const extraAdd = 1 * bet;
         setHerbsLeft((h) => h + extraAdd);
+        triggerWheelSplash("🔄", `+${extraAdd} EXTRA`);
         setWheelResultText(`🔄 +${extraAdd} Extra-Dreh geschenkt!`);
         playWinChime(false);
       } else {
@@ -742,12 +778,15 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
         setTotalWonXp((x) => x + winXp);
 
         if (won.label === "JACKPOT") {
+          triggerWheelSplash("👑", `+${winGroschen} 🪙  +${winXp} XP`);
           setWheelResultText(`👑 ECHTER JACKPOT! +${winGroschen} Groschen & +${winXp} XP!`);
         } else if (winGroschen > 0) {
           playWinChime(false);
+          triggerWheelSplash("🪙", `+${winGroschen}`);
           setWheelResultText(`💰 +${winGroschen} Groschen gewonnen!`);
         } else if (winXp > 0) {
           playWinChime(false);
+          triggerWheelSplash("⭐", `+${winXp} XP`);
           setWheelResultText(`⚡ +${winXp} XP gesammelt!`);
         } else {
           setWheelResultText("🍂 Niete! Versuchs nochmal.");
@@ -875,6 +914,37 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
           >
             Ab zum Park-Glücksrad 🎡
           </button>
+        </div>
+      )}
+
+      {wheelSplash && (
+        <div 
+          key={wheelSplash.id} 
+          className="fixed inset-0 pointer-events-none flex items-center justify-center select-none"
+          style={{ zIndex: 999999 }}
+        >
+          <div 
+            className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-black/80 backdrop-blur-md border border-amber-400/50 shadow-[0_0_50px_rgba(245,158,11,0.6)]"
+            style={{
+              animation: "rewardPopup 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+            }}
+          >
+            <style>{`
+              @keyframes rewardPopup {
+                0% { transform: scale(0.4) translateY(30px); opacity: 0; }
+                20% { transform: scale(1.15) translateY(-5px); opacity: 1; }
+                35% { transform: scale(1) translateY(0); opacity: 1; }
+                75% { transform: scale(1.02) translateY(-15px); opacity: 1; }
+                100% { transform: scale(0.9) translateY(-40px); opacity: 0; }
+              }
+            `}</style>
+            <span className="text-6xl drop-shadow-[0_0_20px_rgba(251,191,36,0.9)]">
+              {wheelSplash.icon}
+            </span>
+            <span className="text-5xl font-black italic tracking-wider text-amber-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)]">
+              {wheelSplash.text}
+            </span>
+          </div>
         </div>
       )}
 

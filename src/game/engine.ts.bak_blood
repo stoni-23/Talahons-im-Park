@@ -312,9 +312,9 @@ export class GameEngine {
         try {
           let img: HTMLImageElement;
           try {
-            img = await loadImage(`/assets/${key}.png`);
+            img = await loadImage(`/assets/${key}.${key === "park-bg" ? "jpg" : "png"}`);
           } catch {
-            img = await loadImage(`/${key}.png`);
+            img = await loadImage(`/${key}.${key === "park-bg" ? "jpg" : "png"}`);
           }
           this.images.set(key, img);
         } catch {
@@ -951,7 +951,11 @@ export class GameEngine {
       this.trauma = Math.min(1, this.trauma + (t.act === "rocker" ? 0.7 : 0.38));
       this.hitstop = t.act === "rocker" ? 0.09 : 0.045;
     }
-    this.flashes.push({ x: t.x, y: t.y - t.dh * 0.45, t: 0.3, kind: "impact", scale: t.scale || 1 });
+    if (!this.lowPower) {
+      this.flashes.push({ x: t.x, y: t.y - t.dh * 0.5, t: 0.18, kind: "impact" });
+      this.burst(t.x, t.y - t.dh * 0.45, t.act === "rocker" ? 28 : 16, "#d4a84b", 160);
+      this.burst(t.x, t.y - t.dh * 0.45, 8, "#f3ead8", 90);
+    }
     this.floaters.push({
       x: t.x,
       y: t.y - t.dh * 0.78,
@@ -1126,10 +1130,10 @@ export class GameEngine {
         t.vy += (t.z < WALL_DRAW_Z ? 1600 : 1900) * dt;
         t.x += t.vx * (this.strickT > 0 ? dt * 1.2 : dt);
         t.y += t.vy * dt;
-        const spin = t.act === "walk" && t.variant === "b" ? 3.5 : (t.z < WALL_DRAW_Z ? 0.7 : 1.0);
+        const spin = t.z < WALL_DRAW_Z ? 0.7 : 1.0;
         t.rot += (t.vx >= 0 ? 1 : -1) * spin * dt;
-        const maxRot = t.act === "walk" && t.variant === "b" ? 1.5 : 0.35; if (t.rot > maxRot) t.rot = maxRot;
-        const minRot = t.act === "walk" && t.variant === "b" ? -1.5 : -0.35; if (t.rot < minRot) t.rot = minRot;
+        if (t.rot > 0.35) t.rot = 0.35;
+        if (t.rot < -0.35) t.rot = -0.35;
         continue;
       }
       if (t.act === "carpet") {
@@ -1237,9 +1241,9 @@ export class GameEngine {
         return false;
       }
       if (t.state === "falling") {
-        if (t.act === "opa") return t.vx > 0 ? t.x < 1760 : t.x > -160; if (t.act === "carpet") return t.y < 1150;
+        if (t.act === "opa") return t.vx > 0 ? t.x < 1760 : t.x > -160;
         const from = t.fallFrom ?? t.y;
-        if (t.z < WALL_DRAW_Z) return t.y < from + 260 && t.y < 1180;
+        if (t.z < WALL_DRAW_Z) return t.y < from + 70 && t.y < 1040;
         return t.y < from + 120 && t.y < 1420;
       }
       if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
@@ -1281,9 +1285,9 @@ export class GameEngine {
     }
     if (t.act === "carpet") return this.img(t.frame % 2 === 0 ? "talahin_1" : "talahin_2");
     if (t.act === "rocker") return this.img("bahndidos");
-    if (t.state === "falling") { if (t.act === "walk" && t.act === "walk" && t.variant === "b") return this.img(`talahon-walk-b-${(t.frame % 4) + 1}`); return this.img(`talahon-hit-${(t.frame % 4) + 1}`); }
+    if (t.state === "falling") return this.img(`talahon-hit-${(t.frame % 4) + 1}`);
     if (t.act === "run") return this.img(`talahon-run-${(t.frame % 4) + 1}`);
-    const base = t.act === "walk" && t.variant === "b" ? "talahon-walk-b" : "talahon-walk";
+    const base = t.variant === "b" ? "talahon-walk-b" : "talahon-walk";
     return this.img(`${base}-${(t.frame % 4) + 1}`);
   }
 
@@ -1297,27 +1301,13 @@ export class GameEngine {
     const ox = shake ? (Math.random() * 2 - 1) * 14 * shake : 0;
     const oy = shake ? (Math.random() * 2 - 1) * 10 * shake : 0;
     ctx.translate(ox, oy);
-    // 1. Himmel zuerst zeichnen (hinter das transparente PNG)
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, WORLD_H * 0.75);
-    skyGrad.addColorStop(0, "#4fa8ff");
-    skyGrad.addColorStop(0.5, "#9fe1ff");
-    skyGrad.addColorStop(1, "#e6f7ff");
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
-
-    // Sonne
-    const sunX = WORLD_W * 0.76, sunY = 280;
-    const sGlow = ctx.createRadialGradient(sunX, sunY, 14, sunX, sunY, 105);
-    sGlow.addColorStop(0, "rgba(255, 255, 235, 0.95)");
-    sGlow.addColorStop(0.35, "rgba(255, 235, 170, 0.45)");
-    sGlow.addColorStop(1, "rgba(255, 220, 140, 0)");
-    ctx.fillStyle = sGlow;
-    ctx.beginPath();
-    ctx.arc(sunX, sunY, 105, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 2. Jetzt das transparente Bild darueberlegen
     this.drawSceneLayer("park-bg");
+    if (!this.img("park-bg")) {
+      ctx.fillStyle = "#6ea0c8";
+      ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+      ctx.fillStyle = "#3d6b3a";
+      ctx.fillRect(0, 800, WORLD_W, WORLD_H);
+    }
     for (const hole of this.holes) {
       ctx.fillStyle = `rgba(10,10,10,${0.55 * hole.a})`;
       ctx.beginPath();
@@ -1435,26 +1425,16 @@ export class GameEngine {
       ctx.restore();
     }
     for (const f of this.flashes) {
-      if (f.kind === "impact") {
-        const prog = clamp(1 - (f.t / 0.3), 0, 1);
-        const sc = f.scale || 1;
-        const r = (12 + prog * 48) * sc;
-        const alpha = (1 - prog) * 0.85;
-        ctx.save();
-        ctx.fillStyle = `rgba(220, 38, 38, ${alpha})`;
-        ctx.beginPath();
-        ctx.arc(f.x, f.y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-        continue;
-      }
-      const key = `muzzle-${clamp(4 - Math.ceil(f.t * 20), 1, 4)}`;
+      const key =
+        f.kind === "muzzle"
+          ? `muzzle-${clamp(4 - Math.ceil(f.t * 20), 1, 4)}`
+          : `impact-${clamp(4 - Math.ceil(f.t * 16), 1, 4)}`;
       const img = this.img(key);
       if (!img) continue;
-      const size = 110;
+      const size = f.kind === "muzzle" ? 110 : 130;
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = Math.min(1, f.t * 4);
+      ctx.globalAlpha = f.kind === "muzzle" ? Math.min(1, f.t * 4) : clamp(f.t * 8, 0, 1);
       ctx.drawImage(img, f.x - size / 2, f.y - size / 2, size, size);
       ctx.restore();
     }
@@ -1533,7 +1513,7 @@ export class GameEngine {
     t.dh = h;
     if (t.act === "bush" && t.state === "alive") this.placeBush(t);
     ctx.save();
-    if ((t.act === "walk" || t.act === "run") && t.state !== "falling" && t.act !== "carpet") {
+    if (t.act === "walk" || t.act === "run" || t.state === "falling") {
       this.clipOccluders(ctx, t);
     }
     if (t.act === "peek" && t.state === "alive" && t.hide >= 0) {

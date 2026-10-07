@@ -70,4 +70,4 @@ export type Floater = {
 };
 
 export type Hole = { x: number; y: number; r: number; a: number };
-export type Flash = { x: number; y: number; t: number; kind: "muzzle" | "impact" };
+export type Flash = { x: number; y: number; t: number; kind: "muzzle" | "impact"; scale?: number };
