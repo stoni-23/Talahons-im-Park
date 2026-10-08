@@ -77,6 +77,8 @@ export function GameScreen() {
       setRewardSplash(curr => curr?.id === id ? null : curr);
     }, 2200);
   }, []);
+  const pendingLevelUpRef = React.useRef<number | null>(null);
+  const tonnenStartCoinsRef = React.useRef<number>(0);
   const [isTonnenOpen, setIsTonnenOpen] = React.useState(false);
   const [isNewsOpen, setIsNewsOpen] = React.useState(false);
   const [showTonnenNoCoinsModal, setShowTonnenNoCoinsModal] = React.useState(false);
@@ -457,7 +459,12 @@ function isBadWord(name: string): boolean {
         // 2. Stats (XP, Hits, Games, Highscore) wie gewohnt berechnen
         p.gamesPlayed = (p.gamesPlayed || 0) + 1;
         p.totalHits = (p.totalHits || 0) + hud.hits;
+        const prevLvl = typeof getPlayerLevel === "function" ? getPlayerLevel(p.totalXp || 0) : 1;
         p.totalXp = (p.totalXp || 0) + hud.score;
+        const nextLvl = typeof getPlayerLevel === "function" ? getPlayerLevel(p.totalXp || 0) : 1;
+        if (nextLvl > prevLvl) {
+          pendingLevelUpRef.current = nextLvl;
+        }
         if (hud.score > p.highScore) p.highScore = hud.score;
         p.missions = currentMissions;
 
@@ -976,12 +983,7 @@ function isBadWord(name: string): boolean {
                   return;
                 }
 
-                if (!status.isFree) {
-                  triggerSplash("🪙", "-1 Groschen");
-                }
-                if (!status.isFree) {
-                  triggerSplash("🪙", "-1 Groschen");
-                }
+                
                 const updated = {
                   ...profile,
                   coins: status.isFree ? (profile.coins || 0) : Math.max(0, (profile.coins || 0) - 1),
@@ -1006,7 +1008,8 @@ function isBadWord(name: string): boolean {
                 setProfile(updated);
                 saveProfile(updated);
                 syncProfileOnline(updated).catch(console.error);
-                setIsTonnenOpen(true);
+                tonnenStartCoinsRef.current = profile.coins || 0;
+                      setIsTonnenOpen(true);
               };
 
               return (
@@ -1582,7 +1585,13 @@ function isBadWord(name: string): boolean {
         {isTonnenOpen && (
           <TonnenGame
             profile={profile}
-            onClose={() => setIsTonnenOpen(false)}
+            onClose={() => {
+              setIsTonnenOpen(false);
+              const diff = (profile.coins || 0) - tonnenStartCoinsRef.current;
+              if (diff > 0) {
+                setTimeout(() => triggerSplash("🪙", "+" + diff + " Groschen"), 200);
+              }
+            }}
 
         
             onUpdateProfile={(updated) => {
@@ -2048,7 +2057,14 @@ function isBadWord(name: string): boolean {
               <button
                 type="button"
                 className={ghostBtn}
-                onClick={() => { engine?.toTitle(); }}
+                onClick={() => {
+                  engine?.toTitle();
+                  if (pendingLevelUpRef.current) {
+                    const upLvl = pendingLevelUpRef.current;
+                    pendingLevelUpRef.current = null;
+                    setTimeout(() => triggerSplash("⭐", "Level " + upLvl + " Aufstieg!"), 350);
+                  }
+                }}
               >
                 Zum Menü
               </button>
