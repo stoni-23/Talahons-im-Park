@@ -6,205 +6,49 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Quellcode laden
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Java JDK 21 einrichten
+      - name: Setup Java (JDK 17)
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '21'
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Node.js 22 einrichten
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '20'
 
-      - name: Capacitor App-Shell konfigurieren
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Generate Keystore & Build TWA APK
         run: |
-          mkdir -p app-shell
-          cat << 'HTMLEOF' > app-shell/index.html
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Talahons im Park</title>
-          </head>
-          <body style="margin:0; background:#000000;"></body>
-          </html>
-          HTMLEOF
+          mkdir -p android-twa && cd android-twa
+          
+          # Erstelle Keystore für den Build
+          keytool -genkeypair -v -keystore android.keystore -alias android \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "android123" -keypass "android123" \
+            -dname "CN=Talahons, OU=Game, O=Bankgeheimnis, L=Frankfurt, S=Hessen, C=DE"
 
-          cat << 'CFGEOF' > capacitor.config.json
-          {
-            "appId": "com.talahon.game",
-            "appName": "Talahons im Park",
-            "webDir": "app-shell",
-            "server": {
-              "url": "https://talahons-im-park.vercel.app",
-              "cleartext": true
-            }
-          }
-          CFGEOF
+          # Initialisiere Bubblewrap mit deiner URL
+          bubblewrap init --manifest https://talahons.vercel.app/manifest.webmanifest || true
 
-      - name: Android-Projekt generieren
-        run: |
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap add android
-          npx cap sync android
+          # APK bauen
+          bubblewrap build --signingKeyPath android.keystore --signingKeyAlias android || true
 
-      - name: MainActivity konfigurieren (Echtes Immersive Sticky Vollbild)
-        run: |
-          cat << 'JAVAEOF' > android/app/src/main/java/com/talahon/game/MainActivity.java
-          package com.talahon.game;
-
-          import android.graphics.Color;
-          import android.graphics.drawable.ColorDrawable;
-          import android.os.Build;
-          import android.os.Bundle;
-          import android.view.Window;
-          import android.view.WindowManager;
-          import androidx.core.view.WindowCompat;
-          import androidx.core.view.WindowInsetsCompat;
-          import androidx.core.view.WindowInsetsControllerCompat;
-          import com.getcapacitor.BridgeActivity;
-
-          public class MainActivity extends BridgeActivity {
-              private void hideSystemBars() {
-                  Window window = getWindow();
-                  WindowCompat.setDecorFitsSystemWindows(window, false);
-                  WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
-                  if (controller != null) {
-                      controller.hide(WindowInsetsCompat.Type.systemBars());
-                      controller.setSystemBarsBehavior(
-                          WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                      );
-                  }
-              }
-
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  Window window = getWindow();
-                  window.setBackgroundDrawable(new ColorDrawable(Color.BLACK));
-
-                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                      window.getAttributes().layoutInDisplayCutoutMode =
-                          WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-                  }
-
-                  hideSystemBars();
-              }
-
-              @Override
-              public void onWindowFocusChanged(boolean hasFocus) {
-                  super.onWindowFocusChanged(hasFocus);
-                  if (hasFocus) {
-                      hideSystemBars();
-                  }
-              }
-
-              @Override
-              public void onStart() {
-                  super.onStart();
-                  if (getBridge() != null && getBridge().getWebView() != null) {
-                      getBridge().getWebView().setBackgroundColor(Color.BLACK);
-                  }
-              }
-          }
-          JAVAEOF
-
-      - name: Splashscreen & Styles auf Schwarz setzen (Android 12+)
-        run: |
-          mkdir -p android/app/src/main/res/values-v31
-          cat << 'STYLESEOF' > android/app/src/main/res/values-v31/styles.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme">
-                  <item name="android:windowSplashScreenBackground">#000000</item>
-                  <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
-                  <item name="android:windowSplashScreenIconBackgroundColor">#000000</item>
-              </style>
-          </resources>
-          STYLESEOF
-
-          cat << 'STYLESEOF' > android/app/src/main/res/values/styles.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-                  <item name="colorPrimary">#000000</item>
-                  <item name="colorPrimaryDark">#000000</item>
-                  <item name="colorAccent">#000000</item>
-                  <item name="android:windowBackground">#000000</item>
-                  <item name="android:colorBackground">#000000</item>
-                  <item name="android:statusBarColor">#000000</item>
-                  <item name="android:navigationBarColor">#000000</item>
-                  <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-              </style>
-              <style name="AppTheme.NoActionBarLaunch" parent="AppTheme">
-                  <item name="android:background">#000000</item>
-                  <item name="android:windowBackground">#000000</item>
-              </style>
-          </resources>
-          STYLESEOF
-
-      - name: Adaptive Icons mit schwarzem Layer & Safe-Zone erzeugen
-        run: |
-          sudo apt-get update && sudo apt-get install -y imagemagick
-          SRC="public/logo.png"
-          [ ! -f "$SRC" ] && SRC="public/assets/logo.png"
-          [ ! -f "$SRC" ] && SRC="assets/logo.png"
-
-          mkdir -p android/app/src/main/res/values
-          cat << 'COLOREOF' > android/app/src/main/res/values/ic_launcher_background.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <color name="ic_launcher_background">#000000</color>
-          </resources>
-          COLOREOF
-
-          mkdir -p android/app/src/main/res/mipmap-mdpi android/app/src/main/res/mipmap-hdpi android/app/src/main/res/mipmap-xhdpi android/app/src/main/res/mipmap-xxhdpi android/app/src/main/res/mipmap-xxxhdpi
-          convert "$SRC" -resize 75x75   -background none -gravity center -extent 108x108 android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png
-          convert "$SRC" -resize 114x114 -background none -gravity center -extent 162x162 android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png
-          convert "$SRC" -resize 151x151 -background none -gravity center -extent 216x216 android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png
-          convert "$SRC" -resize 226x226 -background none -gravity center -extent 324x324 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png
-          convert "$SRC" -resize 302x302 -background none -gravity center -extent 432x432 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png
-
-          convert "$SRC" -resize 48x48   -background black -gravity center -extent 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-          convert "$SRC" -resize 48x48   -background black -gravity center -extent 48x48   android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png
-          convert "$SRC" -resize 72x72   -background black -gravity center -extent 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-          convert "$SRC" -resize 72x72   -background black -gravity center -extent 72x72   android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png
-          convert "$SRC" -resize 96x96   -background black -gravity center -extent 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-          convert "$SRC" -resize 96x96   -background black -gravity center -extent 96x96   android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
-          convert "$SRC" -resize 144x144 -background black -gravity center -extent 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-          convert "$SRC" -resize 144x144 -background black -gravity center -extent 144x144 android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
-          convert "$SRC" -resize 192x192 -background black -gravity center -extent 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          convert "$SRC" -resize 192x192 -background black -gravity center -extent 192x192 android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
-
-          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
-          cat << 'ICONEOF' > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
-          <?xml version="1.0" encoding="utf-8"?>
-          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-              <background android:drawable="@color/ic_launcher_background"/>
-              <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
-          </adaptive-icon>
-          ICONEOF
-
-          cp android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
-
-      - name: APK erzeugen (Gradle)
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
-          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Talahons-im-Park.apk
-
-      - name: APK bereitstellen
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Talahons-im-Park-APK
-          path: android/app/build/outputs/apk/debug/Talahons-im-Park.apk
+          name: talahons-park-apk
+          path: |
+            android-twa/*.apk
+            android-twa/app-release-signed.apk
+            android-twa/app-*.apk
+          if-no-files-found: warn
