@@ -1,3 +1,4 @@
+import { StartScreenOverlay } from "@/components/StartScreenOverlay";
 import { syncProfileOnline } from "@/game/scores";
 import { getOwnedItemsCount, getActiveCrosshairColor, getActiveSkin } from "@/lib/shop";
 import { getActiveBadgeIcon } from "../lib/shop";
@@ -782,6 +783,7 @@ function isBadWord(name: string): boolean {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
+      <StartScreenOverlay onStart={() => { setSoundMutedState(false); setMuted(false); startMenuMusic(); }} />
       
       <div
         className="relative flex h-full items-center justify-center overflow-hidden shrink-0"
