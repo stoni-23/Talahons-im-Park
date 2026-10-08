@@ -159,14 +159,17 @@ export function GameScreen() {
   const toggleSound = () => {
     const nextMuted = !soundMutedState;
     setSoundMutedState(nextMuted);
-    setMuted(nextMuted);
     if (typeof window !== "undefined") {
       localStorage.setItem("menu_music_active", nextMuted ? "false" : "true");
     }
-    if (!nextMuted) {
-      startMenuMusic();
+    if (hud.mode === "title") {
+      if (!nextMuted) {
+        startMenuMusic();
+      } else {
+        stopMenuMusic();
+      }
     } else {
-      stopMenuMusic();
+      setMuted(nextMuted);
     }
   };
 
