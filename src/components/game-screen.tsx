@@ -78,6 +78,7 @@ export function GameScreen() {
     }, 2200);
   }, []);
   const pendingLevelUpRef = React.useRef<number | null>(null);
+  const hasShownIntroLineRef = React.useRef<boolean>(false);
   const tonnenStartCoinsRef = React.useRef<number>(0);
   const [isTonnenOpen, setIsTonnenOpen] = React.useState(false);
   const [isNewsOpen, setIsNewsOpen] = React.useState(false);
@@ -158,6 +159,7 @@ export function GameScreen() {
   const toggleSound = () => {
     const nextMuted = !soundMutedState;
     setSoundMutedState(nextMuted);
+    setMuted(nextMuted);
     if (typeof window !== "undefined") {
       localStorage.setItem("menu_music_active", nextMuted ? "false" : "true");
     }
@@ -167,6 +169,11 @@ export function GameScreen() {
       stopMenuMusic();
     }
   };
+
+  // Beim Mounten Audio-Modul initial mit gespeichertem Mute-Status abgleichen
+  useEffect(() => {
+    setMuted(soundMutedState);
+  }, []);
 
   // Wenn man im Menü ist und Sound aktiv ist -> Musik an; im Spiel -> Musik aus
   useEffect(() => {
@@ -377,17 +384,25 @@ function isBadWord(name: string): boolean {
   }, [profile?.equipped]);
 
   useEffect(() => {
-    if (hud.mode === "playing") {
-      gameOverHandledRef.current = false;
-      pendingMissionActsRef.current = [];
-    }
-    if (hud.mode !== "playing") {
+    if (hud.mode === "title") {
+      hasShownIntroLineRef.current = false;
       setOmaLine(false);
       return;
     }
-    setOmaLine(true);
-    const t = window.setTimeout(() => setOmaLine(false), 7000);
-    return () => window.clearTimeout(t);
+    if (hud.mode === "playing") {
+      gameOverHandledRef.current = false;
+      pendingMissionActsRef.current = [];
+
+      // Nur beim allerersten Start der Runde anzeigen, nicht nach Resume aus Pause
+      if (!hasShownIntroLineRef.current) {
+        hasShownIntroLineRef.current = true;
+        setOmaLine(true);
+        const t = window.setTimeout(() => setOmaLine(false), 7000);
+        return () => window.clearTimeout(t);
+      }
+    } else {
+      setOmaLine(false);
+    }
   }, [hud.mode]);
 
   useEffect(() => {

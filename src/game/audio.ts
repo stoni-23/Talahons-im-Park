@@ -246,7 +246,6 @@ export function setMuted(m: boolean) {
 
 export function resumeAudio() { getCtx(); }
 export function unlockAudio() {
-  muted = false;
   const ctx = getCtx();
   if (ctx && ctx.state === "suspended") {
     ctx.resume().catch(() => {});

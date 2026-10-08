@@ -1316,6 +1316,59 @@ export class GameEngine {
     ctx.arc(sunX, sunY, 105, 0, Math.PI * 2);
     ctx.fill();
 
+    // Dynamischer Himmel: Wolken & Voegel
+    const tNow = performance.now();
+    
+    // 1. Wolken (weich, transluzent)
+    const drawCloud = (cx: number, cy: number, scale: number, alpha: number) => {
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 24 * scale, 0, Math.PI * 2);
+      ctx.arc(cx + 20 * scale, cy - 10 * scale, 30 * scale, 0, Math.PI * 2);
+      ctx.arc(cx + 46 * scale, cy - 4 * scale, 22 * scale, 0, Math.PI * 2);
+      ctx.arc(cx + 62 * scale, cy + 4 * scale, 18 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    const cLoopW = WORLD_W + 200;
+    const c1X = ((tNow * 0.012) % cLoopW) - 100;
+    const c2X = (((tNow * 0.008) + 400) % cLoopW) - 100;
+    const c3X = (((tNow * 0.015) + 850) % cLoopW) - 100;
+
+    drawCloud(c1X, 130, 1.2, 0.42);
+    drawCloud(c2X, 75, 0.95, 0.35);
+    drawCloud(c3X, 190, 1.4, 0.48);
+
+    // 2. Voegel in der Ferne (animierter Fluegelschlag)
+    const drawBird = (bx: number, by: number, flapSpeed: number, size: number) => {
+      const wingY = Math.sin(tNow * flapSpeed) * (size * 0.6);
+      ctx.save();
+      ctx.strokeStyle = "rgba(45, 55, 72, 0.68)";
+      ctx.lineWidth = Math.max(1.2, size * 0.22);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      // Linker Fluegel
+      ctx.moveTo(bx - size, by + wingY);
+      ctx.quadraticCurveTo(bx - (size * 0.45), by - (size * 0.35), bx, by);
+      // Rechter Fluegel
+      ctx.quadraticCurveTo(bx + (size * 0.45), by - (size * 0.35), bx + size, by + wingY);
+      ctx.stroke();
+      ctx.restore();
+    };
+
+    const bLoopW = WORLD_W + 150;
+    // Vogel 1 (zieht gemuetlich hoeher)
+    const b1X = ((tNow * 0.038) % bLoopW) - 60;
+    const b1Y = 110 + Math.sin(tNow * 0.0012) * 12;
+    drawBird(b1X, b1Y, 0.009, 8.5);
+
+    // Vogel 2 (etwas kleiner, schneller)
+    const b2X = (((tNow * 0.052) + 600) % bLoopW) - 60;
+    const b2Y = 165 + Math.cos(tNow * 0.0016) * 10;
+    drawBird(b2X, b2Y, 0.013, 6.5);
+
     // 2. Jetzt das transparente Bild darueberlegen
     this.drawSceneLayer("park-bg");
     for (const hole of this.holes) {
