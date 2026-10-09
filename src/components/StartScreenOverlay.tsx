@@ -27,7 +27,7 @@ export const StartScreenOverlay: React.FC<StartScreenOverlayProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 w-screen h-[100dvh] flex flex-col justify-between items-center select-none overflow-hidden bg-black p-0 m-0">
+    <div className="fixed inset-0 z-[100] w-screen h-[100dvh] flex items-center justify-center bg-black overflow-hidden select-none p-0 m-0">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
         .font-pixel {
@@ -50,7 +50,7 @@ export const StartScreenOverlay: React.FC<StartScreenOverlayProps> = ({
         /* Teppich Intro */
         @keyframes carpetIntro {
           0% {
-            transform: translate(120vw, -120vh) scale(1.4) rotate(15deg);
+            transform: translate(120%, -120%) scale(1.4) rotate(15deg);
             opacity: 0;
           }
           1% {
@@ -79,7 +79,7 @@ export const StartScreenOverlay: React.FC<StartScreenOverlayProps> = ({
                      carpetHover 3s ease-in-out infinite 2.7s;
         }
 
-        /* Tonne wackelt oben links/rechts */
+        /* Tonne Wackeln */
         @keyframes tonneTopRattle {
           0%, 100% { transform: rotate(0deg) skewX(0deg); }
           12% { transform: rotate(-4.5deg) skewX(-2deg); }
@@ -93,7 +93,7 @@ export const StartScreenOverlay: React.FC<StartScreenOverlayProps> = ({
         }
 
         .tonne-top-wobble {
-          transform-origin: 90% 98%;
+          transform-origin: 85% 100%;
           animation: tonneTopRattle 0.95s cubic-bezier(0.36, 0.07, 0.19, 0.97) 2.8s forwards;
         }
 
@@ -140,116 +140,125 @@ export const StartScreenOverlay: React.FC<StartScreenOverlayProps> = ({
         .btn-shimmer { animation: btnShimmerSlide 2.6s ease-in-out infinite; }
       `}</style>
 
-      {/* 1. Basis-Hintergrundbild (Minimal größer und nach links gerückt) */}
-      <div className="absolute inset-0 z-0 w-full h-full pointer-events-none scale-[1.03] -translate-x-1.5">
-        <img
-          src={bgImageSrc}
-          alt="Talahons im Park"
-          className="w-full h-full object-cover object-center"
-        />
-      </div>
-
-      {/* 2. Animierter Teppich Layer */}
-      <div className="absolute inset-0 z-10 w-full h-full pointer-events-none carpet-anim scale-[1.03] -translate-x-1.5">
-        <img
-          src="/teppisch-home.png"
-          alt="Teppich"
-          className="w-full h-full object-cover object-center"
-        />
-        <div className="absolute top-[28%] right-[6%] w-16 h-20 pointer-events-none">
-          <div className="smoke-puff-1 absolute top-3 right-3 w-5 h-5 rounded-full bg-slate-400/60 blur-[2px]" />
-          <div className="smoke-puff-2 absolute top-5 right-2 w-6 h-6 rounded-full bg-amber-500/50 blur-[2px]" />
-          <div className="smoke-puff-3 absolute top-1 right-5 w-4 h-4 rounded-full bg-slate-300/50 blur-[1px]" />
+      {/* 9:16 Kasten */}
+      <div className="relative h-full aspect-[9/16] max-w-[calc(100dvh*9/16)] w-full overflow-hidden bg-black shadow-2xl">
+        
+        {/* 1. Hintergrund */}
+        <div className="absolute inset-0 z-0 w-full h-full pointer-events-none">
+          <img
+            src={bgImageSrc}
+            alt="Talahons im Park"
+            className="w-full h-full object-cover object-center"
+          />
         </div>
-      </div>
 
-      {/* 3. Tonnen Layer (Minimal größer und leicht nach unten versetzt) */}
-      <div className="absolute inset-0 z-10 w-full h-full pointer-events-none origin-bottom-right scale-[1.06] translate-y-2">
-        <img
-          src={isTonneOpen ? '/tonne-auf-home.png' : '/tonne-zu-home.png'}
-          alt="Tonne"
-          className={`w-full h-full object-cover object-center ${!isTonneOpen ? 'tonne-top-wobble' : ''}`}
-        />
-      </div>
-
-      {/* Vögel am Himmel */}
-      <div className="absolute top-0 left-0 w-full h-28 pointer-events-none z-10 overflow-hidden">
-        <div className="bird-1 absolute text-[9px] font-pixel text-slate-800 opacity-75 tracking-tighter">
-          v v
-        </div>
-        <div className="bird-2 absolute text-[7px] font-pixel text-slate-700 opacity-60 tracking-tighter">
-          v
-        </div>
-      </div>
-
-      {/* Kakerlake an der Tonne */}
-      <div className="absolute bottom-[2%] right-[7%] w-6 h-8 pointer-events-none z-20 flex items-center justify-center">
-        <div className="cockroach text-[13px] leading-none select-none drop-shadow-[1px_1px_1px_rgba(0,0,0,0.9)]">
-          🪳
-        </div>
-      </div>
-
-      {/* Straßenschild-Titel */}
-      <div className="relative z-30 pt-8 px-3 w-full flex flex-col items-center sign-float">
-        <div className="flex flex-col items-center gap-1.5 drop-shadow-[0_8px_16px_rgba(0,0,0,0.85)]">
-          <div className="relative bg-[#1c3f3b] border-2 border-white rounded px-4 py-1.5 shadow-[inset_0_0_0_1px_#000,0_4px_0_#0f2220]">
-            <div className="absolute top-1 left-1.5 w-1 h-1 rounded-full bg-white/70" />
-            <div className="absolute top-1 right-1.5 w-1 h-1 rounded-full bg-white/70" />
-            <div className="absolute bottom-1 left-1.5 w-1 h-1 rounded-full bg-white/70" />
-            <div className="absolute bottom-1 right-1.5 w-1 h-1 rounded-full bg-white/70" />
-            <h1
-              className="font-pixel text-[20px] sm:text-[24px] text-white tracking-[0.18em] uppercase"
-              style={{
-                textShadow:
-                  '2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000',
-              }}
-            >
-              TALAHONS
-            </h1>
-          </div>
-
-          <div className="relative bg-[#1c3f3b] border-2 border-white rounded px-5 py-1 shadow-[inset_0_0_0_1px_#000,0_4px_0_#0f2220]">
-            <div className="absolute top-1 left-1.5 w-1 h-1 rounded-full bg-white/70" />
-            <div className="absolute top-1 right-1.5 w-1 h-1 rounded-full bg-white/70" />
-            <div className="absolute bottom-1 left-1.5 w-1 h-1 rounded-full bg-white/70" />
-            <div className="absolute bottom-1 right-1.5 w-1 h-1 rounded-full bg-white/70" />
-            <h2
-              className="font-pixel text-[13px] sm:text-[15px] text-yellow-300 tracking-[0.25em] uppercase"
-              style={{
-                textShadow:
-                  '2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000',
-              }}
-            >
-              IM PARK
-            </h2>
-          </div>
-
-          <div className="relative bg-[#2d1b18] border border-amber-300/80 rounded px-3 py-0.5 mt-0.5 shadow-[0_2px_0_#000]">
-            <span
-              className="font-pixel text-[8px] sm:text-[10px] text-amber-200 tracking-[0.2em] uppercase"
-              style={{
-                textShadow: '1px 1px 0px #000, -1px -1px 0px #000',
-              }}
-            >
-              ★ PARABELLUM EDITION ★
-            </span>
+        {/* 2. Teppich */}
+        <div className="absolute inset-0 z-10 w-full h-full pointer-events-none carpet-anim">
+          <img
+            src="/teppisch-home.png"
+            alt="Teppich"
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute top-[28%] right-[6%] w-16 h-20 pointer-events-none">
+            <div className="smoke-puff-1 absolute top-3 right-3 w-5 h-5 rounded-full bg-slate-400/60 blur-[2px]" />
+            <div className="smoke-puff-2 absolute top-5 right-2 w-6 h-6 rounded-full bg-amber-500/50 blur-[2px]" />
+            <div className="smoke-puff-3 absolute top-1 right-5 w-4 h-4 rounded-full bg-slate-300/50 blur-[1px]" />
           </div>
         </div>
-      </div>
 
-      {/* Start-Button */}
-      <div className="relative z-30 pb-10 w-full flex flex-col items-center">
-        <button
-          onClick={handleStartClick}
-          className="btn-animated relative overflow-hidden px-8 py-3.5 rounded-xl bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border-2 border-amber-100 shadow-[0_5px_0_#78350f] active:translate-y-1 active:shadow-[0_1px_0_#78350f] transition-transform cursor-pointer"
+        {/* 3. Einzel-Tonne */}
+        <div
+          className={`absolute -bottom-2 -right-2 z-20 pointer-events-none w-[37%] max-w-[170px] flex items-end justify-end ${
+            !isTonneOpen ? 'tonne-top-wobble' : ''
+          }`}
         >
-          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
-            <div className="btn-shimmer w-12 h-full bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+          <img
+            src={isTonneOpen ? '/tonne-auf-home.png' : '/tonne-zu-home.png'}
+            alt="Tonne"
+            className="w-full h-auto block object-contain object-bottom"
+          />
+        </div>
+
+        {/* Vögel */}
+        <div className="absolute top-0 left-0 w-full h-28 pointer-events-none z-30 overflow-hidden">
+          <div className="bird-1 absolute text-[9px] font-pixel text-slate-800 opacity-75 tracking-tighter">
+            v v
           </div>
-          <span className="relative z-10 font-pixel text-zinc-950 text-xl tracking-widest uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
-            START
-          </span>
-        </button>
+          <div className="bird-2 absolute text-[7px] font-pixel text-slate-700 opacity-60 tracking-tighter">
+            v
+          </div>
+        </div>
+
+        {/* Kakerlake weiter links direkt auf der Tonne */}
+        <div className="absolute bottom-[5%] right-[9%] w-6 h-8 pointer-events-none z-30 flex items-center justify-center">
+          <div className="cockroach text-[13px] leading-none select-none drop-shadow-[1px_1px_1px_rgba(0,0,0,0.9)]">
+            🪳
+          </div>
+        </div>
+
+        {/* Straßenschild-Titel */}
+        <div className="absolute top-6 left-0 right-0 z-40 px-3 flex flex-col items-center sign-float pointer-events-none">
+          <div className="flex flex-col items-center gap-1.5 drop-shadow-[0_8px_16px_rgba(0,0,0,0.85)]">
+            <div className="relative bg-[#1c3f3b] border-2 border-white rounded px-4 py-1.5 shadow-[inset_0_0_0_1px_#000,0_4px_0_#0f2220]">
+              <div className="absolute top-1 left-1.5 w-1 h-1 rounded-full bg-white/70" />
+              <div className="absolute top-1 right-1.5 w-1 h-1 rounded-full bg-white/70" />
+              <div className="absolute bottom-1 left-1.5 w-1 h-1 rounded-full bg-white/70" />
+              <div className="absolute bottom-1 right-1.5 w-1 h-1 rounded-full bg-white/70" />
+              <h1
+                className="font-pixel text-[19px] sm:text-[22px] text-white tracking-[0.16em] uppercase"
+                style={{
+                  textShadow:
+                    '2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000',
+                }}
+              >
+                TALAHONS
+              </h1>
+            </div>
+
+            <div className="relative bg-[#1c3f3b] border-2 border-white rounded px-5 py-1 shadow-[inset_0_0_0_1px_#000,0_4px_0_#0f2220]">
+              <div className="absolute top-1 left-1.5 w-1 h-1 rounded-full bg-white/70" />
+              <div className="absolute top-1 right-1.5 w-1 h-1 rounded-full bg-white/70" />
+              <div className="absolute bottom-1 left-1.5 w-1 h-1 rounded-full bg-white/70" />
+              <div className="absolute bottom-1 right-1.5 w-1 h-1 rounded-full bg-white/70" />
+              <h2
+                className="font-pixel text-[12px] sm:text-[14px] text-yellow-300 tracking-[0.25em] uppercase"
+                style={{
+                  textShadow:
+                    '2px 2px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000',
+                }}
+              >
+                IM PARK
+              </h2>
+            </div>
+
+            <div className="relative bg-[#2d1b18] border border-amber-300/80 rounded px-3 py-0.5 mt-0.5 shadow-[0_2px_0_#000]">
+              <span
+                className="font-pixel text-[8px] sm:text-[9px] text-amber-200 tracking-[0.2em] uppercase"
+                style={{
+                  textShadow: '1px 1px 0px #000, -1px -1px 0px #000',
+                }}
+              >
+                ★ PARABELLUM EDITION ★
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Start-Button */}
+        <div className="absolute bottom-6 left-0 right-0 z-40 flex justify-center items-center">
+          <button
+            onClick={handleStartClick}
+            className="btn-animated relative overflow-hidden px-8 py-3.5 rounded-xl bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border-2 border-amber-100 shadow-[0_5px_0_#78350f] active:translate-y-1 active:shadow-[0_1px_0_#78350f] transition-transform cursor-pointer"
+          >
+            <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+              <div className="btn-shimmer w-12 h-full bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+            </div>
+            <span className="relative z-10 font-pixel text-zinc-950 text-xl tracking-widest uppercase drop-shadow-[0_1px_0_rgba(255,255,255,0.7)]">
+              START
+            </span>
+          </button>
+        </div>
+
       </div>
     </div>
   );

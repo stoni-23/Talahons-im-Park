@@ -808,7 +808,7 @@ function isBadWord(name: string): boolean {
         />
 
         {hud.mode === "title" && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="mx-auto aspect-[9/16] max-w-[calc(100dvh*9/16)] h-full w-full absolute inset-0 flex items-center justify-center">
             <div className="relative flex h-full w-full flex-col items-center gap-2.5 overflow-y-auto px-4 sm:px-6 pt-[max(360px,38dvh)] pb-12" style={{
         backgroundImage: "url('/bg_oben.jpg'), url('/bg_unten.jpg')",
         backgroundRepeat: "no-repeat, repeat-y",
