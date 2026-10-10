@@ -1,0 +1,46 @@
+[1mdiff --git a/src/game/engine.ts b/src/game/engine.ts[m
+[1mindex d4dfc476..1a1750e0 100644[m
+[1m--- a/src/game/engine.ts[m
+[1m+++ b/src/game/engine.ts[m
+[36m@@ -82,7 +82,8 @@[m [mconst ASSET_KEYS = [[m
+   "talahin_1",[m
+   "talahin_2",[m
+   "logo",[m
+[31m-  "opa_walk",[m
+[32m+[m[32m  "opa-lauf",[m
+[32m+[m[32m  "opa-steht",[m
+   "opa_hit",[m
+   ...[1, 2, 3, 4].flatMap((n) => [[m
+     `talahon-walk-${n}`,[m
+[36m@@ -720,7 +721,8 @@[m [mexport class GameEngine {[m
+     import("./audio").then((a) => a.playRocker());[m
+     const fromRight = Math.random() < 0.5;[m
+     const speed = 260;[m
+[31m-    const lane = LANES[2]!;[m
+[32m+[m[32m    const laneI = Math.random() < 0.45 ? 1 : 2;[m
+[32m+[m[32m    const lane = LANES[laneI]!;[m
+     this.targets.push({[m
+       ...this.baseTarget(),[m
+       id: this.id++,[m
+[36m@@ -728,10 +730,10 @@[m [mexport class GameEngine {[m
+       x: fromRight ? 960 : -80,[m
+       y: lane.y,[m
+       vx: (fromRight ? -1 : 1) * speed,[m
+[31m-      z: lane.z + 0.06,[m
+[32m+[m[32m      z: lane.z - 0.02,[m
+       facing: fromRight ? -1 : 1,[m
+       points: 200,[m
+[31m-      scale: DEPTH.path.scale * 1.25,[m
+[32m+[m[32m      scale: lane.scale * 1.55,[m
+       phase: "move",[m
+     });[m
+   }[m
+[36m@@ -1255,7 +1257,7 @@[m [mexport class GameEngine {[m
+       p.life -= dt;[m
+       p.x += p.vx * dt;[m
+       p.y += p.vy * dt;[m
+[31m-      p.vy += 420 * dt;[m
+[32m+[m[32m      if ((p as any).kind !== "smoke") p.vy += 420 * dt;[m
+       p.rot += p.vr * dt;[m
+     }[m
+     this.particles = this.particles.filter((p) => p.life > 0);[m

@@ -794,7 +794,7 @@ function isBadWord(name: string): boolean {
           touchAction: playing ? "none" : "pan-y"
         }}
       >
-        {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/60 font-bold tracking-widest z-50 pointer-events-none">v1.5.4 BETA</div>}
+        {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/60 font-bold tracking-widest z-50 pointer-events-none">v1.5.5 BETA</div>}
         <canvas ref={canvasRef}
           className="block shrink-0 origin-center"
           style={{

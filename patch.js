@@ -1,139 +1,106 @@
 const fs = require("fs");
+let code = fs.readFileSync("src/game/engine.ts", "utf8");
 
-// 1. News-Modal Datei schreiben
-const newsModalCode = `import React from "react";
+// 1. Opa Spawn: Richtige Groesse und Z-Ebene hinter Talahon
+code = code.replace(
+  /spawnOpa\(\)\s*\{[\s\S]*?phase:\s*"move",\s*\}\);\s*\}/,
+  `spawnOpa() {
+    playOpaSpawn();
+    if (this.targets.some((t) => t.act === "opa")) return;
+    const fromRight = Math.random() < 0.5;
+    const speed = 60;
+    const lane = LANES[2]!;
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "opa",
+      x: fromRight ? 960 : -80,
+      y: lane.y,
+      vx: (fromRight ? -1 : 1) * speed,
+      z: lane.z - 0.02,
+      facing: fromRight ? -1 : 1,
+      points: -50,
+      scale: lane.scale * 1.35,
+      phase: "move",
+    });
+  }`
+);
 
-export interface NewsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+// 2. Rocker Spawn: Groesser (1.65) auf Lane 1 oder 2
+code = code.replace(
+  /spawnRocker\(\)\s*\{[\s\S]*?phase:\s*"move",\s*\}\);\s*\}/,
+  `spawnRocker() {
+    if (this.targets.some((t) => t.act === "rocker" && t.state === "alive")) return;
+    import("./audio").then((a) => a.playRocker());
+    const fromRight = Math.random() < 0.5;
+    const speed = 260;
+    const laneI = Math.random() < 0.5 ? 1 : 2;
+    const lane = LANES[laneI]!;
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "rocker",
+      x: fromRight ? 960 : -80,
+      y: lane.y,
+      vx: (fromRight ? -1 : 1) * speed,
+      z: lane.z + 0.02,
+      facing: fromRight ? -1 : 1,
+      points: 200,
+      scale: lane.scale * 1.65,
+      phase: "move",
+    });
+  }`
+);
 
-export const CURRENT_NEWS_VERSION = "2026.09.v2";
+// 3. Update: Feste Basis-Y fuer Rocker + Rauch-Spawn
+code = code.replace(
+  /if \(t\.act === "walk" \Vert{}\Vert{} t\.act === "run" \Vert{}\Vert{} t\.act === "rocker" \Vert{}\Vert{} t\.act === "opa"\) \{[\s\S]*?t\.x \+= t\.vx \* dt;\s*continue;\s*\}/,
+  `if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
+        t.phaseT += dt;
+        if (t.act === "rocker" && t.state === "alive") {
+          const baseLaneY = (LANES[2]?.y || 430);
+          t.y = baseLaneY + Math.sin(t.x * 0.2) * 2;
+          if (t.phaseT > 0.06) {
+            t.phaseT = 0;
+            const rx = t.x - (t.facing * 48 * t.scale);
+            const ry = t.y - 8 * t.scale;
+            this.particles.push({
+              x: rx,
+              y: ry,
+              vx: (t.facing * -50) + (Math.random() * 20 - 10),
+              vy: -20 - Math.random() * 20,
+              life: 0.55,
+              max: 0.55,
+              size: 7 * t.scale,
+              color: "#94a3b8",
+              rot: Math.random() * 6,
+              vr: (Math.random() - 0.5) * 4,
+              kind: "smoke",
+            } as any);
+          }
+        }
+        t.x += t.vx * dt;
+        continue;
+      }`
+);
 
-export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
-  if (!isOpen) return null;
+// 4. Opa Lauf-Animation: Vor Hit langsam (0.48s), nach Hit schnell fliehen (0.14s)
+code = code.replace(
+  /if \(t\.act === "opa"\) \{[\s\S]*?return this\.img\([^)]+\);\s*\}/,
+  `if (t.act === "opa") {
+      const showHit = t.state === "falling" && t.phase !== "leave";
+      if (showHit) return this.img("opa_hit") || this.img("opa-lauf");
+      const stepInterval = t.phase === "leave" ? 0.14 : 0.48;
+      const step = Math.floor(t.phaseT / stepInterval) % 2;
+      return (step === 0 ? this.img("opa-lauf") : this.img("opa-steht")) || this.img("opa-lauf");
+    }`
+);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-      <div 
-        className="relative w-full max-w-sm rounded-2xl border-2 border-amber-800/80 p-5 text-amber-100 shadow-2xl"
-        style={{
-          background: "linear-gradient(180deg, #1c140e 0%, #120b08 100%)",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.8), inset 0 1px 1px rgba(245, 158, 11, 0.2)"
-        }}
-      >
-        <div className="flex items-center justify-between border-b border-amber-900/60 pb-2.5 mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl animate-bounce">📢</span>
-            <h2 className="text-lg font-bold tracking-wide text-amber-300 uppercase">Neuigkeiten & Update</h2>
-          </div>
-          <button
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-xl bg-black/40 text-stone-400 hover:text-white border border-amber-900/40 active:scale-95 transition"
-          >
-            ✕
-          </button>
-        </div>
+// 5. Rauch nicht fallen lassen
+code = code.replace(
+  "p.vy += 420 * dt;",
+  "if ((p as any).kind !== \"smoke\") p.vy += 420 * dt;"
+);
 
-        <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1 text-xs text-stone-300 leading-relaxed">
-          <div className="bg-stone-900/80 p-3 rounded-xl border border-amber-900/40">
-            <div className="flex items-center gap-1.5 font-bold text-amber-400 text-sm mb-1">
-              <span>🎡</span>
-              <span>Glücksrad-Upgrade!</span>
-            </div>
-            <p className="text-stone-300">
-              Die Nieten wurden drastisch reduziert! Ab sofort erwarten dich viel fettere Gewinne:
-              bis zu <strong className="text-amber-300">10 Coins</strong> und <strong className="text-amber-300">250 XP</strong> warten auf dich.
-            </p>
-          </div>
-
-          <div className="bg-stone-900/80 p-3 rounded-xl border border-amber-900/40">
-            <div className="flex items-center gap-1.5 font-bold text-amber-400 text-sm mb-1">
-              <span>🎵</span>
-              <span>Sound & Audio-Fix</span>
-            </div>
-            <p className="text-stone-300">
-              Die Musik stoppt beim Tonnen-Modus und startet sauber von Sekunde 0, sobald du ins Hauptmenü zurückkehrst.
-            </p>
-          </div>
-
-          <div className="bg-stone-900/80 p-3 rounded-xl border border-amber-900/40">
-            <div className="flex items-center gap-1.5 font-bold text-amber-400 text-sm mb-1">
-              <span>🎯</span>
-              <span>Ranglisten & Treffer</span>
-            </div>
-            <p className="text-stone-300">
-              Deine Trefferstatistik und Durchschnitte synchronisieren nun fehlerfrei mit Supabase.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 pt-3 border-t border-amber-900/50">
-          <button
-            onClick={onClose}
-            className="w-full py-2.5 bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 hover:from-amber-600 hover:to-amber-500 text-white font-bold rounded-xl shadow-lg border border-amber-400/30 transition transform active:scale-95 uppercase tracking-wider text-xs"
-          >
-            Alles klar, weiterballern!
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-`;
-fs.writeFileSync("src/components/news-modal.tsx", newsModalCode, "utf8");
-console.log("1. NewsModal-Datei erstellt.");
-
-// 2. Tonnen-Game WHEEL_SECTORS patchen
-let tonnenCode = fs.readFileSync("src/components/tonnen-game.tsx", "utf8");
-const newSectors = `const WHEEL_SECTORS = [
-  { label: "1 COIN", icon: "🪙", color: "#f59e0b", textColor: "#000", coins: 1, xp: 25, extra: false, weight: 22 },
-  { label: "50 XP", icon: "⚡", color: "#10b981", textColor: "#000", coins: 0, xp: 50, extra: false, weight: 10 },
-  { label: "+1 DREH", icon: "🔄", color: "#3b82f6", textColor: "#fff", coins: 0, xp: 0, extra: true, weight: 15 },
-  { label: "3 COINS", icon: "💰", color: "#d97706", textColor: "#fff", coins: 3, xp: 50, extra: false, weight: 18 },
-  { label: "100 XP", icon: "⚡", color: "#059669", textColor: "#fff", coins: 0, xp: 100, extra: false, weight: 10 },
-  { label: "JACKPOT", icon: "👑", color: "#ef4444", textColor: "#fff", coins: 10, xp: 250, extra: false, weight: 8 },
-  { label: "5 COINS", icon: "💎", color: "#8b5cf6", textColor: "#fff", coins: 5, xp: 100, extra: false, weight: 12 },
-  { label: "NIETE", icon: "🍂", color: "#262626", textColor: "#9ca3af", coins: 0, xp: 0, extra: false, weight: 5 },
-];`;
-
-tonnenCode = tonnenCode.replace(/const WHEEL_SECTORS = \[[\s\S]*?\];/, newSectors);
-fs.writeFileSync("src/components/tonnen-game.tsx", tonnenCode, "utf8");
-console.log("2. Glücksrad-Sektoren erfolgreich neu ausbalanciert.");
-
-// 3. game-screen.tsx patchen
-let gameScreen = fs.readFileSync("src/components/game-screen.tsx", "utf8");
-
-// Import
-if (!gameScreen.includes("NewsModal")) {
-  gameScreen = gameScreen.replace(
-    /import React.*?from "react";/,
-    (m) => `${m}\nimport { NewsModal, CURRENT_NEWS_VERSION } from "./news-modal";`
-  );
-}
-
-// State & Auto-Popup
-if (!gameScreen.includes("isNewsOpen")) {
-  gameScreen = gameScreen.replace(
-    /const \[isTonnenOpen, setIsTonnenOpen\] = React\.useState\(false\);/,
-    `const [isTonnenOpen, setIsTonnenOpen] = React.useState(false);\n  const [isNewsOpen, setIsNewsOpen] = React.useState(false);\n\n  React.useEffect(() => {\n    const seen = localStorage.getItem("last_seen_news_version");\n    if (seen !== CURRENT_NEWS_VERSION && hud.mode === "title") {\n      setIsNewsOpen(true);\n      localStorage.setItem("last_seen_news_version", CURRENT_NEWS_VERSION);\n    }\n  }, [hud.mode]);`
-  );
-}
-
-// Button im Menü oben rechts (symmetrisch zum Ton-Button links)
-if (!gameScreen.includes("aria-label=\"Neuigkeiten\"")) {
-  const soundBtnPattern = /(<button[\s\S]*?aria-label="Ton an\/aus"[\s\S]*?<\/button>)/;
-  const newsButton = `$1\n              {/* News Button oben rechts */}\n              <button\n                type="button"\n                onClick={() => setIsNewsOpen(true)}\n                aria-label="Neuigkeiten"\n                className="absolute top-24 right-6 z-30 flex h-11 px-3 items-center justify-center gap-1.5 rounded-2xl border border-amber-900/40 bg-black/30 text-amber-300 font-bold text-xs shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/40"\n              >\n                <span className="text-base">📢</span>\n                <span>News</span>\n              </button>`;
-  gameScreen = gameScreen.replace(soundBtnPattern, newsButton);
-}
-
-// NewsModal einhängen
-if (!gameScreen.includes("<NewsModal")) {
-  gameScreen = gameScreen.replace(
-    /(<TonnenGame[\s\S]*?\/>\s*\}\s*\))/,
-    `$1\n        <NewsModal isOpen={isNewsOpen} onClose={() => setIsNewsOpen(false)} />`
-  );
-}
-
-fs.writeFileSync("src/components/game-screen.tsx", gameScreen, "utf8");
-console.log("3. Menü & NewsModal in game-screen.tsx integriert.");
+fs.writeFileSync("src/game/engine.ts", code);
+console.log("ERFOLGREICH GEFLICKT");

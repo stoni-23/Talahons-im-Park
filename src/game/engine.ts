@@ -82,7 +82,8 @@ const ASSET_KEYS = [
   "talahin_1",
   "talahin_2",
   "logo",
-  "opa_walk",
+  "opa-lauf",
+  "opa-steht",
   "opa_hit",
   ...[1, 2, 3, 4].flatMap((n) => [
     `talahon-walk-${n}`,
@@ -189,6 +190,8 @@ function emptyHud(): Hud {
 }
 
 export class GameEngine {
+  private treeShakeT = 0;
+  private leaves: Array<{ x: number; y: number; vx: number; vy: number; rot: number; vrot: number; r: number; color: string }> = [];
   crosshairColor: string = "#ffffff";
   skin: string = "default";
 
@@ -332,9 +335,19 @@ export class GameEngine {
     return this.images.get(key) ?? null;
   }
 
+      
   drawSceneLayer(key: string) {
     const layer = this.img(key);
     if (!layer || !layer.width || !layer.height) return;
+    if (key === "tree" && this.treeShakeT > 0) {
+      this.ctx.save();
+      const shakeX = Math.sin(this.treeShakeT * 55) * 6.5;
+      const shakeY = Math.cos(this.treeShakeT * 45) * 2;
+      this.ctx.translate(shakeX, shakeY);
+      this.ctx.drawImage(layer, 0, 0, WORLD_W, WORLD_H);
+      this.ctx.restore();
+      return;
+    }
     this.ctx.drawImage(layer, 0, 0, WORLD_W, WORLD_H);
   }
 
@@ -663,10 +676,10 @@ export class GameEngine {
       x: fromRight ? 960 : -80,
       y: lane.y,
       vx: (fromRight ? -1 : 1) * speed,
-      z: lane.z + 0.04,
+      z: lane.z - 0.02,
       facing: fromRight ? -1 : 1,
       points: -50,
-      scale: DEPTH.path.scale * 1.18,
+      scale: lane.scale * 1.35,
       phase: "move",
     });
   }
@@ -706,7 +719,7 @@ export class GameEngine {
       vy: 1800,
       z: lane.z,
       facing: 1,
-      scale: DEPTH.path.scale * 1.08,
+      scale: DEPTH.path.scale * 0.85,
       openStart: rand(1.2, 4.0),
       openDur: rand(2.2, 3.2),
       standMax: rand(7.5, 9.5),
@@ -720,20 +733,28 @@ export class GameEngine {
     import("./audio").then((a) => a.playRocker());
     const fromRight = Math.random() < 0.5;
     const speed = 260;
-    const lane = LANES[2]!;
+
+    // 50% Zufall: Wiese (hinten, vor Busch-Typ) oder Weg (ganz vorne)
+    const onGrass = Math.random() < 0.5;
+    const yPos = onGrass ? DEPTH.grass.y : LANES[2].y;
+    const scaleVal = onGrass ? (DEPTH.grass.scale * 1.45) : (LANES[2].scale * 1.45);
+    // Wiese: 0.48 (garantiert VOR dem Busch-Typen mit 0.40) | Weg: 0.85 (ganz vorne)
+    const zVal = onGrass ? 0.48 : 0.85;
+
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
       act: "rocker",
       x: fromRight ? 960 : -80,
-      y: lane.y,
+      y: yPos,
+      baseY: yPos,
       vx: (fromRight ? -1 : 1) * speed,
-      z: lane.z + 0.06,
+      z: zVal,
       facing: fromRight ? -1 : 1,
       points: 200,
-      scale: DEPTH.path.scale * 1.25,
+      scale: scaleVal,
       phase: "move",
-    });
+    } as any);
   }
 
   freeHide(t: Target) {
@@ -816,6 +837,27 @@ export class GameEngine {
       const isHead = this.aimY <= (hit.y - (hit.dh || 80) * 0.62);
       this.kill(hit, isHead);
     } else {
+      // 1. ZUERST Baumstamm pruefen
+      const isTreeTrunk = (this.aimX >= 235 && this.aimX <= 335 && this.aimY >= 480 && this.aimY <= 1120);
+      if (isTreeTrunk) {
+        this.treeShakeT = 0.32;
+        const leafCols = ["#2d6a4f", "#40916c", "#52b788", "#74c69d", "#b7e4c7", "#d8f3dc", "#936639"];
+        const count = 10 + Math.floor(Math.random() * 8);
+        for (let i = 0; i < count; i++) {
+          this.leaves.push({
+            x: 220 + Math.random() * 150,
+            y: 400 + Math.random() * 220,
+            vx: (Math.random() - 0.5) * 60,
+            vy: 60 + Math.random() * 95,
+            rot: Math.random() * Math.PI * 2,
+            vrot: (Math.random() - 0.5) * 6,
+            r: 7 + Math.random() * 6,
+            color: leafCols[Math.floor(Math.random() * leafCols.length)]!,
+          });
+        }
+        this.burst(this.aimX, this.aimY, 5, "#8b5a2b", 60);
+        return;
+      }
       playMiss();
       if (this.strickT <= 0) {
         this.combo = 0;
@@ -1038,6 +1080,15 @@ export class GameEngine {
       if (this.strickT === 0) stopOmaKommando();
     }
     this.comboT -= dt;
+    
+    if (this.treeShakeT > 0) this.treeShakeT = Math.max(0, this.treeShakeT - dt);
+    for (let i = this.leaves.length - 1; i >= 0; i--) {
+      const lf = this.leaves[i]!;
+      lf.x += lf.vx * dt + Math.sin(lf.y * 0.05) * 35 * dt;
+      lf.y += lf.vy * dt;
+      lf.rot += lf.vrot * dt;
+      if (lf.y > 1200) this.leaves.splice(i, 1);
+    }
     if (this.comboT <= 0) this.combo = 0;
     this.hudAcc += dt;
     if (this.pointerDown && this.strickT > 0 && this.mode === "playing") {
@@ -1118,7 +1169,8 @@ export class GameEngine {
           } else {
             t.phaseT += dt;
             t.x += t.vx * dt + Math.sin(t.phaseT * 22) * 210 * dt;
-            t.y = LANES[2]!.y + Math.abs(Math.sin(t.phaseT * 20)) * 10;
+            const baseY = (t as any).baseY ?? LANES[2]!.y;
+            t.y = baseY + Math.abs(Math.sin(t.phaseT * 20)) * 10;
             t.rot = Math.sin(t.phaseT * 22) * 0.16;
           }
           continue;
@@ -1130,6 +1182,27 @@ export class GameEngine {
         t.rot += (t.vx >= 0 ? 1 : -1) * spin * dt;
         const maxRot = t.act === "walk" && t.variant === "b" ? 1.5 : 0.35; if (t.rot > maxRot) t.rot = maxRot;
         const minRot = t.act === "walk" && t.variant === "b" ? -1.5 : -0.35; if (t.rot < minRot) t.rot = minRot;
+
+        // Rauch beim Teppich-Absturz
+        if (t.act === "carpet") {
+          (t as any).smokeT = ((t as any).smokeT || 0) + dt;
+          if ((t as any).smokeT >= 0.04) {
+            (t as any).smokeT = 0;
+            this.particles.push({
+              x: t.x + (Math.random() - 0.5) * 35,
+              y: t.y - 100 + (Math.random() - 0.5) * 20,
+              vx: (Math.random() - 0.5) * 45,
+              vy: -rand(40, 80),
+              life: rand(0.5, 0.8),
+              max: 0.8,
+              size: rand(20, 34),
+              color: "rgba(70, 65, 60, 0.75)",
+              rot: rand(0, 6),
+              vr: rand(-2, 2),
+              grav: -60
+            } as any);
+          }
+        }
         continue;
       }
       if (t.act === "carpet") {
@@ -1137,6 +1210,30 @@ export class GameEngine {
         t.phaseT += dt * 3.2;
         t.y = CARPET_Y + Math.sin(t.phaseT) * 32;
         t.rot = Math.cos(t.phaseT) * 0.12 * (t.vx > 0 ? 1 : -1);
+
+        // Magischer Schweif hinter dem Teppich (stabil & leuchtend)
+        (t as any).trailT = ((t as any).trailT || 0) + dt;
+        if ((t as any).trailT >= 0.02) {
+          (t as any).trailT = 0;
+          const dir = t.vx > 0 ? 1 : -1;
+          const tailX = t.x - dir * 70;
+          const colors = ["#facc15", "#c084fc", "#38bdf8", "#f43f5e"];
+          for (let i = 0; i < 2; i++) {
+            this.particles.push({
+              x: tailX + (Math.random() - 0.5) * 20,
+              y: t.y - 110 + (Math.random() - 0.5) * 12,
+              vx: -dir * rand(50, 120),
+              vy: rand(-20, 20),
+              life: rand(0.4, 0.7),
+              max: 0.7,
+              size: rand(16, 26),
+              color: colors[Math.floor(Math.random() * colors.length)],
+              rot: rand(0, 6),
+              vr: rand(-3, 3),
+              grav: 0
+            } as any);
+          }
+        }
         t.frameT += dt;
         if (t.frameT > 0.14) {
           t.frameT = 0;
@@ -1177,6 +1274,35 @@ export class GameEngine {
         continue;
       }
       if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
+        t.phaseT += dt;
+        if (t.act === "rocker" && t.state === "alive") {
+          const base = (t as any).baseY ?? t.y;
+          (t as any).baseY = base;
+          t.y = base + (Math.random() - 0.5) * 4;
+
+          // Echte dichte Staubwolken hinter dem Hinterrad
+          (t as any).dustTimer = ((t as any).dustTimer || 0) + dt;
+          if ((t as any).dustTimer >= 0.04) {
+            (t as any).dustTimer = 0;
+            const dir = (t.facing || 1);
+            const wx = t.x - dir * 75;
+            const wy = t.y - 12;
+            for (let i = 0; i < 2; i++) {
+              this.particles.push({
+                x: wx + (Math.random() - 0.5) * 14,
+                y: wy + (Math.random() - 0.5) * 6,
+                vx: -dir * rand(40, 110),
+                vy: -rand(35, 85),
+                life: rand(0.4, 0.75),
+                max: 0.75,
+                size: rand(18, 32),
+                color: "rgba(220, 212, 195, 0.7)",
+                rot: rand(0, 6),
+                vr: rand(-2, 2)
+              } as any);
+            }
+          }
+        }
         t.x += t.vx * dt;
         continue;
       }
@@ -1255,8 +1381,9 @@ export class GameEngine {
       p.life -= dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vy += 420 * dt;
-      p.rot += p.vr * dt;
+      const g = (p as any).grav !== undefined ? (p as any).grav : 420;
+      p.vy += g * dt;
+      p.rot += (p.vr || 0) * dt;
     }
     this.particles = this.particles.filter((p) => p.life > 0);
     for (const f of this.floaters) {
@@ -1277,7 +1404,10 @@ export class GameEngine {
     }
     if (t.act === "opa") {
       const showHit = t.state === "falling" && t.phase !== "leave";
-      return this.img(showHit ? "opa_hit" : "opa_walk");
+      if (showHit) return this.img("opa_hit") || this.img("opa-lauf");
+      const interval = t.phase === "leave" ? 0.14 : 0.45;
+      const step = Math.floor(t.phaseT / interval) % 2;
+      return (step === 0 ? this.img("opa-lauf") : this.img("opa-steht")) || this.img("opa_hit");
     }
     if (t.act === "carpet") return this.img(t.frame % 2 === 0 ? "talahin_1" : "talahin_2");
     if (t.act === "rocker") return this.img("bahndidos");
@@ -1371,12 +1501,6 @@ export class GameEngine {
 
     // 2. Jetzt das transparente Bild darueberlegen
     this.drawSceneLayer("park-bg");
-    for (const hole of this.holes) {
-      ctx.fillStyle = `rgba(10,10,10,${0.55 * hole.a})`;
-      ctx.beginPath();
-      ctx.ellipse(hole.x, hole.y, hole.r, hole.r * 0.75, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
     const sorted = this.targets.slice().sort((a, b) => (a.z !== b.z ? a.z - b.z : a.y - b.y));
 
     // Wollbalken HUD (Nur im aktiven Spiel anzeigen)
@@ -1443,6 +1567,19 @@ export class GameEngine {
     }
     if (!wallDrawn) this.drawSceneLayer("parkmauer");
     if (!treeDrawn) this.drawSceneLayer("tree");
+    // Blaetter zeichnen
+    if (this.leaves && this.leaves.length > 0) {
+      for (const lf of this.leaves) {
+        ctx.save();
+        ctx.translate(lf.x, lf.y);
+        ctx.rotate(lf.rot);
+        ctx.fillStyle = lf.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, lf.r, lf.r * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
 
     if (this.strickT > 0) {
       ctx.save();
@@ -1477,14 +1614,16 @@ export class GameEngine {
       const kick = this.recoil > 0 ? -6 : 0;
       ctx.drawImage(omaImg, oma.x, oma.y + kick, oma.w, oma.h);
     }
-    if (!this.lowPower) for (const p of this.particles) {
+    for (const p of this.particles) {
       const a = clamp(p.life / p.max, 0, 1);
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
       ctx.globalAlpha = a;
       ctx.fillStyle = p.color;
-      ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
+      ctx.beginPath();
+      ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
     for (const f of this.flashes) {
