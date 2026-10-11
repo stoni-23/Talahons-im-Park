@@ -1,0 +1,89 @@
+{/* --- HOLZSCHILDER-MENÜ AM PFAHL --- */}
+              <div className="flex flex-col items-center gap-2 w-full max-w-[360px] mx-auto select-none my-2 z-20">
+                {/* SCHILD 1: SPIELEN (Gold) */}
+                <button
+                  type="button"
+                  disabled={!hud.ready}
+                  onClick={() => { unlockAudio(); engine?.start(); }}
+                  onTouchEnd={(e) => { e.stopPropagation(); if (hud.ready) { unlockAudio(); engine?.start(); } }}
+                  className="relative w-[340px] h-[72px] flex items-center justify-center transition-transform active:scale-95 cursor-pointer overflow-visible"
+                >
+                  <img src="/assets/menu/menu-schild3.png" alt="Spielen" className="w-full h-full object-contain scale-[2.4] drop-shadow-[0_8px_14px_rgba(0,0,0,0.9)] pointer-events-none" />
+                  <div className="absolute inset-0 flex items-center justify-center pr-6 pointer-events-none z-10">
+                    <span className="font-pixel text-[15px] font-black tracking-wider text-[#221102] drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">
+                      PARKBANK SPIELEN
+                    </span>
+                  </div>
+                </button>
+
+                {/* SCHILD 2: TONNEN-JAGD (Grün) */}
+                {profile.name && !isEditing ? (
+                  <button
+                    type="button"
+                    onClick={handleStartTonnen}
+                    onTouchEnd={(e) => { e.stopPropagation(); handleStartTonnen(); }}
+                    className="relative w-[340px] h-[72px] flex items-center justify-center transition-transform active:scale-95 cursor-pointer overflow-visible"
+                  >
+                    <img src="/assets/menu/menu-schild1.png" alt="Tonnen-Jagd" className="w-full h-full object-contain scale-[2.4] drop-shadow-[0_8px_14px_rgba(0,0,0,0.9)] pointer-events-none" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pr-6 pointer-events-none leading-tight z-10">
+                      <span className="font-pixel text-[13px] font-black tracking-wider text-emerald-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                        🗑️ TONNEN-JAGD
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-300 drop-shadow">
+                        {status.isFree ? `Frei (${status.freeRemaining}/3)` : "Kosten: 1 🪙"}
+                      </span>
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    onTouchEnd={(e) => { e.stopPropagation(); setIsEditing(true); }}
+                    className="relative w-[340px] h-[72px] flex items-center justify-center transition-transform active:scale-95 cursor-pointer opacity-85 overflow-visible"
+                  >
+                    <img src="/assets/menu/menu-schild1.png" alt="Gesperrt" className="w-full h-full object-contain scale-[2.4] grayscale drop-shadow-[0_8px_14px_rgba(0,0,0,0.9)] pointer-events-none" />
+                    <div className="absolute inset-0 flex items-center justify-center pr-6 gap-1.5 pointer-events-none z-10">
+                      <span className="text-base">🔒</span>
+                      <span className="font-pixel text-[12px] font-bold text-neutral-200 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                        ANMELDEN FÜR JAGD
+                      </span>
+                    </div>
+                  </button>
+                )}
+
+                {/* SCHILD 3: KIOSK (Braun links) */}
+                <button
+                  type="button"
+                  onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
+                  onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
+                  className="relative w-[340px] h-[72px] flex items-center justify-center transition-transform active:scale-95 cursor-pointer overflow-visible"
+                >
+                  <img src="/assets/menu/menu-schild2.png" alt="Kiosk" className="w-full h-full object-contain scale-[2.4] drop-shadow-[0_8px_14px_rgba(0,0,0,0.9)] pointer-events-none" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pl-6 pointer-events-none leading-tight z-10">
+                    <span className="font-pixel text-[13px] font-black tracking-wider text-amber-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                      🏪 KIOSK & TASCHE
+                    </span>
+                    <span className="text-[10px] font-bold text-yellow-300 drop-shadow">
+                      🪙 {profile?.groschen ?? 0} Groschen
+                    </span>
+                  </div>
+                </button>
+
+                {/* SCHILD 4: AUFGABEN (Braun rechts) */}
+                <button
+                  type="button"
+                  onClick={() => setIsMissionsOpen(true)}
+                  onTouchEnd={(e) => { e.stopPropagation(); setIsMissionsOpen(true); }}
+                  className="relative w-[340px] h-[72px] flex items-center justify-center transition-transform active:scale-95 cursor-pointer overflow-visible"
+                >
+                  <img src="/assets/menu/menu-schild2.png" alt="Aufgaben" className="w-full h-full object-contain scale-[2.4] scale-x-[-2.4] drop-shadow-[0_8px_14px_rgba(0,0,0,0.9)] pointer-events-none" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pr-6 pointer-events-none leading-tight z-10">
+                    <span className="font-pixel text-[13px] font-black tracking-wider text-amber-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                      🎯 AUFGABEN & BONI
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-300 drop-shadow">
+                      Missionen & Belohnung
+                    </span>
+                  </div>
+                </button>
+              </div>

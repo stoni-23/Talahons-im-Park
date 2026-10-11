@@ -137,6 +137,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
 
       persist(updated);
       showToast(`+${xpToAdd} XP erhalten! 🔋`);
+      window.dispatchEvent(new CustomEvent("park:hint", { detail: { icon: "⭐", text: `+${xpToAdd} XP` } }));
       return;
     }
 
@@ -163,6 +164,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
 
     persist(updated);
     showToast(`"${item.name}" liegt jetzt in der Handtasche! 👜`);
+    window.dispatchEvent(new CustomEvent("park:hint", { detail: { icon: "👜", text: `${item.name} in der Tasche` } }));
   };
 
   const handleToggleEquip = (item: ShopItem) => {
@@ -193,7 +195,7 @@ export const KioskModal: React.FC<KioskModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 backdrop-blur-sm sm:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="flex h-[92vh] sm:h-[88vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900 shadow-2xl">
+      <div className="flex h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-md border-4 border-[#6a5038] bg-[#1a120c] shadow-2xl sm:h-[88vh]">
         <div className="border-b border-neutral-800 bg-neutral-950/70 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

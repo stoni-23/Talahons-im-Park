@@ -245,7 +245,7 @@ export const StartScreenOverlay: React.FC<StartScreenOverlayProps> = ({
         </div>
 
         {/* Start-Button */}
-        <div className="absolute bottom-6 left-0 right-0 z-40 flex justify-center items-center">
+        <div className="absolute bottom-2 left-0 right-0 z-40 flex flex-col items-center gap-2 px-3">
           <button
             onClick={handleStartClick}
             className="btn-animated relative overflow-hidden px-8 py-3.5 rounded-xl bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border-2 border-amber-100 shadow-[0_5px_0_#78350f] active:translate-y-1 active:shadow-[0_1px_0_#78350f] transition-transform cursor-pointer"
@@ -257,6 +257,29 @@ export const StartScreenOverlay: React.FC<StartScreenOverlayProps> = ({
               START
             </span>
           </button>
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-full bg-black/55 px-3 py-1 text-[11px] font-bold text-white">
+            <a href="https://www.tiktok.com/@bankgeheimnisimpark" target="_blank" rel="noreferrer">TikTok</a>
+            <a href="https://www.facebook.com/bankgeheimnisimpark" target="_blank" rel="noreferrer">Facebook</a>
+            <a href="https://www.instagram.com/bankgeheimnisimpark" target="_blank" rel="noreferrer">Instagram</a>
+            <a href="https://www.youtube.com/@bankgeheimnisimpark" target="_blank" rel="noreferrer">YouTube</a>
+            <button
+              type="button"
+              onClick={async () => {
+                const title = "Talahons im Park - Parabellum Edition";
+                const text = "Hilf Omma bei der Parkreinigung und knack den Highscore!";
+                const url = window.location.href;
+                try {
+                  if (navigator.share) await navigator.share({ title, text, url });
+                  else { await navigator.clipboard.writeText(url); alert("Link kopiert!"); }
+                } catch { /* abgebrochen */ }
+              }}
+            >
+              Teilen
+            </button>
+          </div>
+          <p className="text-center text-[10px] font-bold text-white drop-shadow-[0_1px_2px_#000]">
+            Beta 2026.10.5 · Als App: Browser-Menü → Zum Startbildschirm
+          </p>
         </div>
 
       </div>

@@ -43,8 +43,8 @@ export function MissionsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-3">
-      <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-white shadow-2xl flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3">
+      <div className="flex max-h-[90vh] w-full max-w-md flex-col rounded-md border-4 border-[#6a5038] bg-[#1a120c] p-4 text-amber-50 shadow-2xl">
         <div className="flex items-center justify-between pb-3 border-b border-neutral-800 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🎯</span>

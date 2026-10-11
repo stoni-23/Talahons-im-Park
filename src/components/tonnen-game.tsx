@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { PlayerProfile } from "@/lib/profile";
+import { getPlayerLevel } from "@/lib/profile";
 import {playShot, isMuted, resumeAudio, playWheelTick, playWheelWin } from "@/game/audio";
 import { getActiveCrosshairColor } from "@/lib/shop";
 import { Pause, Play } from "lucide-react";
@@ -814,7 +815,13 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
   const rank = getTonnenRank(scoreHits);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center select-none overflow-hidden touch-none">
+    <div className="fixed inset-0 z-50 flex select-none flex-col items-center justify-center overflow-hidden bg-black touch-none">
+      {gameState !== "playing" && (
+        <>
+          <img src="/menu/park-bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-black/45" />
+        </>
+      )}
       {/* 1. VOLLBILD CANVAS */}
       <canvas
         ref={canvasRef}
@@ -852,27 +859,13 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
         </div>
       )}
 
-            {/* PAUSEN MODAL (1:1 ORIGINAL AUS GAME-SCREEN.TSX) */}
       {gameState === "paused" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-xs rounded-2xl border border-neutral-700 bg-neutral-900/95 p-6 text-center shadow-2xl space-y-4">
-            <h2 className="font-display text-4xl font-black tracking-wider text-white">PAUSE</h2>
-            <div className="flex flex-col gap-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setGameState("playing")}
-                className="w-full rounded-xl bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 py-3 font-bold uppercase tracking-wider text-white shadow-lg active:scale-95 transition-all hover:brightness-110"
-              >
-                Weiter
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full rounded-xl border border-neutral-700 bg-neutral-800 py-3 font-bold uppercase tracking-wider text-neutral-300 shadow-md active:scale-95 transition-all hover:bg-neutral-700 hover:text-white"
-              >
-                Menü
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-xs space-y-3 rounded-md border-4 border-[#6b4423] bg-[#1a120c]/92 p-5 text-center">
+            <h2 className="font-display text-4xl tracking-wide text-amber-200">PAUSE</h2>
+            <p className="text-xs font-black text-amber-100">Tonnenjagd · Level {getPlayerLevel(profile.totalXp || 0)}</p>
+            <button type="button" onClick={() => setGameState("playing")} className="h-14 w-full rounded bg-amber-400 text-lg font-black uppercase text-black">Weiter</button>
+            <button type="button" onClick={onClose} className="h-12 w-full rounded border-2 border-amber-200/40 bg-black/40 text-sm font-black uppercase text-amber-100">Menü</button>
           </div>
         </div>
       )}
@@ -891,29 +884,17 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
 
       {/* 3. PUNKTE-TAFEL: Wie im Hauptspiel */}
       {gameState === "results" && (
-        <div className="p-6 text-center space-y-4 bg-neutral-900/95 rounded-2xl border border-neutral-800 shadow-2xl mx-4 max-w-sm w-full">
-          <p className="text-3xl font-black tracking-wide text-white uppercase">Runde vorbei</p>
+        <div className="relative z-10 mx-4 w-full max-w-sm space-y-4 rounded-md border-4 border-[#6b4423] bg-[#1a120c]/92 p-6 text-center text-amber-50 shadow-2xl">
+          <p className="font-display text-4xl tracking-wide text-amber-200">RUNDE VORBEI</p>
           <div className="mt-2 flex flex-col items-center justify-center">
-            <span className="text-5xl font-black tabular-nums tracking-wide text-emerald-400">
-              🌿 {scoreHits}g
-            </span>
-            <span className="mt-1 text-xs text-neutral-400 font-medium">
-              Kräuter für das Glücksrad gesichert
-            </span>
+            <span className="text-5xl font-black tabular-nums tracking-wide text-emerald-300">🌿 {scoreHits}g</span>
+            <span className="mt-1 text-xs font-bold text-amber-100/80">Kräuter fürs Glücksrad</span>
           </div>
-
           <div className={`w-full rounded-xl border p-3 text-center ${rank.color}`}>
             <p className="text-[10px] font-bold tracking-[0.14em] uppercase opacity-80">Rang</p>
             <p className="mt-0.5 text-base font-black tracking-wide">{rank.title}</p>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setGameState("spielo")}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 font-black text-neutral-950 uppercase tracking-wider shadow-lg shadow-amber-950/60 active:scale-95 transition-all cursor-pointer"
-          >
-            Ab zum Park-Glücksrad 🎡
-          </button>
+          <button type="button" onClick={() => setGameState("spielo")} className="h-14 w-full rounded bg-amber-400 font-black uppercase tracking-wide text-black">Zum Glücksrad</button>
         </div>
       )}
 
@@ -950,7 +931,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
 
       {/* 4. PARK-GLÜCKSRAD */}
       {gameState === "spielo" && (
-        <div className="w-full h-full max-w-[480px] p-5 flex flex-col justify-between items-center text-center bg-neutral-950 select-none">
+        <div className="relative z-10 flex h-full w-full max-w-[480px] select-none flex-col items-center justify-between p-4 text-center">
           <div className="space-y-2 text-center">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-yellow-400/30 to-amber-500/20 border border-amber-400/50 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
               <span className="text-amber-300 animate-pulse text-xs">✨</span>

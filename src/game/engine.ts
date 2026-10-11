@@ -28,7 +28,7 @@ export const WORLD_W = 900;
 export const WORLD_H = 1600;
 const FIRE_CD = 0.26;
 const COMBO_WINDOW = 1.05;
-const MAX_ALIVE = 11;
+const MAX_ALIVE = 14;
 const OMA_KEEP_X = -300;
 const OPA_HIT_HOLD = 1.05;
 
@@ -53,7 +53,6 @@ const WALL_DRAW_Z = 0.20;
 const TREE_DRAW_Z = 0.32;
 const GATE_X = 490;
 const CARPET_Y = 520;
-const ARCH = { cx: 455, peak: 870, r: 92, left: 372, right: 552, bottom: 1070 };
 const BEHIND_GATE_Y = DEPTH.gate.y;
 const BEHIND_GATE_SCALE = DEPTH.gate.scale;
 
@@ -234,6 +233,7 @@ export class GameEngine {
   holes: Hole[] = [];
   flashes: Flash[] = [];
   spawnAcc = 0;
+  gapT = 0;
   hippieT = 25;
   hippieCount = 0;
   rockerT = 12;
@@ -253,6 +253,7 @@ export class GameEngine {
   pointerDown = false;
   peekBusy = new Set<number>();
   bushBusy = new Set<number>();
+  bushCd = [0, 0];
   profile: PlayerProfile = defaultProfile();
 
   constructor(canvas: HTMLCanvasElement, onHud: (hud: Hud) => void) {
@@ -326,9 +327,45 @@ export class GameEngine {
       }),
     );
     try { await preloadSounds(); } catch {}
+    this.buildWallMask();
     this.ready = true;
     this.emit();
     this.loop(performance.now());
+  }
+
+  wallMask: Uint8ClampedArray | null = null;
+
+  buildWallMask() {
+    const img = this.img("parkmauer");
+    if (!img) return;
+    const c = document.createElement("canvas");
+    c.width = 450;
+    c.height = 800;
+    const g = c.getContext("2d", { willReadFrequently: true });
+    if (!g) return;
+    g.drawImage(img, 0, 0, 450, 800);
+    this.wallMask = g.getImageData(0, 0, 450, 800).data;
+  }
+
+  wallBlocks(x: number, y: number) {
+    const mask = this.wallMask;
+    if (!mask) return false;
+    const mx = Math.max(0, Math.min(449, Math.floor((x / WORLD_W) * 450)));
+    const my = Math.max(0, Math.min(799, Math.floor((y / WORLD_H) * 800)));
+    const solid = (ix: number, iy: number) => mask[(iy * 450 + ix) * 4 + 3]! > 80;
+    if (!solid(mx, my)) return false;
+    if (x > 540) return true;
+    const rad = 8;
+    for (let dy = -rad; dy <= rad; dy += 2) {
+      for (let dx = -rad; dx <= rad; dx += 2) {
+        if (dx * dx + dy * dy > rad * rad) continue;
+        const ix = mx + dx;
+        const iy = my + dy;
+        if (ix < 0 || iy < 0 || ix > 449 || iy > 799) continue;
+        if (!solid(ix, iy)) return false;
+      }
+    }
+    return true;
   }
 
   img(key: string) {
@@ -424,6 +461,42 @@ export class GameEngine {
     return this.targets.reduce((n, t) => n + +(t.state === "alive"), 0);
   }
 
+  laneWalkers(laneI: number) {
+    const y = LANES[laneI]!.y;
+    return this.targets.filter((t) => t.state === "alive" && (t.act === "walk" || t.act === "run") && Math.abs(t.y - y) < 24);
+  }
+
+  openLane() {
+    const lanes = [1, 2, 3];
+    const best = Math.min(...lanes.map((l) => this.laneWalkers(l).length));
+    return pick(lanes.filter((l) => this.laneWalkers(l).length === best));
+  }
+
+  frontQuota() {
+    if (this.timeLeft < 25) return 4;
+    if (this.timeLeft < 50) return 3;
+    return 2;
+  }
+
+  incomingWalker() {
+    return this.targets.some((t) => t.state === "alive" && (t.act === "walk" || t.act === "run") && t.z >= WALL_DRAW_Z && ((t.vx < 0 && t.x > 860 && t.x < 1000) || (t.vx > 0 && t.x > -80 && t.x < 40)));
+  }
+
+  shootableOnScreen() {
+    return this.targets.reduce((n, t) => {
+      if (t.state !== "alive") return n;
+      if (t.x < 30 || t.x > 870) return n;
+      if (t.vx < 0 && t.x < 120) return n;
+      if (t.vx > 0 && t.x > 780) return n;
+      if (t.act === "bush" && t.reveal >= 0.2) return n + 1;
+      if (t.act === "peek" && t.reveal >= 0.18 && t.phase !== "out") return n + 1;
+      if ((t.act === "walk" || t.act === "run") && t.z >= WALL_DRAW_Z) return n + 1;
+      if (t.act === "opa" || t.act === "rocker" || t.act === "carpet") return n + 1;
+      if (t.act === "hippie" && this.barrelOpen(t)) return n + 1;
+      return n;
+    }, 0);
+  }
+
   maxAlive() {
     return this.lowPower ? 6 : MAX_ALIVE;
   }
@@ -470,7 +543,9 @@ export class GameEngine {
     this.flashes = [];
     this.peekBusy.clear();
     this.bushBusy.clear();
+    this.bushCd = [0, 0];
     this.spawnAcc = 0.5;
+    this.gapT = 0;
     this.hippieT = 25; this.hippieCount = 0;
     this.rockerT = rand(8, 13);
     this.carpetT = rand(15, 22);
@@ -514,6 +589,7 @@ export class GameEngine {
     this.targets = [];
     this.peekBusy.clear();
     this.bushBusy.clear();
+    this.bushCd = [0, 0];
     this.emit();
   }
 
@@ -563,15 +639,22 @@ export class GameEngine {
   }
 
   spawnWalker(lane?: number, running?: boolean, x?: number) {
-    if (this.aliveCount() >= this.maxAlive()) return;
-    const laneI =
-      lane ??
-      (Math.random() < 0.42 ? 1 : Math.random() < 0.55 ? 2 : 3);
+    const laneI = lane ?? this.openLane();
+    const emergency = laneI > 0 && this.shootableOnScreen() < this.frontQuota() && !this.incomingWalker();
+    if (!emergency && this.aliveCount() >= this.maxAlive()) return;
+    if (laneI === 0) {
+      const onWall = this.targets.filter((t) => t.state === "alive" && (t.act === "walk" || t.act === "run") && t.z < WALL_DRAW_Z && t.y < 980).length;
+      if (onWall >= 3) return;
+    }
+    const onLane = this.laneWalkers(laneI).length;
+    const laneCap = this.timeLeft < 30 ? 3 : 2;
+    if (laneI > 0 && onLane >= laneCap) return;
     const L = LANES[laneI]!;
-    const run = running ?? Math.random() < 0.38;
-    const fromRight = laneI === 0 ? x != null ? x > WORLD_W / 2 : Math.random() < 0.72 : Math.random() < 0.5;
-    const speed = L.speed * (run ? 2.2 : 1) * rand(0.88, 1.18);
-    const start = x ?? (fromRight ? 1150 : -150);
+    const run = running ?? Math.random() < 0.28;
+    const fromRight = laneI === 0 ? (x != null ? x > WORLD_W / 2 : Math.random() < 0.72) : Math.random() < 0.5;
+    const speed = L.speed * (run ? 1.7 : 1) * rand(0.9, 1.12);
+    const queued = this.laneWalkers(laneI).filter((t) => fromRight ? t.x > 760 : t.x < 140).length;
+    const start = x ?? (fromRight ? 960 + queued * 180 : -60 - queued * 180);
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
@@ -617,11 +700,11 @@ export class GameEngine {
   }
 
   spawnBush() {
-    if (this.aliveCount() >= this.maxAlive()) return;
+    if (this.aliveCount() >= this.maxAlive()) return false;
     const free = BUSHES.map((_, i) => i).filter(
-      (i) => !this.bushBusy.has(i) && BUSHES[i]!.x >= OMA_KEEP_X,
+      (i) => !this.bushBusy.has(i) && this.bushCd[i]! <= 0 && BUSHES[i]!.x >= OMA_KEEP_X,
     );
-    if (!free.length) return;
+    if (!free.length) return false;
     const idx = pick(free);
     const bush = BUSHES[idx]!;
     this.bushBusy.add(idx);
@@ -641,9 +724,12 @@ export class GameEngine {
       reveal: 0,
       hide: idx,
     });
+    return true;
   }
 
   spawnBehindGate() {
+    const behind = this.targets.filter((t) => t.state === "alive" && (t.act === "walk" || t.act === "run") && t.z < WALL_DRAW_Z && t.y > 980).length;
+    if (behind >= 2) return;
     if (this.aliveCount() >= this.maxAlive()) return;
     const fromRight = Math.random() < 0.5;
     const run = Math.random() < 0.35;
@@ -759,7 +845,10 @@ export class GameEngine {
 
   freeHide(t: Target) {
     if (t.act === "peek" && t.hide >= 0) this.peekBusy.delete(t.hide);
-    if (t.act === "bush" && t.hide >= 0) this.bushBusy.delete(t.hide);
+    if (t.act === "bush" && t.hide >= 0) {
+      this.bushBusy.delete(t.hide);
+      this.bushCd[t.hide] = rand(3.2, 5.2);
+    }
     t.hide = -1;
   }
 
@@ -791,12 +880,19 @@ export class GameEngine {
     t.y = bush.y + dh * (1 - shown);
   }
 
+  barrelOpen(t: Target) {
+    const openStart = (t as any).openStart || 2.0;
+    const openEnd = openStart + ((t as any).openDur || 2.5);
+    return t.phase === "hold" && t.phaseT >= openStart && t.phaseT < openEnd;
+  }
+
   hitTest(t: Target, x: number, y: number): boolean {
     const dw = t.dw || 140 * t.scale;
-    const dh = t.dh || 335 * t.scale;
+    let dh = t.dh || 335 * t.scale;
     const left = t.x - dw * 0.5;
     const right = t.x + dw * 0.5;
-    const top = t.y - dh;
+    let top = t.y - dh;
+    if (t.act === "hippie" && !this.barrelOpen(t)) top = t.y - dh * 0.74;
     const bottom = t.y;
     return x >= left && x <= right && y >= top && y <= bottom;
   }
@@ -821,6 +917,7 @@ export class GameEngine {
         (t.act === "bush" && t.reveal < 0.2) ||
         (t.act === "peek" && t.reveal < 0.18) ||
         (t.act === "peek" && t.phase === "out") ||
+        ((t.act === "walk" || t.act === "run") && t.z < WALL_DRAW_Z && this.wallBlocks(this.aimX, this.aimY)) ||
         !this.hitTest(t, this.aimX, this.aimY)
       )
         continue;
@@ -1098,20 +1195,27 @@ export class GameEngine {
       this.hudAcc = 0;
       this.emit();
     }
+    for (let i = 0; i < this.bushCd.length; i++) this.bushCd[i] = Math.max(0, this.bushCd[i]! - dt);
     const progress = 1 - this.timeLeft / 90;
-    const spawnWait = 0.90 - progress * 0.48;
+    const spawnWait = 0.95 - progress * 0.6;
     this.spawnAcc -= (this.strickT > 0 ? dt * 2.2 : dt);
-    if (this.spawnAcc <= 0) {
-      this.spawnAcc = spawnWait * rand(0.7, 1.15);
-      const n = progress > 0.5 && Math.random() < 0.5 ? 2 : 1;
-      for (let i = 0; i < n; i++) {
-        const r = Math.random();
-        if (r < 0.38) this.spawnBush();
-        else if (r < 0.54) this.spawnPeeker();
-        else if (r < 0.68) this.spawnWalker(0, Math.random() < 0.4);
-        else if (r < 0.80) this.spawnBehindGate();
-        else this.spawnWalker(undefined, r > 0.94);
+    const want = this.frontQuota();
+    if (this.shootableOnScreen() < want && !this.incomingWalker()) {
+      this.gapT += dt;
+      if (this.gapT > (this.timeLeft < 30 ? 0.22 : 0.4)) {
+        this.gapT = 0;
+        this.spawnWalker(this.openLane(), false);
       }
+    } else this.gapT = 0;
+    if (this.spawnAcc <= 0) {
+      this.spawnAcc = spawnWait * rand(0.9, 1.08);
+      const r = Math.random();
+      if (r < 0.4) this.spawnWalker(0, Math.random() < 0.35);
+      else if (r < 0.58) this.spawnBehindGate();
+      else if (r < 0.74) {
+        if (!this.spawnBush()) this.spawnPeeker();
+      } else this.spawnPeeker();
+      if (this.shootableOnScreen() < want) this.spawnWalker(this.openLane(), false);
     }
     this.hippieT -= dt;
     if (this.hippieT <= 0 && (this.hippieCount || 0) < 2) {
@@ -1509,48 +1613,47 @@ export class GameEngine {
       ctx.restore();
       return;
     }
-    const barX = 605;
-    const barY = 205;
-    const barW = 210;
-    const barH = 18;
+    const barX = 548;
+    const barY = 188;
+    const barW = 280;
+    const barH = 22;
     const maxCombo = 13;
     const isStrickActive = (this.strickT || 0) > 0;
 
-    if (isStrickActive) {
-      ctx.globalAlpha = 0.85 + Math.sin(Date.now() / 80) * 0.15;
-    }
-
-    ctx.fillStyle = "rgba(20, 20, 20, 0.75)";
+    ctx.save();
+    ctx.fillStyle = "#1a120c";
+    ctx.strokeStyle = isStrickActive ? "#fbbf24" : "#6a5038";
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.roundRect(barX, barY, barW, barH, 9);
+    ctx.roundRect(barX, barY, barW, barH, 8);
     ctx.fill();
+    ctx.stroke();
 
     const progress = isStrickActive
       ? Math.max(0, Math.min(1, this.strickT / 5.0))
       : Math.max(0, Math.min(1, (this.combo || 0) / maxCombo));
 
     if (progress > 0) {
-      const fillW = Math.max(barH, barW * progress);
+      const fillW = Math.max(8, (barW - 8) * progress);
       const grad = ctx.createLinearGradient(barX, barY, barX + fillW, barY);
       if (isStrickActive) {
-        grad.addColorStop(0, "#FFD700");
-        grad.addColorStop(1, "#FF2200");
+        grad.addColorStop(0, "#fbbf24");
+        grad.addColorStop(1, "#ef4444");
       } else {
-        grad.addColorStop(0, "#E91E63");
-        grad.addColorStop(1, "#FF5722");
+        grad.addColorStop(0, "#b45309");
+        grad.addColorStop(1, "#f59e0b");
       }
       ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.roundRect(barX, barY, fillW, barH, 9);
+      ctx.roundRect(barX + 4, barY + 4, fillW, barH - 8, 5);
       ctx.fill();
     }
-
-    const iconProgress = Math.min(1, (this.combo || 0) / maxCombo);
-    const woolRadius = 20 + (isStrickActive ? 22 : iconProgress * 22);
-    ctx.textAlign = "center";
+    ctx.fillStyle = "#fde68a";
+    ctx.font = "700 16px sans-serif";
+    ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = `${woolRadius * 1.3}px sans-serif`;
-    ctx.fillText(isStrickActive ? "🔥" : "🧶", barX + barW, barY + barH / 2);
+    ctx.fillText(isStrickActive ? "STRICK" : "KOMBO", barX, barY - 14);
+    ctx.restore();
 
     let wallDrawn = false;
     let treeDrawn = false;
@@ -1583,22 +1686,18 @@ export class GameEngine {
 
     if (this.strickT > 0) {
       ctx.save();
-      const pulse = 1 + Math.sin(Date.now() / 90) * 0.06;
-      ctx.translate(WORLD_W / 2, 380);
-      ctx.scale(pulse, pulse);
+      ctx.translate(WORLD_W / 2, 250);
       ctx.textAlign = "center";
-
-      ctx.fillStyle = "rgba(185, 28, 28, 0.85)";
-      ctx.strokeStyle = "#fef08a";
+      ctx.fillStyle = "#1a120c";
+      ctx.strokeStyle = "#fbbf24";
       ctx.lineWidth = 4;
       ctx.beginPath();
-      ctx.roundRect(-260, -32, 520, 64, 16);
+      ctx.roundRect(-210, -28, 420, 56, 12);
       ctx.fill();
       ctx.stroke();
-
-      ctx.font = "900 32px sans-serif";
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText("⚡ STRICKNADELKOMMANDO! ⚡", 0, 11);
+      ctx.font = "900 26px sans-serif";
+      ctx.fillStyle = "#fde68a";
+      ctx.fillText("STRICKNADEL", 0, 2);
       ctx.restore();
     }
 
@@ -1671,44 +1770,55 @@ export class GameEngine {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       if (!activeHippie && this.hippieT <= 5 && this.hippieT > 0 && (this.hippieCount || 0) < 2) {
-        const warnPulse = 1 + Math.sin(Date.now() * 0.015) * 0.08;
-        ctx.font = "900 " + Math.round(18 * warnPulse) + "px sans-serif";
-        ctx.fillStyle = "#f59e0b";
-        ctx.strokeStyle = "rgba(0,0,0,0.85)";
-        ctx.lineWidth = 5;
-        const msg = "⚠️ HIPPIE IN: " + Math.ceil(this.hippieT) + "s ⚠️";
-        ctx.strokeText(msg, WORLD_W / 2, 215);
-        ctx.fillText(msg, WORLD_W / 2, 215);
+        const msg = "⚠️ TONNE IN " + Math.ceil(this.hippieT);
+        ctx.font = "900 72px sans-serif";
+        const tw = ctx.measureText(msg).width;
+        const bx = WORLD_W / 2 - tw / 2 - 28;
+        ctx.fillStyle = "rgba(0,0,0,0.78)";
+        ctx.fillRect(bx, 360, tw + 56, 96);
+        ctx.lineWidth = 10;
+        ctx.strokeStyle = "rgba(0,0,0,0.9)";
+        ctx.fillStyle = "#fbbf24";
+        ctx.strokeText(msg, WORLD_W / 2, 408);
+        ctx.fillText(msg, WORLD_W / 2, 408);
       } else if (activeHippie && activeHippie.phase === "hold") {
         const oS = (activeHippie as any).openStart || 2.0;
         const oE = oS + ((activeHippie as any).openDur || 2.5);
         if (activeHippie.phaseT >= oS && activeHippie.phaseT < oE) {
-          ctx.font = "900 19px sans-serif";
+          ctx.font = "900 48px sans-serif";
           ctx.fillStyle = "#22c55e";
           ctx.strokeStyle = "rgba(0,0,0,0.85)";
           ctx.lineWidth = 5;
-          ctx.strokeText("🎯 JETZT TREFFEN!", WORLD_W / 2, 215);
-          ctx.fillText("🎯 JETZT TREFFEN!", WORLD_W / 2, 215);
+          ctx.strokeText("🎯 JETZT TREFFEN!", WORLD_W / 2, 430);
+          ctx.fillText("🎯 JETZT TREFFEN!", WORLD_W / 2, 430);
         }
       }
       ctx.restore();
     }
 
-    if (this.mode === "playing" || this.mode === "paused") this.drawCrosshair();
+    if (this.mode === "playing" || this.mode === "paused") {
+      if (this.strickT > 0) this.drawStrickScope();
+      this.drawCrosshair();
+    }
   }
 
-  clipOccluders(ctx: CanvasRenderingContext2D, t: Target) {
-    if (!(t.z < WALL_DRAW_Z && t.y < 980)) return;
-    const { cx, peak, r, left, right, bottom } = ARCH;
-    const cy = peak + r;
+  drawStrickScope() {
+    const ctx = this.ctx;
+    ctx.save();
+    const g = ctx.createRadialGradient(WORLD_W / 2, WORLD_H * 0.42, 180, WORLD_W / 2, WORLD_H * 0.46, 920);
+    g.addColorStop(0, "rgba(0,0,0,0)");
+    g.addColorStop(0.55, "rgba(0,0,0,0.05)");
+    g.addColorStop(0.82, "rgba(0,0,0,0.38)");
+    g.addColorStop(1, "rgba(0,0,0,0.72)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    ctx.strokeStyle = this.crosshairColor || "#ffffff";
+    ctx.globalAlpha = 0.55;
+    ctx.lineWidth = 10;
     ctx.beginPath();
-    ctx.rect(0, 0, WORLD_W, WORLD_H);
-    ctx.moveTo(left, cy);
-    ctx.arc(cx, cy, r, Math.PI, 0);
-    ctx.lineTo(right, bottom);
-    ctx.lineTo(left, bottom);
-    ctx.closePath();
-    ctx.clip("evenodd");
+    ctx.arc(this.aimX, this.aimY, 78, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   drawTarget(t: Target) {
@@ -1725,9 +1835,6 @@ export class GameEngine {
     t.dh = h;
     if (t.act === "bush" && t.state === "alive") this.placeBush(t);
     ctx.save();
-    if ((t.act === "walk" || t.act === "run") && t.state !== "falling" && t.act !== "carpet") {
-      this.clipOccluders(ctx, t);
-    }
     if (t.act === "peek" && t.state === "alive" && t.hide >= 0) {
       const tree = TREES[t.hide]!;
       ctx.beginPath();
@@ -1737,11 +1844,18 @@ export class GameEngine {
     }
     // Leichtes Geh-Wackeln (Hinken & Schritt-Bobbing) beim Hereinlaufen vor dem Treffer
     const isOpaWalking = t.act === "opa" && t.state !== "falling";
+    const isTalahon = (t.act === "walk" || t.act === "run") && t.state !== "falling";
+    const step = t.x * (t.act === "run" ? 0.11 : 0.07);
     const opaTilt = isOpaWalking ? Math.sin(t.x * 0.08) * 0.07 : 0;
-    const opaBob = isOpaWalking ? Math.abs(Math.sin(t.x * 0.08)) * 5 : 0;
+    const tilt = isTalahon ? Math.sin(step) * (t.act === "run" ? 0.07 : 0.04) : opaTilt;
+    const bob = isOpaWalking
+      ? Math.abs(Math.sin(t.x * 0.08)) * 5
+      : isTalahon
+        ? Math.abs(Math.sin(step)) * (t.act === "run" ? 10 : 6)
+        : 0;
 
-    ctx.translate(t.x, t.y - opaBob);
-    ctx.rotate(t.rot + opaTilt);
+    ctx.translate(t.x, t.y - bob);
+    ctx.rotate(t.rot + tilt);
     const opaLookAtCamera = t.act === "opa" && t.state === "falling" && t.phase !== "leave";
     if (!opaLookAtCamera && t.facing < 0) ctx.scale(-1, 1);
     if (t.act === "bush" && t.state === "alive") {
@@ -1763,7 +1877,11 @@ export class GameEngine {
     const x = this.aimX;
     const y = this.aimY;
     const kick = this.fireCd > 0.14 ? 4 : 0;
+    const zoom = this.strickT > 0 ? 1.45 : 1;
     ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-x, -y);
     const cColor = this.crosshairColor || "#ffffff";
     ctx.strokeStyle = cColor;
     ctx.fillStyle = cColor;

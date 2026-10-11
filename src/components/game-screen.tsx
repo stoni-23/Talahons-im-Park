@@ -1,4 +1,5 @@
 import { StartScreenOverlay } from "@/components/StartScreenOverlay";
+import { ParkMenu } from "@/components/park-menu";
 import { syncProfileOnline } from "@/game/scores";
 import { getOwnedItemsCount, getActiveCrosshairColor, getActiveSkin } from "@/lib/shop";
 import { getActiveBadgeIcon } from "../lib/shop";
@@ -38,7 +39,7 @@ import React, { useEffect, useRef, useState, type FormEvent, type ReactNode } fr
 import { NewsModal, CURRENT_NEWS_VERSION } from "./news-modal";
 import { Pause, Play, Volume2, VolumeX, User, Trash2, Edit2, Share2, Maximize, Minimize, Smartphone, LogOut } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
-import { unlockAudio, setMuted, isMuted, startMenuMusic, stopMenuMusic } from "@/game/audio";
+import { unlockAudio, setMuted, isMuted, startMenuMusic, stopMenuMusic, playHit } from "@/game/audio";
 import { qualifies, submitScore, fetchOnlineBoard, syncPlayerLevel, persistAccountStats, fetchAccountStats, type ScoreEntry } from "@/game/scores";
 import { loadProfile, saveProfile, resetCurrentProfile, type PlayerProfile, setActiveUserName, getPlayerLevel, getLevelProgress } from "@/lib/profile";
 import { getTonnenPlayStatus } from "@/lib/profile";
@@ -78,6 +79,24 @@ export function GameScreen() {
       setRewardSplash(curr => curr?.id === id ? null : curr);
     }, 2200);
   }, []);
+  const hintRef = React.useRef<{ icon: string; text: string }[]>([]);
+  const queueHint = React.useCallback((icon: string, text: string) => {
+    hintRef.current.push({ icon, text });
+  }, []);
+  const flushHint = React.useCallback(() => {
+    const items = hintRef.current.splice(0);
+    if (items.length === 0) return;
+    const text = items.map((item) => item.text).slice(0, 2).join(" · ");
+    setTimeout(() => triggerSplash(items[0].icon, text), 280);
+  }, [triggerSplash]);
+  React.useEffect(() => {
+    const onHint = (e: Event) => {
+      const detail = (e as CustomEvent<{ icon?: string; text?: string }>).detail;
+      if (detail?.text) queueHint(detail.icon || "🪙", detail.text);
+    };
+    window.addEventListener("park:hint", onHint);
+    return () => window.removeEventListener("park:hint", onHint);
+  }, [queueHint]);
   const pendingLevelUpRef = React.useRef<number | null>(null);
   const hasShownIntroLineRef = React.useRef<boolean>(false);
   const tonnenStartCoinsRef = React.useRef<number>(0);
@@ -777,6 +796,39 @@ function isBadWord(name: string): boolean {
   }, [board, profile.name, profile.highScore]);
 
   const engine = engineRef.current;
+  const startTonnen = () => {
+    const status = getTonnenPlayStatus(profile);
+    if (!status.canAfford) {
+      setShowTonnenNoCoinsModal(true);
+      return;
+    }
+    const updated = {
+      ...profile,
+      coins: status.isFree ? (profile.coins || 0) : Math.max(0, (profile.coins || 0) - 1),
+      tonnenPlays: {
+        date: status.today,
+        count: status.currentCount + 1,
+      },
+      dailyMissions: (() => {
+        try {
+          const dCheck = checkAndResetDailyMissions(profile.dailyMissions || dailyMissionState);
+          const dRes = updateMissionProgress(dCheck.missions, { type: "hit", act: "tonnen_played" });
+          if (dRes.changed) {
+            const nextD = { date: dCheck.date, missions: dRes.updated };
+            setDailyMissionState(nextD);
+            return nextD;
+          }
+          return dCheck;
+        } catch { return profile.dailyMissions; }
+      })(),
+    };
+    setProfile(updated);
+    saveProfile(updated);
+    syncProfileOnline(updated).catch(console.error);
+    tonnenStartCoinsRef.current = profile.coins || 0;
+    setIsTonnenOpen(true);
+  };
+
   const playing = hud.mode === "playing";
   const accuracy = hud.shots ? Math.round((hud.hits / hud.shots) * 100) : 0;
   const min = Math.floor(hud.timeLeft / 60);
@@ -794,7 +846,7 @@ function isBadWord(name: string): boolean {
           touchAction: playing ? "none" : "pan-y"
         }}
       >
-        {!playing && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/60 font-bold tracking-widest z-50 pointer-events-none">v1.5.5 BETA</div>}
+        {!playing && hud.mode !== "title" && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/60 font-bold tracking-widest z-50 pointer-events-none">v1.5.5 BETA</div>}
         <canvas ref={canvasRef}
           className="block shrink-0 origin-center"
           style={{
@@ -808,695 +860,88 @@ function isBadWord(name: string): boolean {
         />
 
         {hud.mode === "title" && (
-          <div className="mx-auto aspect-[9/16] max-w-[calc(100dvh*9/16)] h-full w-full absolute inset-0 flex items-center justify-center">
-            <div className="relative flex h-full w-full flex-col items-center gap-2.5 overflow-y-auto px-4 sm:px-6 pt-[max(360px,38dvh)] pb-12" style={{
-        backgroundImage: "url('/bg_oben.jpg'), url('/bg_unten.jpg')",
-        backgroundRepeat: "no-repeat, repeat-y",
-        backgroundSize: "105% auto, 105% auto",
-        backgroundPosition: "65% top, 65% top",
-        backgroundAttachment: "local, local",
-        touchAction: "pan-y",
-        WebkitOverflowScrolling: "touch"
-      }}>
-              {/* Lautsprecher fest auf dem Holzbrett */}
-              {/* Lautsprecher links */}
-              <button
-                type="button"
-                onClick={toggleSound}
-                aria-label="Ton an/aus"
-                className="absolute top-24 left-6 z-40 flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-900/40 bg-black/40 text-xl shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/60 cursor-pointer"
-              >
-                {soundMutedState ? "🔇" : "🔊"}
-              </button>
-              {/* News rechts */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsNewsOpen(true);
-                }}
-                aria-label="Neuigkeiten"
-                className="absolute top-24 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-900/40 bg-black/40 text-xl shadow-lg backdrop-blur-[2px] transition-transform active:scale-90 hover:bg-black/60 cursor-pointer"
-              >
-                📢
-              </button>
-              {/* Spieler & Rekord Box */}
-              <div className="w-full w-[95%] max-w-[480px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="flex items-center gap-1.5 text-xs font-bold tracking-[0.14em] text-paper uppercase">
-                    <User className="size-3.5 text-amber-400" /> Profil
-                  </p>
-                  <span className="font-mono text-xs font-bold text-amber-400">
-                    Rekord: {profile.highScore} Pkt
-                  </span>
-                </div>
-
-                {!isEditing && profile.name ? (
-                  <div className="flex flex-col gap-2 rounded-md border border-line bg-ink-3 px-3 py-2">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <div className="flex flex-col min-w-0 max-w-[100px]">
-                        <span className="text-[9px] text-paper-dim uppercase font-bold tracking-wider">Eingeloggt als</span>
-                        <span className="text-xs font-bold text-paper truncate">{getActiveBadgeIcon(profile?.equipped) && <span className="mr-1 text-sm">{getActiveBadgeIcon(profile?.equipped)}</span>}{profile.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => setShowStatsModal(true)}
-                          title="Statistiken anzeigen"
-                          className="rounded border border-line bg-ink px-1.5 py-1 text-[11px] font-bold text-paper hover:bg-ink-3"
-                        >
-                          📊 Stats
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setShowPwModal(true); setPwChangeError(null); }}
-                          title="Passwort ändern"
-                          className="rounded border border-line bg-ink px-1.5 py-1 text-[11px] font-bold text-amber-400 hover:bg-ink-3"
-                        >
-                          🔑 PW
-                        </button>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleLogout}
-                        title="Abmelden"
-                        className="flex items-center gap-1 rounded border border-line bg-ink px-2 py-1 text-xs text-red-400 hover:bg-red-950/50 flex-shrink-0"
-                      >
-                        <LogOut className="size-3.5" /> Abmelden
-                      </button>
-                    </div>
-
-                    {!isSecured && (
-                      <div className="mt-1 border-t border-line/60 pt-2 flex flex-col gap-1.5">
-                        <span className="text-[11px] font-bold text-amber-400 flex items-center gap-1">
-                          ⚠️ Account ungesichert! Passwort festlegen:
-                        </span>
-                        <div className="flex gap-1.5">
-                          <input
-                            type="password"
-                            maxLength={32}
-                            placeholder="Passwort (min. 4 Zeichen)"
-                            value={claimPassword}
-                            onChange={(e) => { setClaimPassword(e.target.value); setClaimError(null); }}
-                            className="h-8 flex-1 rounded border border-line bg-ink px-2 text-xs text-paper outline-none placeholder:text-muted"
-                          />
-                          <button
-                            type="button"
-                            disabled={authLoading}
-                            onClick={handleSecureAccount}
-                            className="h-8 px-3 rounded bg-amber-400 text-ink font-bold text-xs hover:bg-amber-300 disabled:opacity-50"
-                          >
-                            {authLoading ? "..." : "Sichern"}
-                          </button>
-                        </div>
-                        {claimError && (
-                          <span className="text-[10px] text-red-400 font-bold">⚠️ {claimError}</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 w-full">
-                    <input
-                      type="text"
-                      maxLength={16}
-                      value={profileInput}
-                      onChange={(e) => {
-                      const clean = e.target.value.replace(/[^a-zA-Z0-9_-]/g, "");
-                      setProfileInput(clean);
-                      setProfileError(null);
-                    }}
-                      placeholder="Name (min. 2 Zeichen)"
-                      className="h-9 w-full rounded-md border border-line bg-ink px-3 text-xs text-paper outline-none placeholder:text-muted"
-                    />
-                    <input
-                      type="password"
-                      maxLength={32}
-                      value={passwordInput}
-                      onChange={(e) => { setPasswordInput(e.target.value); setProfileError(null); }}
-                      placeholder="Passwort (min. 4 Zeichen)"
-                      className="h-9 w-full rounded-md border border-line bg-ink px-3 text-xs text-paper outline-none placeholder:text-muted"
-                    />
-                    <button
-                      type="button"
-                      disabled={authLoading}
-                      onClick={handleAuth}
-                      className="h-9 w-full rounded-md bg-paper font-bold text-xs text-ink hover:bg-paper/90 disabled:opacity-50"
-                    >
-                      {authLoading ? "Prüfe..." : "Einloggen / Registrieren"}
-                    </button>
-                    {profileError && (
-                      <p className="w-full text-left text-xs font-bold text-red-400 bg-red-950/80 border border-red-800 p-1.5 rounded">
-                        ⚠️ {profileError}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* --- HAUPT-AKTIONEN & SPÄTI KASTEN --- */}
-        <div className={profile.name && !isEditing ? "w-full w-[95%] max-w-[480px] rounded-2xl border border-[#5c3a21]/60 p-2.5 shadow-xl my-2 space-y-2" : "my-2 flex justify-center w-full w-[95%] max-w-[480px]"} style={profile.name && !isEditing ? { backgroundColor: "rgba(10, 8, 6, 0.45)" } : undefined}>
-          {/* 1. SPIEL-MODI BUTTONS NEBENEINANDER */}
-          <div className="flex gap-2 w-full">
-            <button
-              type="button"
-              disabled={!hud.ready}
-              onClick={() => {
-                unlockAudio();
-                engine?.start();
-              }}
-              onTouchEnd={(e) => {
-                e.stopPropagation();
-                if (hud.ready) {
-                  unlockAudio();
-                  engine?.start();
-                }
-              }}
-              className="flex-1 relative group overflow-hidden rounded-lg bg-gradient-to-b from-red-700 to-red-900 py-3 px-2 font-black tracking-wider text-amber-100 shadow-md shadow-black/70 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-red-500/50"
-            >
-              <span className="text-lg">🎮</span>
-              <span className="text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-sm truncate">
-                {hud.ready ? "Standard" : "Laden…"}
-              </span>
-            </button>
-
-            {profile.name && !isEditing ? (() => {
-              const status = getTonnenPlayStatus(profile);
-                  const currentLvl = getPlayerLevel(profile.totalXp || 0);
-                  if (currentLvl < 5) {
-                    return (
-                      <button
-                        type="button"
-                        disabled
-                        className="flex-1 relative rounded-xl bg-neutral-800/90 py-2.5 px-2 font-black tracking-wider text-neutral-400 border border-neutral-700 flex items-center justify-center gap-1.5 cursor-not-allowed opacity-80"
-                      >
-                        <span className="text-base">🔒</span>
-                        <span className="text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-sm truncate">
-                          Ab Lvl 5 (Du: {currentLvl})
-                        </span>
-                      </button>
-                    );
-                  }
-              const handleStartTonnen = () => {
-                if (!status.canAfford) {
-                  setShowTonnenNoCoinsModal(true);
-                  return;
-                }
-
-                
-                const updated = {
-                  ...profile,
-                  coins: status.isFree ? (profile.coins || 0) : Math.max(0, (profile.coins || 0) - 1),
-                  tonnenPlays: {
-                    date: status.today,
-                    count: status.currentCount + 1,
-                  },
-                  dailyMissions: (() => {
-                    try {
-                      const dCheck = checkAndResetDailyMissions(profile.dailyMissions || dailyMissionState);
-                      const dRes = updateMissionProgress(dCheck.missions, { type: "hit", act: "tonnen_played" });
-                      if (dRes.changed) {
-                        const nextD = { date: dCheck.date, missions: dRes.updated };
-                        setDailyMissionState(nextD);
-                        return nextD;
-                      }
-                      return dCheck;
-                    } catch { return profile.dailyMissions; }
-                  })(),
-                };
-
-                setProfile(updated);
-                saveProfile(updated);
-                syncProfileOnline(updated).catch(console.error);
-                tonnenStartCoinsRef.current = profile.coins || 0;
-                      setIsTonnenOpen(true);
-              };
-
-              return (
-                <button
-                  type="button"
-                  onClick={handleStartTonnen}
-                  onTouchEnd={(e) => {
-                    e.stopPropagation();
-                    handleStartTonnen();
-                  }}
-                  className="flex-1 relative group overflow-hidden rounded-lg bg-gradient-to-b from-emerald-700 to-emerald-950 py-3 px-2 font-black tracking-wider text-emerald-100 shadow-md shadow-black/70 active:scale-[0.98] hover:brightness-110 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-500/50"
-                >
-                  <span className="text-base">🗑️</span>
-                  <span className="text-xs sm:text-sm font-black tracking-wider uppercase drop-shadow-sm truncate">
-                    {status.isFree ? `Jagd (${status.freeRemaining}/3 frei)` : "Jagd (1 🪙)"}
-                  </span>
-                </button>
-              );
-            })() : (
-              <button
-                type="button"
-                onClick={() => setIsEditing(true)}
-                onTouchEnd={(e) => {
-                  e.stopPropagation();
-                  setIsEditing(true);
-                }}
-                className="flex-1 relative group overflow-hidden rounded-lg bg-neutral-900/90 py-3 px-2 font-bold tracking-wider text-neutral-400 shadow-md shadow-black/70 active:scale-[0.98] hover:text-neutral-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-neutral-700/60"
-              >
-                <span className="text-base">🔒</span>
-                <span className="text-xs sm:text-sm font-bold tracking-wider uppercase truncate">
-                  Anmelden
-                </span>
-              </button>
-            )}
-          </div>
-
-          {profile.name && !isEditing && (
-            <>
-                            {/* KOMPAKTE MEILENSTEIN-BOX: PARABELLUM & LASER */}
-              <div className="w-full rounded-xl border border-neutral-800/90 bg-neutral-950/80 p-2 shadow-md space-y-1.5">
-                {/* 1. Golden Parabellum */}
-                {(() => {
-                  const currentLvl = getPlayerLevel(profile.totalXp || 0);
-                  const isUnlocked = currentLvl >= 10;
-                  const isClaimed = Array.isArray(profile.inventory) && profile.inventory.includes("skin_golden_parabellum");
-                  const progressPercent = Math.min(100, Math.max(0, Math.round((currentLvl / 10) * 100)));
-
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
-                      onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
-                      className="w-full rounded-lg bg-neutral-900/70 hover:bg-neutral-900 border border-amber-500/20 px-2 py-1.5 text-left transition-all active:scale-[0.99] cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-base shrink-0">🔫</span>
-                          <div className="min-w-0">
-                            <div className="text-[11px] font-black tracking-wide text-amber-300 truncate leading-none">
-                              GOLDEN PARABELLUM
-                            </div>
-                            <div className="text-[9px] text-neutral-400 font-medium leading-tight">
-                              Level 10 Waffenskin
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="shrink-0">
-                          {isClaimed ? (
-                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[9px] font-bold">
-                              Erfüllt ✓
-                            </span>
-                          ) : isUnlocked ? (
-                            <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[9px] font-black animate-pulse shadow">
-                              Bereit! 🎁
-                            </span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 rounded-full bg-black/70 border border-neutral-700 text-amber-300 text-[9px] font-mono font-bold">
-                              Lv. {currentLvl}/10
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="w-full h-1 rounded-full bg-neutral-800 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-amber-500 to-yellow-400 rounded-full transition-all duration-500"
-                          style={{ width: progressPercent + "%" }}
-                        />
-                      </div>
-                    </button>
-                  );
-                })()}
-
-                {/* 2. Giftgrün-Laser Visier */}
-                {(() => {
-                  const claimedLaser = Array.isArray(profile.inventory) && profile.inventory.includes("visier_neon");
-                  const mainCompletedCount = missions.filter((m) => m.completed || m.claimed).length;
-                  const totalMain = missions.length || 5;
-                  const laserProgressPct = Math.min(100, Math.max(0, Math.round((mainCompletedCount / totalMain) * 100)));
-
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => setIsMissionsOpen(true)}
-                      onTouchEnd={(e) => { e.stopPropagation(); setIsMissionsOpen(true); }}
-                      className="w-full rounded-lg bg-neutral-900/70 hover:bg-neutral-900 border border-emerald-500/20 px-2 py-1.5 text-left transition-all active:scale-[0.99] cursor-pointer"
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-base shrink-0">🟢</span>
-                          <div className="min-w-0">
-                            <div className="text-[11px] font-black tracking-wide text-emerald-300 truncate leading-none">
-                              GIFTGRÜN-LASER
-                            </div>
-                            <div className="text-[9px] text-neutral-400 font-medium leading-tight">
-                              Alle 5 Park-Missionen
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="shrink-0">
-                          {claimedLaser ? (
-                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[9px] font-bold">
-                              Erfüllt ✓
-                            </span>
-                          ) : (mainCompletedCount >= totalMain) ? (
-                            <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-black text-[9px] font-black animate-bounce shadow">
-                              Abholen! 🎁
-                            </span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 rounded-full bg-black/70 border border-neutral-700 text-neutral-300 text-[9px] font-mono">
-                              {mainCompletedCount}/{totalMain}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="w-full h-1 rounded-full bg-neutral-800 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-emerald-500 to-green-400 rounded-full transition-all duration-300"
-                          style={{ width: (claimedLaser ? 100 : laserProgressPct) + "%" }}
-                        />
-                      </div>
-                    </button>
-                  );
-                })()}
-              </div>
-
-              {/* 3. 2x2 GRID */}
-              <div className="grid grid-cols-2 gap-2">
-                {/* Missionen */}
-                <button
-                  type="button"
-                  onClick={() => setIsMissionsOpen(true)}
-                  onTouchEnd={(e) => { e.stopPropagation(); setIsMissionsOpen(true); }}
-                  className="flex flex-col justify-between rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-2.5 text-left transition-all active:scale-95 hover:bg-emerald-950/30 cursor-pointer shadow-sm"
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-xl">🎯</span>
-                    {(() => {
-                      const dMissions = dailyMissionState?.missions || [];
-                      const dailyClaimable = dMissions.filter(m => m.completed && !m.claimed).length;
-                      const dailyDone = dMissions.filter(m => m.claimed).length;
-                      const mainAllClaimed = missions.length > 0 && missions.every(m => m.claimed);
-
-                      if (dailyClaimable > 0) {
-                        return (
-                          <span className="rounded-md bg-amber-500/30 px-1.5 py-0.5 text-[9px] font-mono font-black text-amber-300 border border-amber-500/50 animate-pulse">
-                            +{dailyClaimable} 🪙 Holen!
-                          </span>
-                        );
-                      }
-                      if (dMissions.length > 0 && dailyDone < dMissions.length) {
-                        return (
-                          <span className="rounded-md bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-amber-300 border border-amber-500/40 animate-pulse">
-                            📅 Täglich {dailyDone}/{dMissions.length}
-                          </span>
-                        );
-                      }
-                      return (
-                        <span className="rounded-md bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-300 border border-emerald-500/30">
-                          {mainAllClaimed && dailyDone === dMissions.length ? "Alle ✓" : `Park ${missions.filter(m => m.claimed).length}/${missions.length}`}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-emerald-200">Missionen</div>
-                    <div className="text-[10px] text-emerald-400/70">Täglich & Park</div>
-                  </div>
-                </button>
-
-                {/* Login-Bonus */}
-                {(() => {
-                  const dailyStatus = getDailyRewardStatus(profile);
-                  const canClaim = Boolean(dailyStatus.canClaim);
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => setIsDailyRewardOpen(true)}
-                      onTouchEnd={(e) => { e.stopPropagation(); setIsDailyRewardOpen(true); }}
-                      className="flex flex-col justify-between rounded-xl border border-amber-500/30 bg-amber-950/20 p-2.5 text-left transition-all active:scale-95 hover:bg-amber-950/30 cursor-pointer shadow-sm"
-                    >
-                      <div className="flex items-center justify-between w-full mb-1">
-                        <span className="text-xl">🎁</span>
-                        {canClaim ? (
-                          <span className="px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-black animate-pulse shadow">
-                            NEU!
-                          </span>
-                        ) : (
-                          <span className="text-[9px] text-neutral-400 font-mono font-medium">
-                            {"Tag " + dailyStatus.streak + "/7 ✓"}
-                          </span>
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-amber-200">Login-Bonus</div>
-                        <div className="text-[10px] text-amber-400/70">Täglich Groschen</div>
-                      </div>
-                    </button>
-                  );
-                })()}
-
-                {/* Kiosk */}
-                <button
-                  type="button"
-                  onClick={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
-                  onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("shop"); setIsKioskOpen(true); }}
-                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 text-center transition-all active:scale-95 hover:bg-amber-950/30 cursor-pointer shadow-sm"
-                >
-                  <span className="text-2xl">🏪</span>
-                  <div className="text-xs font-bold text-amber-100">Kiosk</div>
-                </button>
-
-                {/* Handtasche */}
-                <button
-                  type="button"
-                  onClick={() => { setKioskTab("inventory"); setIsKioskOpen(true); }}
-                  onTouchEnd={(e) => { e.stopPropagation(); setKioskTab("inventory"); setIsKioskOpen(true); }}
-                  className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-neutral-700 bg-neutral-900/60 p-3 text-center transition-all active:scale-95 hover:bg-neutral-800/80 cursor-pointer shadow-sm"
-                >
-                  <span className="text-2xl">👜</span>
-                  <div className="text-xs font-bold text-neutral-200">Handtasche</div>
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Highscore Liste */}
-              <div className="w-full w-[95%] max-w-[480px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-xs font-bold tracking-[0.14em] text-paper uppercase">
-                    🏆 {showAllScores ? "Top 100 Rangliste" : "Top 5 Bestenliste"}
-                  </p>
-                  <div className="flex rounded-md border border-line overflow-hidden">
-                    <button type="button" onClick={() => setBoardTab("highscore")} className={`px-2 py-0.5 text-[10px] font-bold ${boardTab === "highscore" ? "bg-amber-500 text-ink" : "bg-ink text-paper-dim"}`}>Rekord</button>
-                    <button type="button" onClick={() => setBoardTab("xp")} className={`px-2 py-0.5 text-[10px] font-bold ${boardTab === "xp" ? "bg-amber-500 text-ink" : "bg-ink text-paper-dim"}`}>XP</button>
-                  </div>
-                  {board.length > 5 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllScores(!showAllScores)}
-                      className="text-[11px] font-semibold text-amber-400 underline hover:text-amber-300"
-                    >
-                      {showAllScores ? "Top 5" : "Alle 100"}
-                    </button>
-                  )}
-                </div>
-                {board.length > 0 ? (
-                  <ol className={`space-y-1 text-xs text-paper-dim ${showAllScores ? "max-h-64 overflow-y-auto pr-1" : ""}`}>
-                    {board.slice(0, showAllScores ? 100 : 5).map((row, i) => {
-                      const isGold = i === 0;
-                      const isSilver = i === 1;
-                      const isBronze = i === 2;
-                      const isMe = Boolean(profile.name && row.name.trim().toLowerCase() === profile.name.trim().toLowerCase());
-                      const rank = getOmaRank(row.score);
-                      const rankEmoji = rank.title.split(" ")[0] || "🧶";
-
-                      let itemStyle = "flex items-center justify-between py-1 px-2 rounded-md transition-all ";
-                      if (isMe) {
-                        itemStyle += "ring-2 ring-amber-400 bg-amber-500/25 border border-amber-400 text-amber-200 font-bold shadow-md ";
-                      } else if (isGold) {
-                        itemStyle += "bg-amber-500/20 border border-amber-400/60 text-amber-300 font-bold";
-                      } else if (isSilver) {
-                        itemStyle += "bg-slate-300/15 border border-slate-300/40 text-slate-200 font-semibold";
-                      } else if (isBronze) {
-                        itemStyle += "bg-orange-700/20 border border-orange-500/40 text-orange-300 font-medium";
-                      } else {
-                        itemStyle += "border-b border-line/30 text-paper-dim";
-                      }
-
-                      return (
-                        <li key={`${row.name}-${i}-${row.score}`} onClick={async () => {
-  setInspectedPlayer(row);
-  try {
-    const acc = await fetchAccountStats(row.name);
-    if (acc) {
-      setInspectedPlayer((prev: any) => prev ? {
-        ...prev,
-        ...acc,
-        equipped: acc.equipped || {}
-      } : prev);
-    }
-  } catch {}
-}} className={itemStyle + " cursor-pointer active:scale-95 hover:opacity-90"}>
-                          <span className="flex items-center gap-1.5 truncate">
-                            <span className="w-6 font-mono font-bold text-center">
-                              {isGold ? "🥇 1." : isSilver ? "🥈 2." : isBronze ? "🥉 3." : `${i + 1}.`}
-                            </span>
-                            <span className="text-sm select-none" title={rank.title}>{rankEmoji}</span>
-                            <span className={`truncate ${isMe ? "text-amber-300 font-bold" : "text-paper"}`}>{row.name}</span>
-                            <span className="ml-1 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 select-none">Lv.{getPlayerLevel(row.totalXp || row.total_xp || row.score)}</span>
-                            {isMe && (
-                              <span className="rounded bg-amber-400 px-1.5 py-0.2 text-[9px] font-black text-ink uppercase tracking-wider shadow">
-                                DU
-                              </span>
-                            )}
-                          </span>
-                          <span className={`font-mono font-bold ${isMe ? "text-amber-300" : isGold ? "text-amber-400" : isSilver ? "text-slate-200" : isBronze ? "text-orange-400" : "text-amber-400/90"}`}>
-                            {boardTab === "xp" ? (row.totalXp || row.score) + " XP" : row.score + " Pkt"}
-                          </span>
-                        </li>
-                      );
-                    })}</ol>
-                ) : (
-                  <p className="py-2 text-center text-xs text-muted">Lade Rangliste…</p>
-                )}
-              </div>
-
-              
-              {/* Chat-Bereich (Nur sichtbar wenn Name gesetzt) */}
-              {!isEditing && profile?.name && (
-                <div className="w-full w-[95%] max-w-[480px] rounded-lg border border-[#5c3a21]/60 p-2 shadow-lg flex flex-col mb-4" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
-                  <p className="mb-2 text-xs font-bold tracking-[0.14em] text-paper uppercase flex items-center gap-1.5">
-                    💬 Parkbank-Chat
-                  </p>
-                  <div ref={chatRef} className="max-h-40 overflow-y-auto space-y-1.5 mb-2 bg-ink-2/50 rounded-md p-2 border border-line/30 flex flex-col">
-                    {chatMsgs.length === 0 ? (
-                      <p className="text-xs text-muted text-center mt-4">Noch keine Nachrichten...</p>
-                    ) : (
-                      chatMsgs.map((msg, i) => (
-                        <div key={i} className="text-xs leading-snug break-words">
-                          <span className={msg.name === profile.name ? "text-amber-400 font-bold" : "text-paper-dim font-bold"}>{msg.name}:</span>{" "}
-                          <span className="text-paper">{msg.text}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <form className="flex gap-2" onSubmit={async (e) => {
-                    e.preventDefault();
-                    const txt = chatInput.trim();
-                    if (!txt) return;
-                    setChatInput("");
-                    
-                    setChatMsgs(prev => [...prev, {name: profile.name, text: txt}]);
-                    
-                    try {
-                      await fetch("https://lforuvtpskrnydlburpt.supabase.co/rest/v1/chat_messages", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json", apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmb3J1dnRwc2tybnlkbGJ1cnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NjAwMDQsImV4cCI6MjEwMzQzNjAwNH0.dXH7H7VhUPYNcMSGztdJT9L6CYZrnJEdj75xAXo0RPY", Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmb3J1dnRwc2tybnlkbGJ1cnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NjAwMDQsImV4cCI6MjEwMzQzNjAwNH0.dXH7H7VhUPYNcMSGztdJT9L6CYZrnJEdj75xAXo0RPY" },
-                        body: JSON.stringify({ name: profile.name, text: txt })
-                      });
-                    } catch (e) {}
-                  }}>
-                    <input
-                      type="text"
-                      maxLength={100}
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      placeholder="Nachricht..."
-                      className="h-9 flex-1 rounded-md border border-line bg-ink px-3 text-xs text-paper outline-none placeholder:text-muted focus:border-paper"
-                    />
-                    <button type="submit" className="h-9 rounded-md bg-paper px-3 text-xs font-bold text-ink hover:bg-paper/90">
-                      Senden
-                    </button>
-                  </form>
-                </div>
-              )}
-
-              {/* Spielanleitung */}
-              <ul className="w-full w-[95%] max-w-[480px] space-y-1 rounded-xl border border-[#5c3a21]/60 p-3 text-xs text-paper-dim" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
-                <li className="flex items-center justify-between">
-                  <div className="flex flex-col text-left">
-                    <span>🧶 Stricknadelkommando</span>
-                    <span className="text-[10px] text-muted">(5er Combo)</span>
-                  </div>
-                  <span className="font-semibold text-paper">5s Dauerfeuer (0 Fehl-Abzug)</span>
-                </li>
-                <ScoreRow label="🤯 Wallah, kopfschuss!" value="2× Pkt + 50" />
-                <ScoreRow label="🛴 Bahndidos auf dem Roller" value="200 Pkt" />
-                <ScoreRow label="✨ Talahin auf fliegendem Teppich" value="150 Pkt" />
-                <ScoreRow label="🛢️ Hippie in Tonne (offen)" value="150 Pkt" />
-                <ScoreRow label="🚫 Tonne geschlossen (Vorsicht!)" value="-50 Pkt" />
-                <ScoreRow label="🌳 Hinterm Baum / im Busch" value="18–32 Pkt" />
-                <ScoreRow label="🧢 Talahons im Park" value="8–35 Pkt" />
-                <ScoreRow label="🧥 Opa Spaziergänger (Vorsicht!)" value="-50 Pkt" />
-                <ScoreRow label="❌ Fehlschuss ins Leere" value="-15 Pkt" />
-              </ul>
-
-              <p className="text-[11px] text-muted">
-                Klicken/Tippen zum Zielen · Im Kommando gedrückt halten · Esc Pause
-              </p>
-
-              {/* Social Media Links */}
-              <div className="w-full w-[95%] max-w-[480px] rounded-xl border border-[#5c3a21]/60 p-3 text-center mt-2" style={{ backgroundColor: "rgba(10, 8, 6, 0.45)" }}>
-                <p className="mb-2 text-[11px] font-bold tracking-[0.14em] text-paper-dim uppercase">BANKGEHEIMNIS IM PARK</p>
-                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                  <a href="https://www.tiktok.com/@bankgeheimnisimpark" target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 transition-colors">
-                    🎵 TikTok
-                  </a>
-                  <a href="https://www.facebook.com/bankgeheimnisimpark" target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-blue-500 hover:text-blue-400 transition-colors">
-                    📘 Facebook
-                  </a>
-                  <a href="https://www.instagram.com/bankgeheimnisimpark" target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-pink-500 hover:text-pink-400 transition-colors">
-                    📸 Instagram
-                  </a>
-                  <a href="https://www.youtube.com/@bankgeheimnisimpark" target="_blank" rel="noopener noreferrer" className="text-[11px] font-semibold text-red-500 hover:text-red-400 transition-colors">
-                    ▶ YouTube
-                  </a>
-                </div>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const title = "Talahons im Park - Parabellum Edition";
-                    const text = "Hilf Omma bei der Parkreinigung und knack den Highscore! 🧶💥";
-                    const url = window.location.href;
-                    try {
-                      let shared = false;
-                      try {
-                        const imgRes = await fetch("/logo.png");
-                        if (imgRes.ok) {
-                          const blob = await imgRes.blob();
-                          const file = new File([blob], "talahons-im-park.png", { type: "image/png" });
-                          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                            await navigator.share({ title, text: `${title}\n\n${text}\n${url}`, files: [file] });
-                            shared = true;
-                          }
-                        }
-                      } catch {}
-                      if (!shared) {
-                        if (navigator.share) {
-                          await navigator.share({ title, text, url });
-                        } else {
-                          await navigator.clipboard.writeText(url);
-                          alert("Link kopiert!");
-                        }
-                      }
-                    } catch (e) {}
-                  }}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-md border border-line bg-ink-2 py-2 text-[11px] font-bold tracking-[0.14em] text-paper transition-all hover:bg-paper hover:text-ink uppercase shadow-md"
-                >
-                  <Share2 className="size-4" />
-                  Spiel Teilen
-                </button>
-
-                <div className="mt-2 flex w-full flex-col items-center justify-center gap-1.5 rounded-md bg-ink-3/50 p-3 text-center text-xs text-paper-dim border border-line/50">
-                  <span className="flex items-center gap-1.5 font-bold text-paper">
-                    <Smartphone className="size-4 text-emerald-400" /> Als App installieren
-                  </span>
-                  <span>Tippe im Menü deines Browsers auf<br/><b>"Zum Startbildschirm hinzufügen"</b>.</span>
-                </div>
-              </div>
+          <ParkMenu
+            hudReady={hud.ready}
+            profile={profile}
+            isEditing={isEditing}
+            profileInput={profileInput}
+            setProfileInput={setProfileInput}
+            passwordInput={passwordInput}
+            setPasswordInput={setPasswordInput}
+            authLoading={authLoading}
+            profileError={profileError}
+            setProfileError={setProfileError}
+            onAuth={() => { void handleAuth(); }}
+            onLogout={handleLogout}
+            isSecured={isSecured}
+            claimPassword={claimPassword}
+            setClaimPassword={setClaimPassword}
+            claimError={claimError}
+            setClaimError={setClaimError}
+            onSecure={() => { void handleSecureAccount(); }}
+            onStats={() => setShowStatsModal(true)}
+            onPassword={() => { setShowPwModal(true); setPwChangeError(null); }}
+            missions={missions}
+            dailyMissions={dailyMissionState?.missions || []}
+            onMissions={() => setIsMissionsOpen(true)}
+            onDaily={() => setIsDailyRewardOpen(true)}
+            onShop={() => { setKioskTab("shop"); setIsKioskOpen(true); }}
+            onBag={() => { setKioskTab("inventory"); setIsKioskOpen(true); }}
+            hasBagDot={hasHandbagNotification}
+            onStartStandard={() => { unlockAudio(); engine?.start(); }}
+            onStartTonnen={startTonnen}
+            soundMuted={soundMutedState}
+            onToggleSound={toggleSound}
+            onNews={() => setIsNewsOpen(true)}
+            board={board}
+            boardTab={boardTab}
+            setBoardTab={setBoardTab}
+            onInspect={(row) => {
+              setInspectedPlayer(row);
+              void fetchAccountStats(row.name).then((acc) => {
+                if (!acc) return;
+                setInspectedPlayer((prev: any) => prev ? { ...prev, ...acc, equipped: acc.equipped || {} } : prev);
+              }).catch(() => {});
+            }}
+            chatMsgs={chatMsgs}
+            chatInput={chatInput}
+            setChatInput={setChatInput}
+            chatRef={chatRef}
+            onChat={async (e) => {
+              e.preventDefault();
+              const txt = chatInput.trim();
+              if (!txt || !profile.name) return;
+              setChatInput("");
+              setChatMsgs((prev) => [...prev, { name: profile.name, text: txt }]);
+              try {
+                await fetch("https://lforuvtpskrnydlburpt.supabase.co/rest/v1/chat_messages", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", apikey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmb3J1dnRwc2tybnlkbGJ1cnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NjAwMDQsImV4cCI6MjEwMzQzNjAwNH0.dXH7H7VhUPYNcMSGztdJT9L6CYZrnJEdj75xAXo0RPY", Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxmb3J1dnRwc2tybnlkbGJ1cnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4NjAwMDQsImV4cCI6MjEwMzQzNjAwNH0.dXH7H7VhUPYNcMSGztdJT9L6CYZrnJEdj75xAXo0RPY" },
+                  body: JSON.stringify({ name: profile.name, text: txt })
+                });
+              } catch { /* chat bleibt lokal sichtbar */ }
+            }}
+            onShare={async () => {
+              const title = "Talahons im Park - Parabellum Edition";
+              const shareText = "Hilf Omma bei der Parkreinigung und knack den Highscore!";
+              const url = window.location.href;
+              try {
+                if (navigator.share) await navigator.share({ title, text: shareText, url });
+                else { await navigator.clipboard.writeText(url); alert("Link kopiert!"); }
+              } catch { /* abgebrochen */ }
+            }}
+          />
+        )}
+        {showTonnenNoCoinsModal && (
+          <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
+            <div className="w-full max-w-xs rounded-md border-4 border-[#6b4423] bg-[#1a120c] p-5 text-center text-amber-50">
+              <p className="font-display text-2xl text-amber-200">Keine Groschen</p>
+              <p className="mt-2 text-sm">Die Tonnenjagd braucht 1 Groschen, oder warte auf die nächsten freien Runden.</p>
+              <button type="button" onClick={() => setShowTonnenNoCoinsModal(false)} className="mt-4 h-12 w-full rounded bg-amber-400 font-black text-black">Verstanden</button>
             </div>
           </div>
         )}
+
         {(hud.mode === "playing" || hud.mode === "paused") && (
           <>
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 pt-[max(12px,env(safe-area-inset-top))] sm:p-5">
@@ -1622,32 +1067,24 @@ function isBadWord(name: string): boolean {
           />
         )}
         {rewardSplash && (
-          <div 
-            key={rewardSplash.id} 
-            className="fixed inset-0 pointer-events-none flex items-center justify-center select-none"
-            style={{ zIndex: 999999 }}
+          <div
+            key={rewardSplash.id}
+            className="pointer-events-none fixed inset-x-0 top-[4.5rem] z-[999999] flex justify-center px-4 select-none"
           >
-            <div 
-              className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-black/75 backdrop-blur-md border border-amber-400/50 shadow-[0_0_50px_rgba(245,158,11,0.6)]"
-              style={{
-                animation: "rewardPopup 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
-              }}
+            <div
+              className="flex max-w-full items-center gap-2 rounded-full border border-amber-300/80 bg-[#1a120c]/95 px-3 py-1.5 shadow-lg"
+              style={{ animation: "rewardPopup 2.4s ease forwards" }}
             >
               <style>{`
                 @keyframes rewardPopup {
-                  0% { transform: scale(0.4) translateY(30px); opacity: 0; }
-                  20% { transform: scale(1.15) translateY(-5px); opacity: 1; }
-                  35% { transform: scale(1) translateY(0); opacity: 1; }
-                  75% { transform: scale(1.02) translateY(-15px); opacity: 1; }
-                  100% { transform: scale(0.9) translateY(-40px); opacity: 0; }
+                  0% { transform: translateY(-8px); opacity: 0; }
+                  12% { transform: translateY(0); opacity: 1; }
+                  78% { opacity: 1; }
+                  100% { transform: translateY(-6px); opacity: 0; }
                 }
               `}</style>
-              <span className="text-6xl drop-shadow-[0_0_20px_rgba(251,191,36,0.9)]">
-                {rewardSplash.icon}
-              </span>
-              <span className="text-5xl font-black italic tracking-wider text-amber-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)]">
-                {rewardSplash.text}
-              </span>
+              <span className="text-lg leading-none">{rewardSplash.icon}</span>
+              <span className="truncate text-sm font-black text-amber-200">{rewardSplash.text}</span>
             </div>
           </div>
         )}
@@ -1655,7 +1092,7 @@ function isBadWord(name: string): boolean {
           isOpen={isKioskOpen}
           initialTab={kioskTab}
           profile={profile}
-          onClose={() => setIsKioskOpen(false)}
+          onClose={() => { setIsKioskOpen(false); flushHint(); }}
           onUpdateProfile={(updated) => {
             setProfile(updated);
             saveProfile(updated);
@@ -1665,7 +1102,7 @@ function isBadWord(name: string): boolean {
         <NewsModal isOpen={isNewsOpen} onClose={() => setIsNewsOpen(false)} />
         <DailyRewardModal
         isOpen={isDailyRewardOpen}
-        onClose={() => setIsDailyRewardOpen(false)}
+        onClose={() => { setIsDailyRewardOpen(false); flushHint(); }}
         profile={profile}
         onClaim={() => {
           const status = getDailyRewardStatus(profile);
@@ -1727,11 +1164,15 @@ function isBadWord(name: string): boolean {
 
             return updated;
           });
+          if (r.badge) queueHint("🕊️", "Tauben-Badge");
+          else if (r.coins && r.xp) queueHint("🪙", `+${r.coins} Groschen · +${r.xp} XP`);
+          else if (r.coins) queueHint("🪙", `+${r.coins} Groschen`);
+          else if (r.xp) queueHint("⭐", `+${r.xp} XP`);
         }}
       />
       <MissionsModal
           isOpen={isMissionsOpen}
-          onClose={() => setIsMissionsOpen(false)}
+          onClose={() => { setIsMissionsOpen(false); flushHint(); }}
           missions={missions}
           dailyMissions={dailyMissionState?.missions || []}
           onClaimLaser={() => {
@@ -1740,7 +1181,7 @@ function isBadWord(name: string): boolean {
               if (inv.includes("visier_neon")) return prev;
               const updatedInv = [...inv, "visier_neon"];
               const updatedEquipped = { ...(prev.equipped || {}), visier: "visier_neon" };
-              triggerSplash("🟢", "Laser freigeschaltet!");
+              queueHint("🟢", "Laser freigeschaltet!");
               const updated = { ...prev, inventory: updatedInv, equipped: updatedEquipped };
               try {
                 localStorage.setItem("park_profile", JSON.stringify(updated));
@@ -1758,7 +1199,7 @@ function isBadWord(name: string): boolean {
               const nextM = curD.missions.map((m) => m.id === id ? { ...m, claimed: true } : m);
               const nextD = { ...curD, missions: nextM };
               setDailyMissionState(nextD);
-              triggerSplash("🪙", "+" + (target.rewardCoins || 2));
+              queueHint("🪙", "+" + (target.rewardCoins || 2) + " Groschen");
               setProfile((p: any) => {
                 const updatedCoins = (p.coins || 0) + (target.rewardCoins || 2);
                 const updated = { ...p, coins: updatedCoins, dailyMissions: nextD };
@@ -1768,16 +1209,14 @@ function isBadWord(name: string): boolean {
                 } catch {}
                 return updated;
               });
-              playSfx("hit");
+              playHit();
             } else {
               const target = missions.find(m => m.id === id);
               if (!target || !target.completed || target.claimed) return;
-              triggerSplash("🪙", "+" + (target.rewardCoins || 2));
-              setMissions(prev => {
-                const next = prev.map(m => m.id === id ? { ...m, claimed: true } : m);
-                try { localStorage.setItem("park_missions", JSON.stringify(next)); } catch {}
-                return next;
-              });
+              queueHint("🪙", "+" + (target.rewardCoins || 2) + " Groschen");
+              const next = missions.map(m => m.id === id ? { ...m, claimed: true } : m);
+              setMissions(next);
+              try { localStorage.setItem("park_missions", JSON.stringify(next)); } catch {}
               setProfile((p: any) => {
                 const rewardItem = missions.find(m => m.id === id);
                 const addCoins = rewardItem ? rewardItem.rewardCoins : 2;
@@ -1809,7 +1248,8 @@ function isBadWord(name: string): boolean {
                 } catch {}
                 return updated;
               });
-              playSfx("hit");
+              playHit();
+              queueHint("🪙", "+" + totalReward + " Groschen");
             } else {
               const claimables = missions.filter(m => m.completed && !m.claimed);
               if (claimables.length === 0) return;
@@ -1826,6 +1266,7 @@ function isBadWord(name: string): boolean {
                 } catch {}
                 return updated;
               });
+              queueHint("🪙", "+" + totalAdd + " Groschen");
             }
           }}
           allCompleted={missions.every(m => m.claimed || m.completed)}
@@ -1890,36 +1331,26 @@ function isBadWord(name: string): boolean {
         )}
 
         {hud.mode === "paused" && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in">
-            <div className="w-full max-w-xs rounded-2xl border border-neutral-700 bg-neutral-900/95 p-6 text-center shadow-2xl space-y-4">
-              <h2 className="font-display text-4xl font-black tracking-wider text-white">PAUSE</h2>
-              <div className="flex flex-col gap-2.5 pt-2">
-                <button
-                  type="button"
-                  onClick={() => engine?.resume()}
-                  className="w-full rounded-xl bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 py-3 font-bold uppercase tracking-wider text-white shadow-lg active:scale-95 transition-all hover:brightness-110"
-                >
-                  Weiter
-                </button>
-                <button
-                  type="button"
-                  onClick={() => engine?.toTitle()}
-                  className="w-full rounded-xl border border-neutral-700 bg-neutral-800 py-3 font-bold uppercase tracking-wider text-neutral-300 shadow-md active:scale-95 transition-all hover:bg-neutral-700 hover:text-white"
-                >
-                  Menü
-                </button>
-              </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <img src="/menu/park-bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-black/45" />
+            <div className="relative w-full max-w-xs space-y-3 rounded-md border-4 border-[#6b4423] bg-[#1a120c]/92 p-5 text-center shadow-2xl">
+              <h2 className="font-display text-4xl tracking-wide text-amber-200">PAUSE</h2>
+              <p className="text-xs font-black text-amber-100">Level {getPlayerLevel(profile.totalXp || 0)} · {profile.totalXp || 0} XP</p>
+              <button type="button" onClick={() => engine?.resume()} className="h-14 w-full rounded bg-amber-400 text-lg font-black uppercase text-black active:scale-95">Weiter</button>
+              <button type="button" onClick={() => engine?.toTitle()} className="h-12 w-full rounded border-2 border-amber-200/40 bg-black/40 text-sm font-black uppercase text-amber-100 active:scale-95">Menü</button>
             </div>
           </div>
         )}
 
         {hud.mode === "results" && resultsDelay && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-ink/90 p-4">
-            <div className="mb-6 animate-bounce text-7xl drop-shadow-2xl">🎉✨🎊</div>
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-4">
+            <img src="/menu/park-bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-black/55" />
             {(() => {
               const rank = getOmaRank(hud.score);
               return (
-                <div className={`w-full max-w-sm rounded-xl border p-5 text-center shadow-2xl ${rank.color}`}>
+                <div className={`relative w-full max-w-sm rounded-md border-4 border-[#6b4423] p-5 text-center shadow-2xl ${rank.color}`}>
                   <p className="text-[11px] font-bold tracking-[0.14em] uppercase opacity-80">Dein erreichter Rang</p>
                   <p className="mt-1 text-2xl font-black tracking-wide">{rank.title}</p>
                   <p className="mt-2 text-sm leading-relaxed opacity-90">{rank.desc}</p>
@@ -1993,9 +1424,9 @@ function isBadWord(name: string): boolean {
                     ...base,
                     name: cl,
                     highScore: Math.max(base.highScore || 0, hud.score),
-                    gamesPlayed: Math.max(base.gamesPlayed || 0, p.gamesPlayed || 0),
-                    totalHits: Math.max(base.totalHits || 0, p.totalHits || 0),
-                    totalXp: Math.max(base.totalXp || 0, p.totalXp || 0)
+                    gamesPlayed: Math.max(base.gamesPlayed || 0, profile.gamesPlayed || 0),
+                    totalHits: Math.max(base.totalHits || 0, profile.totalHits || 0),
+                    totalXp: Math.max(base.totalXp || 0, profile.totalXp || 0)
                   };
                   saveProfile(nextP);
                   setProfile(nextP);
@@ -2122,11 +1553,13 @@ function IconBtn({ label, onClick, children }: { label: string; onClick: () => v
 
 function Modal({ children }: { children: ReactNode }) {
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-ink/80 p-4">
-      <div className="flex w-full max-w-md flex-col items-center rounded-2xl border border-line bg-ink p-6 text-center shadow-2xl">
+    <div className="absolute inset-0 flex items-center justify-center p-3">
+      <img src="/menu/park-bg.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="relative flex max-h-[88dvh] w-full max-w-md flex-col items-center overflow-y-auto rounded-md border-4 border-[#6b4423] bg-[#1a120c]/92 p-5 text-center text-amber-50 shadow-2xl">
         {children}
       </div>
-</div>
+    </div>
   );
 }
 

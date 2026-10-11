@@ -30,7 +30,7 @@ export const DailyRewardModal: React.FC<DailyRewardModalProps> = ({
 
   return (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-ink/80 p-4">
-      <div className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-line bg-ink p-5 text-center shadow-2xl">
+      <div className="flex w-full max-w-sm flex-col items-center rounded-md border-4 border-[#6a5038] bg-[#1a120c] p-5 text-center text-amber-50 shadow-2xl">
         <p className="font-display text-2xl tracking-wide text-paper flex items-center gap-2">
           🎁 7-Tage Login-Bonus
         </p>
