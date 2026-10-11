@@ -79,6 +79,7 @@ export async function preloadSounds() {
 }
 
 export function startParkAmbience() {
+  bgmWanted = true;
   if (muted) return;
   if (soundPool["bgm"] && soundPool["bgm"][0]) {
     bgmAudio = soundPool["bgm"][0];
@@ -89,6 +90,7 @@ export function startParkAmbience() {
 }
 
 export function stopParkAmbience() {
+  bgmWanted = false;
   stopAllVoices();
   if (bgmAudio) {
     bgmAudio.pause();
@@ -301,11 +303,11 @@ export function setMuted(m: boolean) {
       }
     }
   }
-  if (bgmAudio) {
+  if (bgmAudio && bgmWanted) {
     if (m) bgmAudio.pause();
     else bgmAudio.play().catch(() => {});
   }
-  if (menuAudio) {
+  if (menuAudio && menuWanted) {
     if (m) menuAudio.pause();
     else menuAudio.play().catch(() => {});
   }
@@ -361,15 +363,18 @@ export function playWheelWin() {
 }
 
 let menuAudio: HTMLAudioElement | null = null;
+let menuWanted = false;
+let bgmWanted = false;
 
 export function startMenuMusic(fromBeginning = true) {
+  menuWanted = true;
   try {
     if (!menuAudio) {
       menuAudio = new Audio("/bgm-menu-musik.mp3");
       menuAudio.loop = true;
       menuAudio.volume = 0.6;
     }
-    menuAudio.muted = false;
+    if (muted) return;
     if (fromBeginning) {
       menuAudio.currentTime = 0;
     }
@@ -381,6 +386,7 @@ export function startMenuMusic(fromBeginning = true) {
 }
 
 export function stopMenuMusic() {
+  menuWanted = false;
   try {
     if (menuAudio) {
       menuAudio.pause();

@@ -307,13 +307,14 @@ export class GameEngine {
   }
 
   detectLowPower() {
-    const nav = navigator as Navigator & { deviceMemory?: number };
+    const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean; effectiveType?: string } };
     const mem = nav.deviceMemory ?? 8;
     const cores = navigator.hardwareConcurrency || 8;
-    // Nur bei wirklich extrem schwachen Geraeten drosseln
-    const weakMem = mem < 2;
-    const weakCpu = cores < 3;
-    return this.reduced || weakMem || weakCpu;
+    const conn = nav.connection;
+    const weakMem = mem <= 3;
+    const weakCpu = cores <= 4 && mem <= 4;
+    const slowNet = !!conn?.saveData || conn?.effectiveType === "2g" || conn?.effectiveType === "slow-2g";
+    return this.reduced || weakMem || weakCpu || slowNet;
   }
 
   setLowPower(on: boolean) {
@@ -847,10 +848,10 @@ export class GameEngine {
     let z = 0.28;
     let facing = lookLeft ? -1 : 1;
     if (spot === 2) {
-      fromX = toX = 610;
-      fromY = 1088;
-      toY = 848;
-      scale = 0.64;
+      fromX = toX = 700;
+      fromY = 1120;
+      toY = 1020;
+      scale = 0.36;
       z = 0.15;
       facing = 1;
     }
@@ -884,21 +885,24 @@ export class GameEngine {
     const hand = t.facing < 0 ? 0.15 : 0.85;
     const x = t.x - w / 2 + hand * w;
     const y = t.y - h * 0.62;
+    const oma = this.omaRect();
+    let dropX = x;
+    if (dropX < oma.x + oma.w + 8) dropX = oma.x + oma.w + 36;
     this.targets.push({
       ...this.baseTarget(),
       id: this.id++,
       act: "dose",
-      x,
+      x: dropX,
       y,
-      vx: rand(-50, 50),
-      vy: 40,
-      z: 0.92,
+      vx: rand(-30, 30),
+      vy: 80,
+      z: 0.62,
       facing: 1,
       points: 80,
       scale: canH / 320,
       phase: "in",
       rot: rand(-0.3, 0.3),
-      groundY: Math.min(1288, Math.max(t.y + 30, 1160)),
+      groundY: 1210,
     } as any);
   }
 
@@ -915,7 +919,7 @@ export class GameEngine {
       y: lane.y,
       baseY: lane.y,
       vx: (fromRight ? -1 : 1) * speed,
-      z: lane.z,
+      z: lane.z + 0.02,
       facing: fromRight ? -1 : 1,
       points: -100,
       scale: lane.scale * 1.15,
@@ -1057,7 +1061,8 @@ export class GameEngine {
       if (isTreeTrunk) {
         this.treeShakeT = 0.32;
         const leafCols = ["#2d6a4f", "#40916c", "#52b788", "#74c69d", "#b7e4c7", "#d8f3dc", "#936639"];
-        const count = 10 + Math.floor(Math.random() * 8);
+        const count = this.lowPower ? 4 : 10 + Math.floor(Math.random() * 8);
+        if (this.lowPower && this.leaves.length > 16) return;
         for (let i = 0; i < count; i++) {
           this.leaves.push({
             x: 220 + Math.random() * 150,
@@ -1272,7 +1277,9 @@ export class GameEngine {
   }
 
   burst(x: number, y: number, n: number, color: string, speed: number) {
-    for (let i = 0; i < n; i++) {
+    const count = this.lowPower ? Math.max(2, Math.floor(n * 0.4)) : n;
+    if (this.lowPower && this.particles.length > 40) return;
+    for (let i = 0; i < count; i++) {
       const a = Math.random() * Math.PI * 2;
       const s = rand(speed * 0.3, speed);
       this.particles.push({
@@ -1800,7 +1807,7 @@ export class GameEngine {
   draw() {
     const ctx = this.ctx;
     ctx.save();
-    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingEnabled = !this.lowPower;
     ctx.imageSmoothingQuality = this.lowPower ? "low" : "high";
     ctx.clearRect(0, 0, WORLD_W, WORLD_H);
     const shake = (this.reduced || this.mode !== "playing") ? 0 : this.trauma * this.trauma * (this.strickT > 0 ? 1.85 : 1);
@@ -1962,16 +1969,16 @@ export class GameEngine {
 
     if (this.strickT > 0) {
       ctx.save();
-      ctx.translate(WORLD_W / 2, 250);
+      ctx.translate(WORLD_W / 2, 268);
       ctx.textAlign = "center";
       ctx.fillStyle = "#1a120c";
       ctx.strokeStyle = "#fbbf24";
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.roundRect(-210, -28, 420, 56, 12);
+      ctx.roundRect(-240, -38, 480, 76, 14);
       ctx.fill();
       ctx.stroke();
-      ctx.font = "900 26px sans-serif";
+      ctx.font = "900 34px sans-serif";
       ctx.fillStyle = "#fde68a";
       ctx.fillText("STRICKNADEL", 0, 2);
       ctx.restore();
@@ -2047,26 +2054,26 @@ export class GameEngine {
       ctx.textBaseline = "middle";
       if (!activeHippie && this.hippieT <= 5 && this.hippieT > 0 && (this.hippieCount || 0) < 2) {
         const msg = "TONNE " + Math.ceil(this.hippieT);
-        ctx.font = "900 34px sans-serif";
+        ctx.font = "900 40px sans-serif";
         const tw = ctx.measureText(msg).width;
-        const bx = WORLD_W / 2 - tw / 2 - 16;
+        const bx = WORLD_W / 2 - tw / 2 - 22;
         ctx.fillStyle = "rgba(0,0,0,0.72)";
-        ctx.fillRect(bx, 86, tw + 32, 48);
-        ctx.lineWidth = 5;
+        ctx.fillRect(bx, 230, tw + 44, 76);
+        ctx.lineWidth = 6;
         ctx.strokeStyle = "rgba(0,0,0,0.9)";
         ctx.fillStyle = "#fbbf24";
-        ctx.strokeText(msg, WORLD_W / 2, 110);
-        ctx.fillText(msg, WORLD_W / 2, 110);
+        ctx.strokeText(msg, WORLD_W / 2, 268);
+        ctx.fillText(msg, WORLD_W / 2, 268);
       } else if (activeHippie && activeHippie.phase === "hold") {
         const oS = (activeHippie as any).openStart || 2.0;
         const oE = oS + ((activeHippie as any).openDur || 2.5);
         if (activeHippie.phaseT >= oS && activeHippie.phaseT < oE) {
-          ctx.font = "900 32px sans-serif";
+          ctx.font = "900 40px sans-serif";
           ctx.fillStyle = "#22c55e";
           ctx.strokeStyle = "rgba(0,0,0,0.85)";
-          ctx.lineWidth = 4;
-          ctx.strokeText("JETZT", WORLD_W / 2, 110);
-          ctx.fillText("JETZT", WORLD_W / 2, 110);
+          ctx.lineWidth = 6;
+          ctx.strokeText("JETZT", WORLD_W / 2, 268);
+          ctx.fillText("JETZT", WORLD_W / 2, 268);
         }
       }
       ctx.restore();
