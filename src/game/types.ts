@@ -1,5 +1,5 @@
 export type Mode = "title" | "playing" | "paused" | "results";
-export type Act = "walk" | "run" | "peek" | "bush" | "rocker" | "opa" | "oma" | "carpet" | "hippie";
+export type Act = "walk" | "run" | "peek" | "bush" | "rocker" | "opa" | "oma" | "carpet" | "hippie" | "rollstuhl" | "punk" | "dose";
 export type Phase = "move" | "in" | "hold" | "out" | "hit" | "leave";
 export type TargetState = "alive" | "falling";
 

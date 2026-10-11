@@ -5,11 +5,11 @@
       "width": 1280,
       "height": 800,
       "status": 200,
-      "title": "Bankgeheimnis im Park",
+      "title": "Talahons im Park - Parabellum Edition",
       "hasCanvas": true,
-      "bodyTextLen": 297,
-      "bodyTextHash": "8f20b4a075d88f00d93e4c572d501d0d1447c0f0b029be118feb7c0c31c834bd",
-      "bodyTextPrefix": "90 Sekunden. Die Oma holt die Parabellum unter dem Strickzeug vo",
+      "bodyTextLen": 185,
+      "bodyTextHash": "e5a265ed63dc0ea2b8e0430451f84e8878680596e0e4790fa6dc9ea80d7cf5f2",
+      "bodyTextPrefix": "v v v 🪳 TALAHONS IM PARK ★ PARABELLUM EDITION ★ START v1.5.5 BE",
       "horizontalOverflow": false,
       "consoleErrors": [],
       "pageErrors": [],
@@ -19,11 +19,11 @@
       "width": 390,
       "height": 844,
       "status": 200,
-      "title": "Bankgeheimnis im Park",
+      "title": "Talahons im Park - Parabellum Edition",
       "hasCanvas": true,
-      "bodyTextLen": 297,
-      "bodyTextHash": "8f20b4a075d88f00d93e4c572d501d0d1447c0f0b029be118feb7c0c31c834bd",
-      "bodyTextPrefix": "90 Sekunden. Die Oma holt die Parabellum unter dem Strickzeug vo",
+      "bodyTextLen": 185,
+      "bodyTextHash": "e5a265ed63dc0ea2b8e0430451f84e8878680596e0e4790fa6dc9ea80d7cf5f2",
+      "bodyTextPrefix": "v v v 🪳 TALAHONS IM PARK ★ PARABELLUM EDITION ★ START v1.5.5 BE",
       "horizontalOverflow": false,
       "consoleErrors": [],
       "pageErrors": [],
@@ -33,6 +33,9 @@
   "brandWarnings": [],
   "authWarnings": [],
   "verdictFile": "/workspace/screenshots/app-builder-built.json",
-  "divergesFromBaseline": false,
-  "baselineReasons": []
+  "divergesFromBaseline": true,
+  "baselineReasons": [
+    "desktop: body text collapsed (2195 -> 185 chars)",
+    "mobile: body text collapsed (2195 -> 185 chars)"
+  ]
 }

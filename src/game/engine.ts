@@ -10,6 +10,9 @@ import {
   playMiss,
   playOmaLine, playOmaKommando, stopOmaKommando,
   playRocker,
+  playFachkraft,
+  playAlteSchachtel,
+  playKuckuck,
   playRoundEnd,
   playShot,
   preloadSounds,
@@ -75,6 +78,11 @@ const ASSET_KEYS = [
   "oma-goldenpara",
   "oma-goldenpara-recoil",
   "bahndidos",
+  "rollstuhl-1",
+  "rollstuhl-2",
+  "punk1",
+  "punk2",
+  "dose",
   "tonne-zu",
   "tonne-hippie",
   "tonne-umgekippt",
@@ -237,6 +245,10 @@ export class GameEngine {
   hippieT = 25;
   hippieCount = 0;
   rockerT = 12;
+  rollT = 16;
+  punkT = 20;
+  punkLeft = 2;
+  punkRush = false;
   carpetT = 18;
   opaT = 8;
   hudAcc = 0;
@@ -493,6 +505,7 @@ export class GameEngine {
       if ((t.act === "walk" || t.act === "run") && t.z >= WALL_DRAW_Z) return n + 1;
       if (t.act === "opa" || t.act === "rocker" || t.act === "carpet") return n + 1;
       if (t.act === "hippie" && this.barrelOpen(t)) return n + 1;
+      if (t.act === "punk" && t.reveal >= 0.55 && t.phase !== "out") return n + 1;
       return n;
     }, 0);
   }
@@ -548,6 +561,10 @@ export class GameEngine {
     this.gapT = 0;
     this.hippieT = 25; this.hippieCount = 0;
     this.rockerT = rand(8, 13);
+    this.rollT = rand(12, 18);
+    this.punkLeft = Math.random() < 0.5 ? 3 : 2;
+    this.punkT = rand(24, 34);
+    this.punkRush = false;
     this.carpetT = rand(15, 22);
     this.opaT = rand(6, 10);
     this.spawnBush();
@@ -650,7 +667,7 @@ export class GameEngine {
     const laneCap = this.timeLeft < 30 ? 3 : 2;
     if (laneI > 0 && onLane >= laneCap) return;
     const L = LANES[laneI]!;
-    const run = running ?? Math.random() < 0.28;
+    const run = running ?? (laneI >= 3 ? Math.random() < 0.85 : laneI === 2 ? Math.random() < 0.55 : Math.random() < 0.3);
     const fromRight = laneI === 0 ? (x != null ? x > WORLD_W / 2 : Math.random() < 0.72) : Math.random() < 0.5;
     const speed = L.speed * (run ? 1.7 : 1) * rand(0.9, 1.12);
     const queued = this.laneWalkers(laneI).filter((t) => fromRight ? t.x > 760 : t.x < 140).length;
@@ -764,7 +781,7 @@ export class GameEngine {
       vx: (fromRight ? -1 : 1) * speed,
       z: lane.z - 0.02,
       facing: fromRight ? -1 : 1,
-      points: -50,
+      points: -100,
       scale: lane.scale * 1.35,
       phase: "move",
     });
@@ -812,6 +829,98 @@ export class GameEngine {
       points: 150,
       phase: "in",
     });
+  }
+
+  spawnPunk() {
+    if (this.punkLeft <= 0) return;
+    if (this.targets.some((t) => t.act === "punk" && t.x !== -999)) return;
+    this.punkLeft--;
+    this.punkT = this.punkLeft > 0 ? rand(22, 30) : 999;
+    const spot = Math.random() < 0.5 ? 0 : 2;
+    const tree = TREES[0]!;
+    const lookLeft = Math.random() < 0.5;
+    let fromX = lookLeft ? tree.x + 20 : tree.x - 20;
+    let toX = lookLeft ? tree.x - 58 : tree.x + 58;
+    let fromY = tree.y;
+    let toY = tree.y;
+    let scale = 0.78;
+    let z = 0.28;
+    let facing = lookLeft ? -1 : 1;
+    if (spot === 2) {
+      fromX = toX = 610;
+      fromY = 1088;
+      toY = 848;
+      scale = 0.64;
+      z = 0.15;
+      facing = 1;
+    }
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "punk",
+      x: fromX,
+      y: fromY,
+      vx: 0,
+      z,
+      facing,
+      points: 120,
+      scale,
+      phase: "in",
+      phaseT: 0,
+      reveal: 0,
+      hide: spot,
+      fromX,
+      toX,
+      fromY,
+      toY,
+    } as any);
+  }
+
+  spawnCan(t: Target) {
+    for (const c of this.targets) if (c.act === "dose") c.x = -999;
+    const h = 320 * t.scale;
+    const w = h * (306 / 859);
+    const canH = Math.max(78, h * 0.22);
+    const hand = t.facing < 0 ? 0.15 : 0.85;
+    const x = t.x - w / 2 + hand * w;
+    const y = t.y - h * 0.62;
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "dose",
+      x,
+      y,
+      vx: rand(-50, 50),
+      vy: 40,
+      z: 0.92,
+      facing: 1,
+      points: 80,
+      scale: canH / 320,
+      phase: "in",
+      rot: rand(-0.3, 0.3),
+      groundY: Math.min(1288, Math.max(t.y + 30, 1160)),
+    } as any);
+  }
+
+  spawnRoll() {
+    if (this.targets.some((t) => t.act === "rollstuhl" && t.state === "alive")) return;
+    const lane = LANES[pick([1, 2, 3])]!;
+    const fromRight = Math.random() < 0.5;
+    const speed = 400;
+    this.targets.push({
+      ...this.baseTarget(),
+      id: this.id++,
+      act: "rollstuhl",
+      x: fromRight ? 980 : -80,
+      y: lane.y,
+      baseY: lane.y,
+      vx: (fromRight ? -1 : 1) * speed,
+      z: lane.z,
+      facing: fromRight ? -1 : 1,
+      points: -100,
+      scale: lane.scale * 1.15,
+      phase: "move",
+    } as any);
   }
 
   spawnRocker() {
@@ -887,12 +996,21 @@ export class GameEngine {
   }
 
   hitTest(t: Target, x: number, y: number): boolean {
-    const dw = t.dw || 140 * t.scale;
-    let dh = t.dh || 335 * t.scale;
+    const dw0 = t.act === "dose" ? (t.dw || 40) * 1.7 : (t.dw || 140 * t.scale);
+    let dh = t.act === "dose" ? (t.dh || 70) * 1.7 : (t.dh || 335 * t.scale);
+    const dw = dw0;
     const left = t.x - dw * 0.5;
     const right = t.x + dw * 0.5;
     let top = t.y - dh;
     if (t.act === "hippie" && !this.barrelOpen(t)) top = t.y - dh * 0.74;
+    if (t.act === "punk") {
+      if (t.reveal < 0.4) return false;
+      if (t.hide === 0) {
+        if (t.facing < 0 ? x > TREES[0]!.x - 6 : x < TREES[0]!.x + 6) return false;
+      }
+      if (t.hide === 1 && (x < 490 || x > 555 || y > top + dh * 0.45)) return false;
+      if (t.hide === 2 && y > top + dh * 0.5) return false;
+    }
     const bottom = t.y;
     return x >= left && x <= right && y >= top && y <= bottom;
   }
@@ -995,6 +1113,24 @@ export class GameEngine {
       }
     }
 
+    if (t.act === "rollstuhl") {
+      if (t.phase === "hit") return;
+      t.phase = "hit";
+      t.vx *= 1.7;
+      this.combo = 0;
+      this.score = Math.max(0, this.score + t.points);
+      playFachkraft();
+      this.floaters.push({
+        x: t.x,
+        y: t.y - (t.dh || 80) * 0.7,
+        text: "Aus dem Weg! (" + t.points + ")",
+        life: 1.15,
+        max: 1.15,
+        color: "#ef4444",
+      });
+      return;
+    }
+
     if (t.act === "opa") {
       t.state = "falling";
       t.rot = 0;
@@ -1007,14 +1143,46 @@ export class GameEngine {
       t.facing = 1;
       this.hits++;
       this.combo = 0;
-      this.score = Math.max(0, this.score - 50);
+      this.score = Math.max(0, this.score + t.points);
       this.floaters.push({
         x: t.x,
         y: t.y - (t.dh || 80) * 0.95,
-        text: "Finger weg! (-50)",
+        text: "Finger weg! (" + t.points + ")",
         life: 1.15,
         max: 1.15,
         color: "#ef4444",
+      });
+      return;
+    }
+
+    if (t.act === "punk" || t.act === "dose") {
+      const hx = t.x;
+      const hy = t.y;
+      if (t.act === "punk") this.spawnCan(t);
+      t.x = -999;
+      this.hits++;
+      this.combo += 1;
+      const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3));
+      if (mult >= 5 && this.strickT <= 0) {
+        this.strickT = 5.0;
+        this.punkRush = this.punkLeft > 0;
+        playOmaKommando();
+        if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("park_hit", { detail: { act: "strick_kommando" } }));
+      }
+      this.comboT = COMBO_WINDOW;
+      if (this.combo > this.bestCombo) this.bestCombo = this.combo;
+      let pts = Math.round(t.points * (1 + Math.min(this.combo, 10) * 0.15));
+      this.score += pts;
+      playHit(this.combo);
+      if (t.act === "dose") this.burst(hx, hy - 20, 14, "#d6a15a", 160);
+      this.floaters.push({
+        x: hx,
+        y: hy - (t.act === "dose" ? 30 : (t.dh || 80) * 0.7),
+        text: mult > 1 ? `+${pts} ×${mult}` : `+${pts}`,
+        life: 1.1,
+        max: 1.1,
+        color: t.act === "dose" ? "#f6c453" : "#f3ead8",
+        size: 92,
       });
       return;
     }
@@ -1033,6 +1201,7 @@ export class GameEngine {
     const mult = Math.min(5, 1 + Math.floor((this.combo - 1) / 3));
     if (mult >= 5 && this.strickT <= 0) {
       this.strickT = 5.0;
+      this.punkRush = this.punkLeft > 0;
       playOmaKommando();
       if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("park_hit", { detail: { act: "strick_kommando" } }));
     }
@@ -1198,24 +1367,28 @@ export class GameEngine {
     for (let i = 0; i < this.bushCd.length; i++) this.bushCd[i] = Math.max(0, this.bushCd[i]! - dt);
     const progress = 1 - this.timeLeft / 90;
     const spawnWait = 0.95 - progress * 0.6;
-    this.spawnAcc -= (this.strickT > 0 ? dt * 2.2 : dt);
+    this.spawnAcc -= dt;
     const want = this.frontQuota();
     if (this.shootableOnScreen() < want && !this.incomingWalker()) {
       this.gapT += dt;
-      if (this.gapT > (this.timeLeft < 30 ? 0.22 : 0.4)) {
+      if (this.gapT > (this.timeLeft < 30 ? 0.45 : 0.7)) {
         this.gapT = 0;
-        this.spawnWalker(this.openLane(), false);
+        const lane = this.openLane();
+        this.spawnWalker(lane, lane >= 3 ? true : undefined);
       }
     } else this.gapT = 0;
     if (this.spawnAcc <= 0) {
-      this.spawnAcc = spawnWait * rand(0.9, 1.08);
+      this.spawnAcc = spawnWait * rand(0.95, 1.15);
       const r = Math.random();
-      if (r < 0.4) this.spawnWalker(0, Math.random() < 0.35);
-      else if (r < 0.58) this.spawnBehindGate();
-      else if (r < 0.74) {
+      if (r < 0.28) this.spawnWalker(0, Math.random() < 0.35);
+      else if (r < 0.48) this.spawnBehindGate();
+      else if (r < 0.66) {
         if (!this.spawnBush()) this.spawnPeeker();
-      } else this.spawnPeeker();
-      if (this.shootableOnScreen() < want) this.spawnWalker(this.openLane(), false);
+      } else if (r < 0.84) this.spawnPeeker();
+      else {
+        const lane = this.openLane();
+        this.spawnWalker(lane, lane >= 3 ? true : undefined);
+      }
     }
     this.hippieT -= dt;
     if (this.hippieT <= 0 && (this.hippieCount || 0) < 2) {
@@ -1227,6 +1400,21 @@ export class GameEngine {
     if (this.rockerT <= 0) {
       this.rockerT = rand(13, 19);
       this.spawnRocker();
+    }
+    this.rollT -= dt;
+    if (this.rollT <= 0) {
+      this.rollT = rand(14, 22);
+      this.spawnRoll();
+    }
+    if (this.punkRush) {
+      this.punkRush = false;
+      this.spawnPunk();
+    }
+    this.punkT -= dt;
+    if (this.punkT <= 0) {
+      if (this.punkLeft <= 0) this.punkT = 999;
+      else if (this.targets.some((t) => t.act === "punk" && t.x !== -999)) this.punkT = 1.5;
+      else this.spawnPunk();
     }
     this.carpetT -= dt;
     if (this.carpetT <= 0) {
@@ -1354,6 +1542,7 @@ export class GameEngine {
             t.phase = "hold";
             t.phaseT = 0;
             this.burst(t.x, t.y, 16, "#cbd5e1", 130);
+            playKuckuck();
           }
         } else if (t.phase === "hold") {
           t.phaseT += dt;
@@ -1377,14 +1566,64 @@ export class GameEngine {
         }
         continue;
       }
-      if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
+      if (t.act === "punk") {
+        t.phaseT += dt;
+        const fromX = (t as any).fromX ?? t.x;
+        const toX = (t as any).toX ?? t.x;
+        const fromY = (t as any).fromY ?? t.y;
+        const toY = (t as any).toY ?? t.y;
+        if (t.phase === "in") {
+          const k = clamp(t.phaseT / 0.5, 0, 1);
+          t.x = fromX + (toX - fromX) * k;
+          t.y = fromY + (toY - fromY) * k;
+          t.reveal = k;
+          if (k >= 1) {
+            t.phase = "hold";
+            t.phaseT = 0;
+            playAlteSchachtel();
+          }
+        } else if (t.phase === "hold") {
+          t.reveal = 1;
+          if (t.phaseT > 2.3) {
+            t.phase = "out";
+            t.phaseT = 0;
+          }
+        } else {
+          const k = clamp(t.phaseT / 0.38, 0, 1);
+          t.x = toX + (fromX - toX) * k;
+          t.y = toY + (fromY - toY) * k;
+          t.reveal = 1 - k;
+          if (k >= 1) t.x = -999;
+        }
+        continue;
+      }
+      if (t.act === "dose") {
+        if (t.phase === "in") {
+          t.vy += 1500 * dt;
+          t.x += t.vx * dt;
+          t.y += t.vy * dt;
+          t.rot += dt * 5;
+          const ground = (t as any).groundY ?? 1188;
+          if (t.y >= ground) {
+            t.y = ground;
+            t.vy = 0;
+            t.vx = 0;
+            t.rot = 0.15;
+            t.phase = "hold";
+            t.phaseT = 0;
+          }
+        } else {
+          t.phaseT += dt;
+          if (t.phaseT > 4.2) t.x = -999;
+        }
+        continue;
+      }
+      if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa" || t.act === "rollstuhl") {
         t.phaseT += dt;
         if (t.act === "rocker" && t.state === "alive") {
           const base = (t as any).baseY ?? t.y;
           (t as any).baseY = base;
           t.y = base + (Math.random() - 0.5) * 4;
-
-          // Echte dichte Staubwolken hinter dem Hinterrad
           (t as any).dustTimer = ((t as any).dustTimer || 0) + dt;
           if ((t as any).dustTimer >= 0.04) {
             (t as any).dustTimer = 0;
@@ -1401,6 +1640,33 @@ export class GameEngine {
                 max: 0.75,
                 size: rand(18, 32),
                 color: "rgba(220, 212, 195, 0.7)",
+                rot: rand(0, 6),
+                vr: rand(-2, 2)
+              } as any);
+            }
+          }
+        }
+        if (t.act === "rollstuhl" && t.state === "alive") {
+          const base = (t as any).baseY ?? t.y;
+          (t as any).baseY = base;
+          t.y = base + (Math.random() - 0.5) * 6;
+          t.rot = Math.sin(t.phaseT * 42) * 0.025;
+          (t as any).dustTimer = ((t as any).dustTimer || 0) + dt;
+          if ((t as any).dustTimer >= 0.03) {
+            (t as any).dustTimer = 0;
+            const dir = t.facing || 1;
+            const wx = t.x - dir * 88;
+            const wy = t.y - 8;
+            for (let i = 0; i < 2; i++) {
+              this.particles.push({
+                x: wx + (Math.random() - 0.5) * 16,
+                y: wy,
+                vx: -dir * rand(50, 120),
+                vy: -rand(20, 55),
+                life: rand(0.35, 0.6),
+                max: 0.6,
+                size: rand(14, 26),
+                color: "rgba(210, 200, 180, 0.65)",
                 rot: rand(0, 6),
                 vr: rand(-2, 2)
               } as any);
@@ -1472,7 +1738,7 @@ export class GameEngine {
         if (t.z < WALL_DRAW_Z) return t.y < from + 260 && t.y < 1180;
         return t.y < from + 120 && t.y < 1420;
       }
-      if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa") {
+      if (t.act === "walk" || t.act === "run" || t.act === "rocker" || t.act === "opa" || t.act === "rollstuhl") {
         if (t.y >= 620 && t.x < OMA_KEEP_X) {
           this.freeHide(t);
           return false;
@@ -1515,6 +1781,16 @@ export class GameEngine {
     }
     if (t.act === "carpet") return this.img(t.frame % 2 === 0 ? "talahin_1" : "talahin_2");
     if (t.act === "rocker") return this.img("bahndidos");
+    if (t.act === "rollstuhl") {
+      const step = Math.floor(Math.abs(t.x) / 36) % 2;
+      return this.img(step ? "rollstuhl-2" : "rollstuhl-1") || this.img("rollstuhl-1");
+    }
+    if (t.act === "dose") return this.img("dose");
+    if (t.act === "punk") {
+      const talking = t.phase === "hold" && t.phaseT < 1.7;
+      const open = talking && Math.floor(t.phaseT * 6) % 2 === 1;
+      return this.img(open ? "punk2" : "punk1") || this.img("punk1");
+    }
     if (t.state === "falling") { if (t.act === "walk" && t.act === "walk" && t.variant === "b") return this.img(`talahon-walk-b-${(t.frame % 4) + 1}`); return this.img(`talahon-hit-${(t.frame % 4) + 1}`); }
     if (t.act === "run") return this.img(`talahon-run-${(t.frame % 4) + 1}`);
     const base = t.act === "walk" && t.variant === "b" ? "talahon-walk-b" : "talahon-walk";
@@ -1708,7 +1984,7 @@ export class GameEngine {
     const omaDrawKey = this.skin === "skin_golden_parabellum"
       ? (this.recoil > 0.02 ? "oma-goldenpara-recoil" : "oma-goldenpara")
       : (this.recoil > 0.02 ? "oma-recoil" : "oma");
-    const omaImg = this.img(omaDrawKey);
+    const omaImg = this.img(omaDrawKey) || this.img("oma") || this.img("oma-recoil");
     if (omaImg) {
       const kick = this.recoil > 0 ? -6 : 0;
       ctx.drawImage(omaImg, oma.x, oma.y + kick, oma.w, oma.h);
@@ -1770,27 +2046,27 @@ export class GameEngine {
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       if (!activeHippie && this.hippieT <= 5 && this.hippieT > 0 && (this.hippieCount || 0) < 2) {
-        const msg = "⚠️ TONNE IN " + Math.ceil(this.hippieT);
-        ctx.font = "900 72px sans-serif";
+        const msg = "TONNE " + Math.ceil(this.hippieT);
+        ctx.font = "900 34px sans-serif";
         const tw = ctx.measureText(msg).width;
-        const bx = WORLD_W / 2 - tw / 2 - 28;
-        ctx.fillStyle = "rgba(0,0,0,0.78)";
-        ctx.fillRect(bx, 360, tw + 56, 96);
-        ctx.lineWidth = 10;
+        const bx = WORLD_W / 2 - tw / 2 - 16;
+        ctx.fillStyle = "rgba(0,0,0,0.72)";
+        ctx.fillRect(bx, 86, tw + 32, 48);
+        ctx.lineWidth = 5;
         ctx.strokeStyle = "rgba(0,0,0,0.9)";
         ctx.fillStyle = "#fbbf24";
-        ctx.strokeText(msg, WORLD_W / 2, 408);
-        ctx.fillText(msg, WORLD_W / 2, 408);
+        ctx.strokeText(msg, WORLD_W / 2, 110);
+        ctx.fillText(msg, WORLD_W / 2, 110);
       } else if (activeHippie && activeHippie.phase === "hold") {
         const oS = (activeHippie as any).openStart || 2.0;
         const oE = oS + ((activeHippie as any).openDur || 2.5);
         if (activeHippie.phaseT >= oS && activeHippie.phaseT < oE) {
-          ctx.font = "900 48px sans-serif";
+          ctx.font = "900 32px sans-serif";
           ctx.fillStyle = "#22c55e";
           ctx.strokeStyle = "rgba(0,0,0,0.85)";
-          ctx.lineWidth = 5;
-          ctx.strokeText("🎯 JETZT TREFFEN!", WORLD_W / 2, 430);
-          ctx.fillText("🎯 JETZT TREFFEN!", WORLD_W / 2, 430);
+          ctx.lineWidth = 4;
+          ctx.strokeText("JETZT", WORLD_W / 2, 110);
+          ctx.fillText("JETZT", WORLD_W / 2, 110);
         }
       }
       ctx.restore();
@@ -1842,6 +2118,18 @@ export class GameEngine {
       else ctx.rect(0, 0, tree.x + 2, WORLD_H);
       ctx.clip();
     }
+    if (t.act === "punk" && t.hide === 0) {
+      const tree = TREES[0]!;
+      ctx.beginPath();
+      if (t.facing < 0) ctx.rect(0, 0, tree.x - 6, WORLD_H);
+      else ctx.rect(tree.x + 6, 0, WORLD_W, WORLD_H);
+      ctx.clip();
+    }
+    if (t.act === "punk" && t.hide === 1) {
+      ctx.beginPath();
+      ctx.rect(488, 900, 72, 150);
+      ctx.clip();
+    }
     // Leichtes Geh-Wackeln (Hinken & Schritt-Bobbing) beim Hereinlaufen vor dem Treffer
     const isOpaWalking = t.act === "opa" && t.state !== "falling";
     const isTalahon = (t.act === "walk" || t.act === "run") && t.state !== "falling";
@@ -1857,7 +2145,7 @@ export class GameEngine {
     ctx.translate(t.x, t.y - bob);
     ctx.rotate(t.rot + tilt);
     const opaLookAtCamera = t.act === "opa" && t.state === "falling" && t.phase !== "leave";
-    if (!opaLookAtCamera && t.facing < 0) ctx.scale(-1, 1);
+    if (!opaLookAtCamera && t.facing < 0 && t.act !== "dose") ctx.scale(-1, 1);
     if (t.act === "bush" && t.state === "alive") {
       const r = t.phase === "out" ? clamp(t.reveal, 0, 0.5) : clamp(t.reveal, 0.28, 0.52);
       ctx.beginPath();
@@ -1865,7 +2153,7 @@ export class GameEngine {
       ctx.clip();
     }
     if (sprite) ctx.drawImage(sprite, -w / 2, -h, w, h);
-    else {
+    else if (t.act !== "rollstuhl") {
       ctx.fillStyle = "#222";
       ctx.fillRect(-w / 2, -h, w, h);
     }

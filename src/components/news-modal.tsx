@@ -5,7 +5,7 @@ export interface NewsModalProps {
   onClose: () => void;
 }
 
-export const CURRENT_NEWS_VERSION = "2026.10.5";
+export const CURRENT_NEWS_VERSION = "2026.10.6";
 
 export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
@@ -42,14 +42,15 @@ export const NewsModal: React.FC<NewsModalProps> = ({ isOpen, onClose }) => {
         {/* Scrollable Content */}
         <div className="space-y-3 overflow-y-auto pr-1 text-xs leading-relaxed text-stone-300 flex-1">
           <div className="rounded-xl border border-amber-500/50 bg-amber-950/40 p-3">
-            <p className="text-sm font-black uppercase tracking-wide text-amber-300">Menü-Update · Beta 2026.10.5</p>
-            <p className="mt-1">Der Park hat einen Wegweiser. Profil geht nach oben, Spielen nach rechts, Aufträge unter die Erde. Level, Groschen und XP bleiben gespeichert.</p>
+            <p className="text-sm font-black uppercase tracking-wide text-amber-300">Park-Update · Beta 2026.10.6</p>
+            <p className="mt-1">Neue Figuren im Standard, klarere Regeln und ein leiserer Tonnen-Modus. Level, Groschen und XP bleiben gespeichert.</p>
           </div>
           <ul className="space-y-1.5 text-[12px]">
-            <li>📅 Täglich neue Missionen und der 7-Tage-Bonus.</li>
-            <li>🪙 Groschen aus Missionen, XP aus dem Standard. Danach ein kurzer Hinweis im Menü.</li>
-            <li>🟢 Giftgrün-Visier nach den Park-Missionen.</li>
-            <li>🛢️ Tonnen-Modus ab Level 5, danach das Glücksrad.</li>
+            <li>🤘 Punk schaut hinter dem Baum links oder rechts raus, oder höher über die Mauer. Dose +80.</li>
+            <li>🦽 Rollstuhl und Opa: Treffer −100.</li>
+            <li>🛢️ Tonne im Standard: „Kuckuck“. Tonnen-Modus: erst der Hippie, dann Oma.</li>
+            <li>🔇 Stumm schaltet Musik, Schüsse und Sprüche. Die Regeln zeigen jetzt die echten Punkte.</li>
+            <li>📅 Täglich Missionen und der 7-Tage-Bonus. Tonnen-Modus ab Level 5, danach das Glücksrad.</li>
           </ul>
           <div className="relative overflow-hidden rounded-xl border-2 border-amber-500/60 bg-stone-950/90 p-3 shadow-xl">
             <span className="absolute top-2 right-2 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-stone-950">

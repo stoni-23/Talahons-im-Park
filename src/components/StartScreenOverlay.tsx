@@ -278,7 +278,7 @@ export const StartScreenOverlay: React.FC<StartScreenOverlayProps> = ({
             </button>
           </div>
           <p className="text-center text-[10px] font-bold text-white drop-shadow-[0_1px_2px_#000]">
-            Beta 2026.10.5 · Als App: Browser-Menü → Zum Startbildschirm
+            Beta 2026.10.6 · Als App: Browser-Menü → Zum Startbildschirm
           </p>
         </div>
 

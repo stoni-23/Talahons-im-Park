@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { PlayerProfile } from "@/lib/profile";
 import { getPlayerLevel } from "@/lib/profile";
-import {playShot, isMuted, resumeAudio, playWheelTick, playWheelWin } from "@/game/audio";
+import {playShot, isMuted, resumeAudio, playWheelTick, playWheelWin, playTonnenIntro, stopTonnenIntro } from "@/game/audio";
 import { getActiveCrosshairColor } from "@/lib/shop";
 import { Pause, Play } from "lucide-react";
 
@@ -139,14 +139,6 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
   const [wheelBet, setWheelBet] = useState(1);
   const [totalWonGroschen, setTotalWonGroschen] = useState(0);
   const [totalWonXp, setTotalWonXp] = useState(0);
-  const [wheelSplash, setWheelSplash] = useState<{ icon: string; text: string; id: number } | null>(null);
-  const triggerWheelSplash = (icon: string, text: string) => {
-    const id = Date.now();
-    setWheelSplash({ icon, text, id });
-    setTimeout(() => {
-      setWheelSplash(curr => curr?.id === id ? null : curr);
-    }, 2200);
-  };
   // Audio-Lebenszyklus als echtes Singleton
   useEffect(() => {
     if (!tonnenBgm) {
@@ -161,18 +153,32 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       }
     };
 
+    const duckMusic = () => {
+      if (tonnenBgm) tonnenBgm.volume = 0.4;
+    };
+    const restoreMusic = () => {
+      if (tonnenBgm) tonnenBgm.volume = 0.45;
+    };
+    const startIntro = () => {
+      duckMusic();
+      playTonnenIntro(restoreMusic);
+    };
+
     if (!isMuted()) {
       playSafe();
+      startIntro();
     }
 
     const unlockOnFirstClick = () => {
       playSafe();
+      startIntro();
       window.removeEventListener("pointerdown", unlockOnFirstClick);
     };
     window.addEventListener("pointerdown", unlockOnFirstClick);
 
     return () => {
       window.removeEventListener("pointerdown", unlockOnFirstClick);
+      stopTonnenIntro();
       if (tonnenBgm) {
         tonnenBgm.pause();
         tonnenBgm.currentTime = 0;
@@ -233,14 +239,14 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
   const targetSlotIdRef = useRef<number | null>(null);
 
   const slotsRef = useRef<TonneSlot[]>([
-    { id: 1, x: 275, y: 1118, scale: 0.44, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 2, x: 470, y: 1120, scale: 0.44, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 3, x: 685, y: 1118, scale: 0.44, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 4, x: 360, y: 1222, scale: 0.62, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 5, x: 550, y: 1226, scale: 0.64, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 6, x: 745, y: 1222, scale: 0.62, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 7, x: 450, y: 1335, scale: 0.84, z: 3, state: "zu", openT: 0, openDur: 0, wobble: 0 },
-    { id: 8, x: 690, y: 1340, scale: 0.86, z: 3, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 1, x: 155, y: 912, scale: 0.58, z: 1, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 2, x: 320, y: 974, scale: 0.64, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 3, x: 158, y: 1048, scale: 0.7, z: 2, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 4, x: 370, y: 1116, scale: 0.76, z: 3, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 5, x: 225, y: 1118, scale: 0.84, z: 3, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 6, x: 400, y: 1310, scale: 0.94, z: 4, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 7, x: 290, y: 1368, scale: 1.05, z: 5, state: "zu", openT: 0, openDur: 0, wobble: 0 },
+    { id: 8, x: 95, y: 1328, scale: 1.02, z: 5, state: "zu", openT: 0, openDur: 0, wobble: 0 },
   ]);
 
   const imagesRef = useRef<{ [key: string]: HTMLImageElement }>({});
@@ -248,7 +254,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
 
   useEffect(() => {
     const assets = [
-      { key: "bg", src: "/assets/park-bg.webp" },
+      { key: "bg", src: "/assets/tonnen-bg.png" },
       { key: "parkmauer", src: "/assets/parkmauer.png" },
       { key: "tree", src: "/assets/tree.png" },
       { key: "foliage", src: "/assets/foliage.png" },
@@ -441,17 +447,22 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       ctx.fillRect(0, 0, WORLD_W, WORLD_H);
     }
 
-    const wall = imagesRef.current["parkmauer"];
-//     if (wall) ctx.drawImage(wall, 0, 0, WORLD_W, WORLD_H);
-
-    // 2. Großer Baum
-    const tree = imagesRef.current["tree"];
-//     if (tree) ctx.drawImage(tree, 0, 0, WORLD_W, WORLD_H);
-
-    // 3. Dunkelheit / Nacht-Overlay
+    const fogT = Date.now() / 1000;
     ctx.save();
-    ctx.fillStyle = "rgba(10, 16, 35, 0.45)";
-    ctx.fillRect(0, 0, WORLD_W, WORLD_H);
+    const wisps = [
+      { x: 280 + Math.sin(fogT * 0.25) * 90, y: 1040, rx: 340, ry: 70, a: 0.16 },
+      { x: 640 + Math.cos(fogT * 0.18) * 110, y: 1200, rx: 420, ry: 90, a: 0.2 },
+      { x: 460 + Math.sin(fogT * 0.15 + 1) * 70, y: 1320, rx: 380, ry: 80, a: 0.14 },
+    ];
+    for (const w of wisps) {
+      const g = ctx.createRadialGradient(w.x, w.y, 10, w.x, w.y, w.rx);
+      g.addColorStop(0, `rgba(214, 218, 224, ${w.a})`);
+      g.addColorStop(1, "rgba(214, 218, 224, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(w.x, w.y, w.rx, w.ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.restore();
 
     // 4. Tonnen
@@ -485,11 +496,24 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       }
     });
 
-    // 6. Foliage Vordergrund & Laterne
-    const foliage = imagesRef.current["foliage"];
-    if (foliage) {
-      ctx.drawImage(foliage, 0, WORLD_H - 260, WORLD_W, 260);
+    ctx.save();
+    const mist = Date.now() / 1000;
+    const front = [
+      { x: 420 + Math.sin(mist * 0.2) * 60, y: 1260, rx: 300, ry: 55, a: 0.1 },
+      { x: 700 + Math.cos(mist * 0.16) * 50, y: 1160, rx: 260, ry: 48, a: 0.09 },
+    ];
+    for (const w of front) {
+      const g = ctx.createRadialGradient(w.x, w.y, 8, w.x, w.y, w.rx);
+      g.addColorStop(0, `rgba(226, 230, 234, ${w.a})`);
+      g.addColorStop(1, "rgba(226, 230, 234, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(w.x, w.y, w.rx, w.ry, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
+    ctx.restore();
+
+    // Laterne hinter Oma, altes Laub passt nicht auf die Treppe
     const laterne = imagesRef.current["laterne"];
     if (laterne) {
       ctx.drawImage(laterne, 0, 80, WORLD_W, WORLD_H);
@@ -505,11 +529,15 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
 
     const omaH = 560;
     const omaW = (omaImg && omaImg.naturalHeight) ? omaH * (omaImg.naturalWidth / omaImg.naturalHeight) : 530;
-    const omaX = -10;
+    const omaX = 16;
     const omaY = WORLD_H - omaH + 25 + (isRecoiling ? -6 : 0);
 
     if (omaImg) {
+      ctx.save();
+      ctx.translate(WORLD_W, 0);
+      ctx.scale(-1, 1);
       ctx.drawImage(omaImg, omaX, omaY, omaW, omaH);
+      ctx.restore();
     }
 
     
@@ -519,7 +547,7 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       const frameIdx = Math.min(4, Math.max(1, 5 - Math.ceil(muzzleFlashRef.current / 0.15 * 4)));
       const muzzleImg = imagesRef.current[`muzzle-${frameIdx}`] || imagesRef.current["muzzle-1"];
       if (muzzleImg) {
-        const mx = omaX + omaW * 0.85;
+        const mx = WORLD_W - omaX - omaW * 0.85;
         const my = omaY + omaH * 0.15;
         const size = 130;
         ctx.save();
@@ -771,7 +799,6 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
       if (won.extra) {
         const extraAdd = 1 * bet;
         setHerbsLeft((h) => h + extraAdd);
-        triggerWheelSplash("🔄", `+${extraAdd} EXTRA`);
         setWheelResultText(`🔄 +${extraAdd} Extra-Dreh geschenkt!`);
         playWinChime(false);
       } else {
@@ -779,15 +806,12 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
         setTotalWonXp((x) => x + winXp);
 
         if (won.label === "JACKPOT") {
-          triggerWheelSplash("👑", `+${winGroschen} 🪙  +${winXp} XP`);
           setWheelResultText(`👑 ECHTER JACKPOT! +${winGroschen} Groschen & +${winXp} XP!`);
         } else if (winGroschen > 0) {
           playWinChime(false);
-          triggerWheelSplash("🪙", `+${winGroschen}`);
           setWheelResultText(`💰 +${winGroschen} Groschen gewonnen!`);
         } else if (winXp > 0) {
           playWinChime(false);
-          triggerWheelSplash("⭐", `+${winXp} XP`);
           setWheelResultText(`⚡ +${winXp} XP gesammelt!`);
         } else {
           setWheelResultText("🍂 Niete! Versuchs nochmal.");
@@ -898,62 +922,76 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
         </div>
       )}
 
-      {wheelSplash && (
-        <div 
-          key={wheelSplash.id} 
-          className="fixed inset-0 pointer-events-none flex items-center justify-center select-none"
-          style={{ zIndex: 999999 }}
-        >
-          <div 
-            className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-black/80 backdrop-blur-md border border-amber-400/50 shadow-[0_0_50px_rgba(245,158,11,0.6)]"
+      {gameState === "spielo" && (
+        <div className="absolute inset-0 z-10 overflow-hidden bg-[#06101f]">
+          <style>{`
+            @keyframes wheelRumble {
+              0% { transform: translate(0, 0) rotate(0deg); }
+              20% { transform: translate(1.1px, -0.8px) rotate(0.25deg); }
+              40% { transform: translate(-1.2px, 0.7px) rotate(-0.3deg); }
+              60% { transform: translate(0.8px, 1px) rotate(0.2deg); }
+              80% { transform: translate(-0.6px, -0.9px) rotate(-0.15deg); }
+              100% { transform: translate(0, 0) rotate(0deg); }
+            }
+          `}</style>
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
             style={{
-              animation: "rewardPopup 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+              aspectRatio: "768 / 1376",
+              width: "max(100vw, calc(100dvh * 768 / 1376))",
+              height: "max(100dvh, calc(100vw * 1376 / 768))",
             }}
           >
-            <style>{`
-              @keyframes rewardPopup {
-                0% { transform: scale(0.4) translateY(30px); opacity: 0; }
-                20% { transform: scale(1.15) translateY(-5px); opacity: 1; }
-                35% { transform: scale(1) translateY(0); opacity: 1; }
-                75% { transform: scale(1.02) translateY(-15px); opacity: 1; }
-                100% { transform: scale(0.9) translateY(-40px); opacity: 0; }
-              }
-            `}</style>
-            <span className="text-6xl drop-shadow-[0_0_20px_rgba(251,191,36,0.9)]">
-              {wheelSplash.icon}
-            </span>
-            <span className="text-5xl font-black italic tracking-wider text-amber-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)]">
-              {wheelSplash.text}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* 4. PARK-GLÜCKSRAD */}
-      {gameState === "spielo" && (
-        <div className="relative z-10 flex h-full w-full max-w-[480px] select-none flex-col items-center justify-between p-4 text-center">
-          <div className="space-y-2 text-center">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-yellow-400/30 to-amber-500/20 border border-amber-400/50 shadow-[0_0_15px_rgba(245,158,11,0.3)]">
-              <span className="text-amber-300 animate-pulse text-xs">✨</span>
-              <span className="text-[11px] uppercase tracking-widest text-amber-300 font-black">
-                PARK-CASINO GLÜCKSRAD
-              </span>
-              <span className="text-amber-300 animate-pulse text-xs">✨</span>
+            <img src="/assets/wheel-bg.png" alt="" className="absolute inset-0 h-full w-full" />
+            <div
+              className="absolute inset-0"
+              style={isSpinning ? { animation: "wheelRumble 0.07s linear infinite" } : undefined}
+            >
+              <div
+                className="absolute overflow-hidden rounded-full"
+                style={{
+                  left: "19.01%",
+                  top: "35.54%",
+                  width: "61.98%",
+                  aspectRatio: "1",
+                  transform: `rotate(${wheelAngle}deg)`,
+                  transition: "transform 3200ms cubic-bezier(0.12, 0.88, 0.32, 1)",
+                  background: WHEEL_CONIC_GRADIENT,
+                }}
+              >
+                {WHEEL_SECTORS.map((sec, i) => {
+                  const angle = i * 45 + 22.5;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute left-1/2 top-0 -ml-6 flex h-1/2 w-12 origin-bottom flex-col items-center pt-[8%] text-[11px] font-black select-none"
+                      style={{ transform: `rotate(${angle}deg)`, color: sec.textColor }}
+                    >
+                      <span className="text-xl leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{sec.icon}</span>
+                      <span className="mt-0.5 text-[10px] font-black uppercase leading-tight tracking-tighter drop-shadow-[0_1px_3px_rgba(0,0,0,1)]">
+                        {sec.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <img src="/assets/wheel-frame.png" alt="" className="pointer-events-none absolute inset-0 h-full w-full" />
             </div>
+          </div>
 
-            {/* Einsatz Chips */}
-            <div className="flex items-center justify-center gap-2 pt-1">
-              <span className="text-xs text-neutral-400 font-black uppercase tracking-wider">Einsatz:</span>
+          <div className="absolute inset-x-0 bottom-0 z-20 space-y-2 bg-gradient-to-t from-black/80 via-black/45 to-transparent px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-10 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-100">Einsatz:</span>
               {[1, 2, 5].map((val) => (
                 <button
                   key={val}
                   type="button"
                   disabled={isSpinning || herbsLeft < val}
                   onClick={() => setWheelBet(val)}
-                  className={`relative px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                  className={`relative rounded-xl px-3 py-1.5 text-xs font-black transition-all ${
                     wheelBet === val
-                      ? "bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-600 text-neutral-950 scale-110 shadow-[0_0_15px_rgba(251,191,36,0.6)] ring-2 ring-yellow-200"
-                      : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700 disabled:opacity-25"
+                      ? "scale-110 bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-600 text-neutral-950 shadow-[0_0_15px_rgba(251,191,36,0.6)] ring-2 ring-yellow-200"
+                      : "border border-neutral-800 bg-neutral-900 text-neutral-300 disabled:opacity-25"
                   }`}
                 >
                   {val}g
@@ -963,96 +1001,40 @@ export const TonnenGame: React.FC<TonnenGameProps> = ({
                 type="button"
                 disabled={isSpinning || herbsLeft <= 0}
                 onClick={() => setWheelBet(Math.max(1, herbsLeft))}
-                className={`relative px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                className={`relative rounded-xl px-3 py-1.5 text-xs font-black transition-all ${
                   wheelBet >= herbsLeft && herbsLeft > 0
-                    ? "bg-gradient-to-b from-emerald-300 via-teal-400 to-emerald-600 text-neutral-950 scale-110 shadow-[0_0_15px_rgba(52,211,153,0.6)] ring-2 ring-emerald-200"
-                    : "bg-neutral-900 border border-neutral-800 text-neutral-300 hover:border-neutral-700 disabled:opacity-25"
+                    ? "scale-110 bg-gradient-to-b from-emerald-300 via-teal-400 to-emerald-600 text-neutral-950 ring-2 ring-emerald-200"
+                    : "border border-neutral-800 bg-neutral-900 text-neutral-300 disabled:opacity-25"
                 }`}
               >
                 MAX
               </button>
             </div>
-          </div>
-
-          <div className="relative flex items-center justify-center my-3">
-            {/* 3D Casino Zeiger mit Rubin */}
-            <div className="absolute -top-5 z-40 flex flex-col items-center drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)]">
-              <div className="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-t-[28px] border-t-amber-300 filter drop-shadow-[0_2px_4px_rgba(217,119,6,0.8)]" />
-              <div className="-mt-6 w-3 h-3 rounded-full bg-red-600 ring-2 ring-yellow-200 shadow-[0_0_8px_#ef4444]" />
-            </div>
-
-            {/* Äußerer goldener Leuchtkranz */}
-            <div className="p-3 rounded-full bg-gradient-to-b from-yellow-300 via-amber-600 to-yellow-950 shadow-[0_0_40px_rgba(245,158,11,0.4)] border-2 border-amber-300/60 relative">
-              {/* LED Lichterkette auf dem Rahmen */}
-              <div className="absolute inset-1 rounded-full border border-dashed border-amber-200/40 pointer-events-none" />
-
-              {/* Das Rad */}
-              <div
-                className="w-72 h-72 rounded-full border-4 border-neutral-950 shadow-[inset_0_0_20px_rgba(0,0,0,0.8)] relative overflow-hidden transition-transform duration-[3200ms] cubic-bezier(0.12, 0.88, 0.32, 1)"
-                style={{
-                  transform: `rotate(${wheelAngle}deg)`,
-                  background: WHEEL_CONIC_GRADIENT,
-                }}
-              >
-                {WHEEL_SECTORS.map((sec, i) => {
-                  const angle = i * 45 + 22.5;
-                  return (
-                    <div
-                      key={i}
-                      className="absolute top-0 left-1/2 -ml-6 w-12 h-36 origin-bottom flex flex-col items-center pt-2 text-[11px] font-black tracking-tight select-none"
-                      style={{
-                        transform: `rotate(${angle}deg)`,
-                        color: sec.textColor,
-                      }}
-                    >
-                      <span className="text-xl leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{sec.icon}</span>
-                      <span className="text-[10px] uppercase font-black leading-tight mt-0.5 drop-shadow-[0_1px_3px_rgba(0,0,0,1)] tracking-tighter">
-                        {sec.label}
-                      </span>
-                    </div>
-                  );
-                })}
-
-                {/* Zentraler Casino Hub */}
-                <div className="absolute inset-0 m-auto w-14 h-14 rounded-full bg-gradient-to-b from-neutral-900 via-neutral-950 to-black border-2 border-amber-400 flex items-center justify-center text-xl z-20 shadow-[0_0_15px_rgba(0,0,0,0.9)] ring-2 ring-amber-500/40">
-                  <span className="drop-shadow-[0_0_6px_rgba(245,158,11,0.8)]">🎰</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-base font-bold text-emerald-400">
+            <div className="text-sm font-bold text-emerald-300">
               Verbleibend: {herbsLeft}g Kräuter
             </div>
-            <div className="flex gap-4 justify-center text-xs font-semibold text-neutral-300">
-              <span>Gewonnen: 🪙 {totalWonGroschen} Groschen</span>
+            <div className="flex justify-center gap-4 text-xs font-semibold text-amber-100/80">
+              <span>🪙 {totalWonGroschen}</span>
               <span>⚡ {totalWonXp} XP</span>
             </div>
-            <div className="h-8 flex items-center justify-center">
-              <span className="text-sm text-amber-400 font-bold animate-pulse">
-                {wheelResultText}
-              </span>
+            <div className="flex h-6 items-center justify-center">
+              <span className="text-sm font-bold text-amber-300">{wheelResultText}</span>
             </div>
-          </div>
-
-          <div className="w-full space-y-2">
             <button
               type="button"
               disabled={herbsLeft <= 0 || isSpinning}
               onClick={spinWheel}
-              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 font-black text-neutral-950 uppercase tracking-wider shadow-lg shadow-amber-950/60 active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
+              className="w-full rounded-xl bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 py-3.5 font-black uppercase tracking-wider text-neutral-950 shadow-lg active:scale-95 disabled:opacity-40"
             >
               {isSpinning ? "Rad dreht sich…" : herbsLeft > 0 ? `Rad drehen (${Math.min(wheelBet, herbsLeft)}g)` : "Keine Kräuter mehr"}
             </button>
-
             <button
               type="button"
               onClick={() => {
                 if (herbsLeft > 0) setShowExitConfirm(true);
                 else onClose();
               }}
-              className="w-full py-2.5 rounded-lg bg-neutral-800 text-neutral-300 font-bold text-xs hover:bg-neutral-700"
+              className="w-full rounded-lg bg-black/50 py-2.5 text-xs font-bold text-amber-100"
             >
               Hauptmenü
             </button>

@@ -517,12 +517,14 @@ export function ParkMenu(props: {
             <WoodBox className="pointer-events-auto mt-3 flex min-h-0 flex-1 flex-col">
               <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3 text-[12px] text-amber-50">
                 <p className="text-sm font-black tracking-wide text-amber-200">PUNKTE</p>
-                <p>🧶 Stricknadelkommando — 5s Dauerfeuer</p>
-                <p>🤯 Kopfschuss — 2× Pkt + 50</p>
-                <p>🛴 Bahndidos — 200 · ✨ Teppich — 150</p>
-                <p>🛢️ Offene Tonne — 150 · 🚫 Zu — −50</p>
-                <p>🌳 Busch 18–32 · 🧢 Talahons 8–35</p>
-                <p>🧥 Opa — −50 · ❌ Fehlschuss — −15</p>
+                <p>Mauer 35 · Wiese 22 · Weg 14 · Vorne 8</p>
+                <p>Rennen +6 · Hinterm Tor 28 · Baum 26 · Busch 22</p>
+                <p>🛴 Bahndidos 200 · ✨ Teppich 150</p>
+                <p>🛢️ Offene Tonne 150 · 🚫 Zu −50</p>
+                <p>🤘 Punk 120 · 🥫 Dose 80</p>
+                <p>🧥 Opa −100 · 🦽 Rollstuhl −100 · ❌ Fehlschuss −15</p>
+                <p>Kopfschuss: 2× plus 50. Combo gibt bis zu +150%.</p>
+                <p>🧶 Stricknadel: ab 13 Treffern in Folge, 5 Sekunden Dauerfeuer.</p>
                 <p className="pt-1 text-[11px] text-amber-100/80">Tippen zum Zielen · Im Kommando halten · Esc Pause</p>
                 <p className="pt-2 text-[11px]">XP kommt aus dem Standard. Groschen aus Missionen. Das Glücksrad kommt nach dem Tonnen-Modus.</p>
                 <div className="flex flex-wrap gap-2 pt-2 text-[12px] font-bold">

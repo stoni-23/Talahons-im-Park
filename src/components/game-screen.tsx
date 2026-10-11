@@ -36,7 +36,7 @@ function getOmaRank(score: number) {
 }
 
 import React, { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { NewsModal, CURRENT_NEWS_VERSION } from "./news-modal";
+import { NewsModal } from "./news-modal";
 import { Pause, Play, Volume2, VolumeX, User, Trash2, Edit2, Share2, Maximize, Minimize, Smartphone, LogOut } from "lucide-react";
 import { emptyHud, GameEngine } from "@/game/engine";
 import { unlockAudio, setMuted, isMuted, startMenuMusic, stopMenuMusic, playHit } from "@/game/audio";
@@ -188,9 +188,8 @@ export function GameScreen() {
       } else {
         stopMenuMusic();
       }
-    } else {
-      setMuted(nextMuted);
     }
+    setMuted(nextMuted);
   };
 
   // Beim Mounten Audio-Modul initial mit gespeichertem Mute-Status abgleichen
@@ -210,17 +209,6 @@ export function GameScreen() {
       stopMenuMusic();
     }
   }, [hud.mode, isTonnenOpen]);
-
-  React.useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const seen = localStorage.getItem("last_seen_news_version");
-      if (seen !== CURRENT_NEWS_VERSION && hud?.mode === "title") {
-        setIsNewsOpen(true);
-        localStorage.setItem("last_seen_news_version", CURRENT_NEWS_VERSION);
-      }
-    } catch (e) {}
-  }, [hud?.mode]);
 
 
 
@@ -835,7 +823,7 @@ function isBadWord(name: string): boolean {
   const sec = String(Math.floor(hud.timeLeft % 60)).padStart(2, "0");
   return (
     <div className="fixed inset-0 flex h-[100dvh] w-screen items-center justify-center overflow-hidden bg-ink text-paper">
-      <StartScreenOverlay onStart={() => { setSoundMutedState(false); setMuted(false); startMenuMusic(); }} />
+      <StartScreenOverlay onStart={() => { setSoundMutedState(false); setMuted(false); startMenuMusic(); setIsNewsOpen(true); }} />
       
       <div
         className="relative flex h-full items-center justify-center overflow-hidden shrink-0"
@@ -846,7 +834,7 @@ function isBadWord(name: string): boolean {
           touchAction: playing ? "none" : "pan-y"
         }}
       >
-        {!playing && hud.mode !== "title" && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/60 font-bold tracking-widest z-50 pointer-events-none">v1.5.5 BETA</div>}
+        {!playing && hud.mode !== "title" && <div className="absolute top-3 right-4 text-[10px] font-mono text-paper-dim/60 font-bold tracking-widest z-50 pointer-events-none">BETA 2026.10.6</div>}
         <canvas ref={canvasRef}
           className="block shrink-0 origin-center"
           style={{

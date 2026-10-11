@@ -169,6 +169,65 @@ export function onGameStartAudio() {
 export function playOpaSpawn() { playVoice("/opa_aus_dem_weg.wav"); }
 export function playOpaHit() { playVoice("/parkleuchte.wav"); }
 
+export function playAlteSchachtel() { playVoice("/alte-schachtel.mp3", 1); }
+
+export function playKuckuck() { playVoice("/kukuk_hippie.wav", 1); }
+
+let tonnenIntro: HTMLAudioElement | null = null;
+let tonnenIntroStarted = false;
+let tonnenIntroToken = 0;
+
+export function stopTonnenIntro() {
+  tonnenIntroToken++;
+  tonnenIntroStarted = false;
+  if (!tonnenIntro) return;
+  try {
+    tonnenIntro.onended = null;
+    tonnenIntro.pause();
+    tonnenIntro.currentTime = 0;
+  } catch {}
+  tonnenIntro = null;
+}
+
+export function playTonnenIntro(onDone?: () => void) {
+  if (muted || tonnenIntroStarted) return;
+  if (tonnenIntro && !tonnenIntro.paused) return;
+  tonnenIntroStarted = true;
+  const token = ++tonnenIntroToken;
+  const done = () => {
+    if (token !== tonnenIntroToken) return;
+    tonnenIntro = null;
+    onDone?.();
+  };
+  const first = new Audio("/buch_hippie.wav");
+  first.volume = 0.34;
+  tonnenIntro = first;
+  activeSounds.push(first);
+  first.onended = () => {
+    activeSounds = activeSounds.filter((item) => item !== first);
+    if (token !== tonnenIntroToken || muted || tonnenIntro !== first) return;
+    const second = new Audio("/oma_buch.mp3");
+    second.volume = 0.34;
+    tonnenIntro = second;
+    activeSounds.push(second);
+    second.onended = () => {
+      activeSounds = activeSounds.filter((item) => item !== second);
+      done();
+    };
+    second.play().catch(() => done());
+  };
+  first.play().catch(() => {
+    if (token !== tonnenIntroToken) return;
+    if (first.paused && first.currentTime === 0 && tonnenIntro === first) {
+      tonnenIntroStarted = false;
+      tonnenIntro = null;
+      onDone?.();
+    }
+  });
+}
+
+export function playFachkraft() { playVoice("/fachkraft.mp3", 1); }
+
 export function playRocker() {
   const rockerSounds = ["/rocker_brum.wav", "/rocker_powerbank.wav", "/rocker_intro.wav"];
   playVoice(rockerSounds[Math.floor(Math.random() * rockerSounds.length)], 0.9);
@@ -233,6 +292,15 @@ export function tickChirps(_dt?: number) {}
 export function isMuted() { return muted; }
 export function setMuted(m: boolean) {
   muted = m;
+  if (m) {
+    stopAllVoices();
+    stopTonnenIntro();
+    for (const pool of Object.values(soundPool)) {
+      for (const a of pool) {
+        try { a.pause(); } catch {}
+      }
+    }
+  }
   if (bgmAudio) {
     if (m) bgmAudio.pause();
     else bgmAudio.play().catch(() => {});
@@ -241,12 +309,10 @@ export function setMuted(m: boolean) {
     if (m) menuAudio.pause();
     else menuAudio.play().catch(() => {});
   }
-  if (m) stopAllVoices();
 }
 
 export function resumeAudio() { getCtx(); }
 export function unlockAudio() {
-  muted = false;
   const ctx = getCtx();
   if (ctx && ctx.state === "suspended") {
     ctx.resume().catch(() => {});
